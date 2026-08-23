@@ -1,0 +1,9 @@
+Create a 1200x630px image with:
+- Dark gradient background (#1A1A2E to #FF6B35)
+- ejaBashkohu logo centered in white
+- Tagline: 'Ulu te tavolina e dikujt' in white below
+- Seat ring visual (the circle with dots) above the logo
+Save as og-image.jpg in public/
+
+This image is critical for WhatsApp and Facebook shares.
+Every time someone shares the app link, this image appears.

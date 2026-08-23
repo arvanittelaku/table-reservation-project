@@ -1,0 +1,2568 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#244AA5" />
+<meta name="description" content="Hajde! — Uluni te tavolina e dikujt. Ose hapni tuajën. Aplikacioni social i Kosovës për kafe, vozitje, hiking e udhëtime." />
+<title>Hajde! — Uluni te tavolina e dikujt</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23244AA5'/><circle cx='50' cy='50' r='14' fill='%23F0E7D8'/><circle cx='50' cy='14' r='7' fill='%23E3A23C'/><circle cx='81' cy='32' r='7' fill='%23FAF6EE'/><circle cx='81' cy='68' r='7' fill='%23E3A23C'/><circle cx='50' cy='86' r='7' fill='%23FAF6EE'/><circle cx='19' cy='68' r='7' fill='%23E3A23C'/><circle cx='19' cy='32' r='7' fill='%23FAF6EE'/></svg>" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #E9E2D2; }
+  #root { min-height: 100vh; }
+  .boot { font-family: system-ui, sans-serif; text-align: center; padding: 60px 20px; color: #6B6455; }
+</style>
+</head>
+<body>
+<div id="root"><div class="boot">Duke e hapur Hajde!…</div></div>
+<script type="text/babel" data-presets="react">
+const { useState, useRef, useEffect } = React;
+
+/* Ikonat — glife të lehta pa varësi të jashtme */
+const mkIcon = (glyph) => ({ size = 16, className = "", style = {}, title }) => (
+  <span className={"emo " + className} title={title}
+    style={{ fontSize: size, lineHeight: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", ...style }}>
+    {glyph}
+  </span>
+);
+const MapPin = mkIcon("📍"), Clock = mkIcon("🕐"), Users = mkIcon("👥"), Plus = mkIcon("＋"),
+  Coffee = mkIcon("☕"), Search = mkIcon("🔍"), X = mkIcon("✕"), Send = mkIcon("➤"),
+  ChevronLeft = mkIcon("‹"), Globe = mkIcon("🌐"), Sparkles = mkIcon("✨"), Check = mkIcon("✓"),
+  Beer = mkIcon("🍺"), Mountain = mkIcon("⛰️"), Music = mkIcon("🎵"), Gamepad2 = mkIcon("🎮"),
+  ShieldCheck = mkIcon("🛡️"), Star = mkIcon("★"), CreditCard = mkIcon("💳"), Wallet = mkIcon("👛"),
+  Ticket = mkIcon("🎟️"), Dice5 = mkIcon("🎲"), Lock = mkIcon("🔒"), BadgeCheck = mkIcon("✓"),
+  PartyPopper = mkIcon("🎉"), Waves = mkIcon("🌊"), Home = mkIcon("🏠"), Dumbbell = mkIcon("🏋️"),
+  UtensilsCrossed = mkIcon("🍽️"), Bell = mkIcon("🔔"), Camera = mkIcon("📷"), Navigation = mkIcon("🧭"),
+  UserCheck = mkIcon("✔"), UserX = mkIcon("✖"), Hourglass = mkIcon("⏳"), Flag = mkIcon("⚑"),
+  Share2 = mkIcon("⇪"), Award = mkIcon("🏅"), BellRing = mkIcon("🔔"), Car = mkIcon("🚗"),
+  TreePine = mkIcon("🌲"), Bike = mkIcon("🚴"), BookOpen = mkIcon("📖"), HeartHandshake = mkIcon("🤝"),
+  Languages = mkIcon("🌐"), Plane = mkIcon("✈️"), FlipHorizontal = mkIcon("↔"), Minus = mkIcon("−");
+
+/* ══════════════════════════  HAJDE! 4.0  ══════════════════════════
+   E RE në këtë version:
+   1. APROVIMI: kërkon → nikoqiri sheh kush je (foto+moshë) → aprovon → paguan
+   2. FOTO E DETYRUESHME në regjistrim — nikoqiri e di gjithmonë kush po vjen
+   3. LOKACIONI: distanca live nga ti + drejtimet në Google Maps
+   4. MODELI: paguan ai që bashkohet (2 €), nikoqiri gjithmonë falas
+   ═══════════════════════════════════════════════════════════════════ */
+
+const BOOKING_FEE = 2.0;
+
+const CITIES = [
+  "Prishtinë", "Prizren", "Pejë", "Gjakovë", "Mitrovicë", "Ferizaj", "Gjilan",
+  "Podujevë", "Vushtrri", "Suharekë", "Rahovec", "Drenas", "Lipjan", "Malishevë",
+  "Kamenicë", "Viti", "Deçan", "Istog", "Klinë", "Skenderaj", "Dragash",
+  "Fushë Kosovë", "Obiliq", "Shtime", "Kaçanik", "Junik", "Hani i Elezit",
+  "Mamushë", "Graçanicë", "Shtërpcë", "Novobërdë", "Kllokot", "Ranillug",
+  "Partesh", "Zubin Potok", "Zveçan", "Leposaviq", "Mitrovicë e Veriut",
+];
+
+const CATEGORIES = [
+  { id: "kafe", label: "Kafe", icon: Coffee },
+  { id: "pije", label: "Pije", icon: Beer },
+  { id: "ushqim", label: "Ushqim", icon: UtensilsCrossed },
+  { id: "natyre", label: "Natyrë", icon: Mountain },
+  { id: "pishine", label: "Pishinë", icon: Waves },
+  { id: "apartament", label: "Apartament", icon: Home },
+  { id: "sport", label: "Sport", icon: Dumbbell },
+  { id: "muzike", label: "Muzikë", icon: Music },
+  { id: "lojera", label: "Lojëra", icon: Gamepad2 },
+  { id: "hiking", label: "Hiking", icon: TreePine },
+  { id: "biciklete", label: "Biçikletë", icon: Bike },
+  { id: "studim", label: "Studim", icon: BookOpen },
+  { id: "vullnetarizem", label: "Vullnetarizëm", icon: HeartHandshake },
+  { id: "vozitje", label: "Vozitje", icon: Car },
+  { id: "udhetim", label: "Udhëtim", icon: Plane },
+];
+
+const ICEBREAKERS = [
+  "Cili është vendi më i bukur që ke vizituar ndonjëherë?",
+  "Nëse do të hapje një kafe, si do ta quaje?",
+  "Makiato apo espresso — dhe pse makiato? 😄",
+  "Cila është kënga që s'të lodhë kurrë?",
+  "Çka do t'i tregoje një turisti të parën në qytetin tënd?",
+  "Talenti yt i fshehur që askush s'e di?",
+  "Vendi më i mirë për byrek — debat i hapur! 🥧",
+  "Nëse nesër zgjohesh në një shtet tjetër, cili do të ishte?",
+];
+
+/* Profile demo që dërgojnë kërkesa te tavolinat e tua (simulim i palës tjetër) */
+const FAKE_REQUESTERS = [
+  { name: "Erblin Krasniqi", age: 23, from: "🇽🇰 Prishtinë" },
+  { name: "Hanna Weber", age: 27, from: "🇩🇪 Turiste nga Berlini" },
+  { name: "Alba Gashi", age: 25, from: "🇽🇰 Ferizaj" },
+  { name: "Marco Rossi", age: 29, from: "🇮🇹 Turist nga Milano" },
+];
+
+/* ── DARKA E SË MËRKURËS (modeli Timeleft) ── */
+const QUIZ = [
+  { q: "Si duket mbrëmja jote ideale në tavolinë?", opts: ["Biseda të thella", "Humor e të qeshura", "Njohje e ide të reja", "Pak nga të gjitha"] },
+  { q: "Në grup, ti zakonisht je…", opts: ["Ai që pyet", "Ai që tregon histori", "Ai që dëgjon", "Ai që i qesh të gjithë"] },
+  { q: "Tema që të ndez më shumë?", opts: ["Udhëtime", "Karriera & ide", "Art & muzikë", "Sport"] },
+  { q: "Energjia jote në darkë?", opts: ["E qetë 🌙", "Mesatare 🙂", "E lartë ⚡"] },
+  { q: "Gjuha e darkës?", opts: ["Shqip", "English", "Të dyja"] },
+];
+const MATCHED_PEOPLE = [
+  { name: "Vesa", age: 26 }, { name: "Dritan", age: 28 }, { name: "Lena", age: 24 },
+  { name: "Bind", age: 27 }, { name: "Sara", age: 25 },
+];
+const SECRET_RESTAURANTS = ["Restaurant Liburnia", "Baba Ganoush", "Renaissance / Rilindja"];
+
+/* ══ AI MATCH: kuizi i profilit (15 pyetje) ══ */
+const MATCH_QUIZ = [
+  { key: "groupSize", q: "Grupe të mëdha apo të vogla?", opts: [["vogla","Të vogla (3-4)"],["mesatare","Mesatare (5-6)"],["medha","Të mëdha (7+)"]] },
+  { key: "depth", q: "Biseda të thella apo argëtim?", opts: [["thella","Biseda të thella"],["argetim","Argëtim e humor"],["te-dyja","Të dyja"]] },
+  { key: "time", q: "Kafeja/dalja ideale — kur?", opts: [["paradite","Paradite"],["pasdite","Pasdite"],["mbremje","Mbrëmje"]] },
+  { key: "energy", q: "Introvert apo ekstrovert?", opts: [["introvert","Më introvert"],["mes","Diku në mes"],["ekstrovert","Ekstrovert"]] },
+  { key: "interests", q: "Interesat e tua kryesore (deri 3)", multi: true, max: 3,
+    opts: [["Sipërmarrje","Sipërmarrje"],["Teknologji","Teknologji"],["Art & dizajn","Art & dizajn"],["Muzikë","Muzikë"],["Sport","Sport"],["Udhëtime","Udhëtime"],["Gastronomi","Gastronomi"],["Libra","Libra"]] },
+  { key: "field", q: "Profesioni / fusha jote?", opts: [["student","Student/e"],["it","IT & teknologji"],["biznes","Biznes & marketing"],["kreativ","Kreativ & art"],["shendetesi","Shëndetësi"],["tjeter","Tjetër"]] },
+  { key: "bizSport", q: "Biznes apo sport?", opts: [["biznes","Biznes"],["sport","Sport"],["asnjera","Asnjëra"]] },
+  { key: "weekend", q: "Fundjava jote ideale?", opts: [["natyre","Natyrë & hiking"],["qytet","Qytet & kafe"],["nata","Nata jashtë"],["shtepi","Shtëpi & film"]] },
+  { key: "role", q: "Në tavolinë ti je…", opts: [["degjuesi","Dëgjuesi"],["tregimtari","Tregimtari"],["pyetesi","Pyetësi"],["organizatori","Organizatori"]] },
+  { key: "music", q: "Muzikë live apo bisedë e qetë?", opts: [["live","Muzikë live"],["qete","Bisedë e qetë"]] },
+  { key: "freq", q: "Sa shpesh do doje tavolina?", opts: [["jave","Çdo javë"],["muaj","2-3 herë në muaj"],["rralle","Më rrallë"]] },
+  { key: "langs", q: "Gjuhët që flet (zgjidh të gjitha)", multi: true, max: 5,
+    opts: [["Shqip","Shqip"],["English","English"],["Deutsch","Deutsch"],["Türkçe","Türkçe"],["Italiano","Italiano"]] },
+  { key: "organizer", q: "A të pëlqen të organizosh vetë?", opts: [["po","Po, shpesh"],["ndonjehere","Ndonjëherë"],["bashkohem","Preferoj të bashkohem"]] },
+  { key: "humor", q: "Takimi i parë: humor apo seriozitet?", opts: [["humor","Humor i shumtë"],["balance","Balancë"],["serioz","Më serioz"]] },
+  { key: "newPeople", q: "Me kë preferon të njihesh?", opts: [["panjohur","Të panjohur totalë"],["miq","Miq të miqve"],["te-dy","Të dyja"]] },
+];
+
+/* Vibe i tavolinave të krijuara nga përdoruesi, sipas kategorisë */
+const CAT_VIBE = {
+  kafe: { interests: ["Gastronomi", "Libra"], time: null, depth: null, energy: "mes" },
+  pije: { interests: ["Muzikë"], time: "mbremje", depth: "argetim", energy: "ekstrovert" },
+  ushqim: { interests: ["Gastronomi"], time: "mbremje", depth: "thella", energy: "mes" },
+  natyre: { interests: ["Udhëtime", "Sport"], time: "paradite", depth: "argetim", energy: "mes" },
+  pishine: { interests: ["Sport", "Udhëtime"], time: "pasdite", depth: "argetim", energy: "ekstrovert" },
+  apartament: { interests: ["Art & dizajn", "Muzikë"], time: "mbremje", depth: "argetim", energy: "introvert" },
+  sport: { interests: ["Sport"], time: "pasdite", depth: "argetim", energy: "ekstrovert" },
+  muzike: { interests: ["Muzikë"], time: "mbremje", depth: "argetim", energy: "ekstrovert" },
+  lojera: { interests: ["Teknologji"], time: "mbremje", depth: "argetim", energy: "mes" },
+  hiking: { interests: ["Udhëtime", "Sport"], time: "paradite", depth: "argetim", energy: "mes" },
+  biciklete: { interests: ["Sport", "Udhëtime"], time: "paradite", depth: "argetim", energy: "ekstrovert" },
+  studim: { interests: ["Libra", "Teknologji"], time: "pasdite", depth: "thella", energy: "introvert" },
+  vullnetarizem: { interests: ["Udhëtime"], time: "paradite", depth: "thella", energy: "mes" },
+  vozitje: { interests: ["Udhëtime"], time: null, depth: null, energy: null },
+  udhetim: { interests: ["Udhëtime"], time: null, depth: "te-dyja", energy: "mes" },
+};
+const WEEKEND_CAT = { natyre: "natyre", qytet: "kafe", nata: "muzike", shtepi: "apartament" };
+
+/* Llogaritja e përputhjes (0-98) — transparente dhe e shpjegueshme */
+const matchScore = (t, p, aff) => {
+  if (!p.done) return null;
+  let s = 50;
+  const vibe = t.vibe || CAT_VIBE[t.cat] || {};
+  const shared = (vibe.interests || []).filter((i) => p.interests.includes(i));
+  s += Math.min(3, shared.length) * 9;
+  if (vibe.depth && (vibe.depth === p.depth || p.depth === "te-dyja")) s += 7;
+  if (vibe.time && vibe.time === p.time) s += 6;
+  const gs = t.spots <= 4 ? "vogla" : t.spots <= 6 ? "mesatare" : "medha";
+  if (gs === p.groupSize) s += 5;
+  if (vibe.energy && vibe.energy === p.energy) s += 4;
+  if ((t.langs || []).some((l) => (p.langs || []).includes(l))) s += 4;
+  if (WEEKEND_CAT[p.weekend] === t.cat) s += 4;
+  if (p.bizSport === "sport" && t.cat === "sport") s += 4;
+  s += Math.max(-8, Math.min(10, aff[t.cat] || 0));
+  if (t.mystery) s = Math.max(s, 93);
+  return Math.max(45, Math.min(98, Math.round(s)));
+};
+
+/* "Pse po ta rekomandojmë?" — arsyet në gjuhë natyrale */
+const explainMatch = (t, p, aff) => {
+  if (t.mystery) return "Kjo tavolinë u krijua direkt nga përgjigjet e tua — 5 personat u zgjodhën sepse dhanë përgjigje shumë të ngjashme me tuat.";
+  const vibe = t.vibe || CAT_VIBE[t.cat] || {};
+  const parts = [];
+  const shared = (vibe.interests || []).filter((i) => p.interests.includes(i));
+  if (shared.length) parts.push(`Ti dhe ${t.host.split(" ")[0]} keni interes të përbashkët për ${shared.join(" dhe ")}.`);
+  const gs = t.spots <= 4 ? "vogla" : t.spots <= 6 ? "mesatare" : "medha";
+  if (gs === p.groupSize && vibe.depth && (vibe.depth === p.depth || p.depth === "te-dyja"))
+    parts.push(`Të dy preferoni grupe të ${gs === "vogla" ? "vogla" : gs === "mesatare" ? "mesme" : "mëdha"} dhe ${vibe.depth === "thella" ? "biseda të thella" : "atmosferë argëtuese"}.`);
+  else if (gs === p.groupSize) parts.push(`Madhësia e grupit (${t.spots} vende) përputhet me preferencën tënde.`);
+  if (vibe.time && vibe.time === p.time) parts.push("Ora e tavolinës përputhet me orarin kur del ti zakonisht.");
+  if ((aff[t.cat] || 0) >= 6) parts.push("Ke dalë i kënaqur nga tavolina të ngjashme më parë — e kemi vënë re nga vlerësimet e tua.");
+  if ((aff[t.cat] || 0) <= -6) parts.push("Vlerësimet e tua të kaluara tregojnë se kjo kategori s'të përshtatet aq — prandaj renditet më poshtë.");
+  if (!parts.length) parts.push("Profilet tuaja kanë disa pika të përbashkëta bazë — gjuha, qyteti dhe hapja për njohje të reja.");
+  return parts.join(" ");
+};
+
+const SEED_TABLES = [
+  {
+    id: 1, vibe: { interests: ["Libra", "Art & dizajn"], depth: "thella", time: "pasdite", energy: "mes" }, cat: "kafe", cafe: "Soma Book Station", area: "Qendra", city: "Prishtinë",
+    coords: { lat: 42.6608, lng: 21.1641 },
+    host: "Arta", hostAge: 26, hostFrom: "🇽🇰 Prishtinë", hostVerified: true, hostRating: 4.9, hostTables: 23,
+    time: "Sot, 17:00", spots: 5,
+    joined: ["Arta", "Leon"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Makiato", "Libra", "Biseda të qeta"],
+    desc: "Makiato pasdite në oborrin e Somës. Flasim për libra, muzikë, çka të doni. Turistët veçanërisht të mirëpritur — ju tregojmë Prishtinën!",
+    chat: [
+      { from: "Arta", text: "Hajde kush do, jemi te tavolina në oborr 🌿", time: "14:02" },
+      { from: "Leon", text: "Po vij edhe unë, arrij rreth 17:15", time: "14:30" },
+    ],
+  },
+  {
+    id: 2, vibe: { interests: ["Udhëtime", "Libra"], depth: "argetim", time: "mbremje", energy: "mes" }, cat: "kafe", cafe: "Dit' e Nat'", area: "Qendra", city: "Prishtinë",
+    coords: { lat: 42.6597, lng: 21.1622 },
+    host: "Jonas", hostAge: 29, hostFrom: "🇩🇪 Berlin", hostVerified: true, hostRating: 4.7, hostTables: 4,
+    time: "Sot, 19:30", spots: 4,
+    joined: ["Jonas"], requests: [],
+    langs: ["English", "Deutsch"],
+    tags: ["Turistë", "Language exchange"],
+    desc: "Hi! I'm visiting Kosovo for a week and would love to meet locals. Coffee or beer, I'm easy. Help me learn some Albanian phrases? 😄",
+    chat: [{ from: "Jonas", text: "Anyone around tonight? First time in Prishtina!", time: "12:45" }],
+  },
+  {
+    id: 3, vibe: { interests: ["Muzikë"], depth: "argetim", time: "mbremje", energy: "ekstrovert" }, cat: "pije", cafe: "Half & Half", area: "Pejton", city: "Prishtinë",
+    coords: { lat: 42.6577, lng: 21.1565 },
+    host: "Blerta", hostAge: 24, hostFrom: "🇽🇰 Prishtinë", hostVerified: true, hostRating: 5.0, hostTables: 41,
+    time: "Nesër, 20:00", spots: 6,
+    joined: ["Blerta", "Rron", "Elsa"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Pas pune", "Muzikë live"],
+    desc: "Mbledhje e zakonshme e së premtes. Grup i përzier — vendas dhe të huaj. Vjen kush do, ikën kush do. Zero presion.",
+    chat: [],
+  },
+  {
+    id: 4, vibe: { interests: ["Udhëtime", "Sport"], depth: "argetim", time: "paradite", energy: "mes" }, cat: "natyre", cafe: "Nisja: Sheshi Shadërvan", area: "Qendra historike", city: "Prizren",
+    coords: { lat: 42.2088, lng: 20.7406 },
+    host: "Drin", hostAge: 31, hostFrom: "🇽🇰 Prizren", hostVerified: true, hostRating: 4.8, hostTables: 17,
+    time: "E diel, 10:00", spots: 8,
+    joined: ["Drin", "Mira"], requests: [],
+    langs: ["Shqip", "English", "Türkçe"],
+    tags: ["Hiking", "Kalaja", "Foto"],
+    desc: "Ngjitje e lehtë deri te Kalaja e Prizrenit, pastaj kafe në qytet të vjetër. Rreth 2 orë gjithsej. Pamja nga lart ia vlen 100%.",
+    chat: [
+      { from: "Mira", text: "A duhen këpucë hiking apo mjaftojnë atlete?", time: "09:10" },
+      { from: "Drin", text: "Atletet mjaftojnë krejt, rruga është e shtruar", time: "09:22" },
+    ],
+  },
+  {
+    id: 5, vibe: { interests: ["Teknologji"], depth: "argetim", time: "mbremje", energy: "mes" }, cat: "lojera", cafe: "Bubble Tea & Games", area: "Ulpianë", city: "Prishtinë",
+    coords: { lat: 42.6489, lng: 21.1608 },
+    host: "Endrit", hostAge: 22, hostFrom: "🇽🇰 Prishtinë", hostVerified: false, hostRating: 4.5, hostTables: 6,
+    time: "Sot, 18:00", spots: 4,
+    joined: ["Endrit", "Vesa", "Tim"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Board games", "UNO", "Catan"],
+    desc: "Mbrëmje lojërash! Kemi Catan, Uno, Monopoly Deal. S'ka nevojë me dit' me lujt — mësojmë bashkë.",
+    chat: [{ from: "Tim", text: "I call dibs on the red pieces 🔴", time: "11:00" }],
+  },
+  {
+    id: 6, vibe: { interests: ["Udhëtime", "Gastronomi"], depth: "thella", time: "paradite", energy: "mes" }, cat: "kafe", cafe: "Art Design Café", area: "Qendra", city: "Pejë",
+    coords: { lat: 42.6593, lng: 20.2887 },
+    host: "Lum", hostAge: 27, hostFrom: "🇽🇰 Pejë", hostVerified: true, hostRating: 4.9, hostTables: 12,
+    time: "Nesër, 11:00", spots: 5,
+    joined: ["Lum"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Rugova", "Këshilla udhëtimi", "Makiato"],
+    desc: "Kafe e qetë para drekës. Nëse jeni turistë që planifikoni Grykën e Rugovës, ju jap të gjitha këshillat — via ferrata, zipline, gjithçka.",
+    chat: [],
+  },
+  {
+    id: 7, vibe: { interests: ["Gastronomi", "Art & dizajn"], depth: "thella", time: "paradite", energy: "mes" }, cat: "kafe", cafe: "Prince Coffee House", area: "Qendra", city: "Prishtinë",
+    coords: { lat: 42.6620, lng: 21.1650 },
+    host: "Nita", hostAge: 25, hostFrom: "🇽🇰 Prishtinë", hostVerified: true, hostRating: 4.9, hostTables: 28,
+    time: "E shtunë, 12:00", spots: 6,
+    joined: ["Nita", "Dea"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Vetëm femra", "Brunch"], womenOnly: true,
+    desc: "Tavolinë vetëm për vajza — brunch i qetë e biseda të hapura. Të gjitha të mirëseardhura, vendase e turiste. 💛",
+    chat: [{ from: "Dea", text: "Mezi pres, e shtuna po vjen ngadalë 😅", time: "10:15" }],
+  },
+  {
+    id: 8, vibe: { interests: ["Muzikë"], depth: "argetim", time: "mbremje", energy: "ekstrovert" }, cat: "muzike", cafe: "Zone Club", area: "Qendra", city: "Prishtinë",
+    coords: { lat: 42.6555, lng: 21.1600 },
+    host: "Art", hostAge: 23, hostFrom: "🇽🇰 Prishtinë", hostVerified: false, hostRating: 4.3, hostTables: 3,
+    time: "E shtunë, 22:00", spots: 7,
+    joined: ["Art", "Sam", "Vera", "Loni"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Techno", "Nata jashtë"],
+    desc: "Grup për natën e së shtunës. Takohemi para hyrjes në 22:00. Sa më shumë, aq më mirë 🎶",
+    chat: [{ from: "Sam", text: "Heard so much about Prishtina nightlife, can't wait", time: "16:40" }],
+  },
+  {
+    id: 9, vibe: { interests: ["Sport", "Udhëtime"], depth: "argetim", time: "pasdite", energy: "ekstrovert" }, cat: "pishine", cafe: "Pishina Gërmia", area: "Parku i Gërmisë", city: "Prishtinë",
+    coords: { lat: 42.6839, lng: 21.2079 },
+    host: "Rina", hostAge: 24, hostFrom: "🇽🇰 Prishtinë", hostVerified: true, hostRating: 4.8, hostTables: 9,
+    time: "Nesër, 13:00", spots: 8,
+    joined: ["Rina", "Bardh", "Eli"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Not", "Diell", "Pishina më e madhe në rajon"],
+    desc: "Ditë vere te pishina e Gërmisë — noti, dielli dhe akullore pas. Merrni peshqir e krem dielli, atmosfera është garanci! ☀️",
+    chat: [{ from: "Bardh", text: "Kush vjen herët me zanë vend te hija? 😄", time: "10:05" }],
+  },
+  {
+    id: 10, vibe: { interests: ["Art & dizajn", "Muzikë"], depth: "argetim", time: "mbremje", energy: "introvert" }, cat: "apartament", cafe: "Mbrëmje filmi te unë", area: "Bregu i Diellit", city: "Prishtinë",
+    coords: { lat: 42.6472, lng: 21.1739 },
+    host: "Gent", hostAge: 26, hostFrom: "🇽🇰 Prishtinë", hostVerified: true, hostRating: 4.9, hostTables: 15,
+    time: "E premte, 20:30", spots: 6,
+    joined: ["Gent", "Lea"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Film", "Pica", "Cozy"],
+    desc: "Mbrëmje filmi në apartamentin tim — projektor, pica e kokoshka. Votojmë filmin bashkë në chat. Sillni vetëm humor të mirë 🍿",
+    chat: [{ from: "Lea", text: "Votoj për ndonjë thriller 🎬", time: "13:20" }],
+  },
+  {
+    id: 11, vibe: { interests: ["Sport"], depth: "argetim", time: "pasdite", energy: "ekstrovert" }, cat: "sport", cafe: "Fusha e futbollit, Gërmia", area: "Gërmia", city: "Prishtinë",
+    coords: { lat: 42.6800, lng: 21.1990 },
+    host: "Dion", hostAge: 28, hostFrom: "🇽🇰 Prishtinë", hostVerified: false, hostRating: 4.6, hostTables: 11,
+    time: "E diel, 17:00", spots: 10,
+    joined: ["Dion", "Ardit", "Leke", "Roni"], requests: [],
+    langs: ["Shqip"],
+    tags: ["Futboll", "5 vs 5", "Të gjitha nivelet"],
+    desc: "Futboll i vogël çdo të diel. S'ka rëndësi niveli — luajmë për qejf, humbësi i merr pijet 😅",
+    chat: [],
+  },
+  {
+    id: 12, vibe: { interests: ["Gastronomi", "Sipërmarrje"], depth: "thella", time: "mbremje", energy: "mes" }, cat: "ushqim", cafe: "Restaurant Tiffany", area: "Qendra", city: "Prishtinë",
+    coords: { lat: 42.6585, lng: 21.1570 },
+    host: "Vlora", hostAge: 30, hostFrom: "🇽🇰 Prishtinë", hostVerified: true, hostRating: 5.0, hostTables: 34,
+    time: "E enjte, 19:00", spots: 6,
+    joined: ["Vlora"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Darkë me të panjohur", "Kuzhinë tradicionale"],
+    desc: "Darkë me të panjohur — modeli klasik: 6 persona, një tavolinë, biseda pa fund. Kuzhinë tradicionale kosovare, perfekte edhe për turistë.",
+    chat: [],
+  },
+  {
+    id: 13, cat: "vozitje", cafe: "Prishtinë → Prizren", area: "Nisja: te Katedralja", city: "Prishtinë",
+    vibe: { interests: ["Udhëtime"], depth: null, time: "paradite", energy: null },
+    host: "Bleron", hostAge: 27, hostFrom: "🇽🇰 Prishtinë", hostVerified: true, hostRating: 4.9, hostTables: 31,
+    time: "E diel, 09:30", spots: 3,
+    joined: ["Bleron"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Vozitje e përbashkët", "Muzikë e mirë", "Ndalesë për kafe"],
+    desc: "Po zbres në Prizren për vikend — kam 3 ulëse të lira, falas, veç për shoqëri rrugës. Muzikë të mirë garantoj dhe ndalemi për kafe 😄 Kthimi të dielën në mbrëmje, po deshët edhe atë.",
+    chat: [],
+  },
+  {
+    id: 14, cat: "vozitje", cafe: "Prishtinë → Pejë", area: "Nisja: te Sheshi Zahir Pajaziti", city: "Prishtinë",
+    vibe: { interests: ["Udhëtime"], depth: null, time: "pasdite", energy: null },
+    host: "Diellza", hostAge: 25, hostFrom: "🇽🇰 Pejë", hostVerified: true, hostRating: 5.0, hostTables: 18,
+    time: "E premte, 16:00", spots: 2,
+    joined: ["Diellza"], requests: [],
+    langs: ["Shqip", "English", "Deutsch"],
+    tags: ["Vozitje e përbashkët", "Fundjavë në Rugovë"],
+    desc: "Kthehem në Pejë çdo të premte pas pune. 2 ulëse të lira — ideale për këdo që do fundjavën në Rugovë. Vozitje e qetë, pa nxitim.",
+    chat: [],
+  },
+  {
+    id: 15, cat: "hiking", cafe: "Maja e Gjeravicës", area: "Nisja: qendra e Deçanit", city: "Deçan",
+    vibe: { interests: ["Udhëtime", "Sport"], depth: "argetim", time: "paradite", energy: "ekstrovert" },
+    host: "Ilir", hostAge: 32, hostFrom: "🇽🇰 Deçan", hostVerified: true, hostRating: 4.9, hostTables: 26,
+    time: "E shtunë, 06:30", spots: 8,
+    joined: ["Ilir", "Vera"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Maja më e lartë e Kosovës", "2,656 m", "Nivel mesatar"],
+    desc: "Ngjitje në Gjeravicë — maja më e lartë e Kosovës! Rreth 6-7 orë vajtje-ardhje, liqenet akullnajore rrugës janë spektakolare. Duhen këpucë të mira dhe 2L ujë. Grupi ec bashkë, s'lëmë njeri mbrapa. 🏔️",
+    chat: [{ from: "Vera", text: "A ka borë ende në majë?", time: "19:15" }, { from: "Ilir", text: "Vetëm ndonjë njollë, rruga është e pastër", time: "19:40" }],
+  },
+  {
+    id: 16, cat: "udhetim", cafe: "Ksamil, Shqipëri 🇦🇱", area: "Nisja: Prishtinë", city: "Prishtinë",
+    budget: "~120 € / person", vibe: { interests: ["Udhëtime"], depth: "te-dyja", time: null, energy: "mes" },
+    host: "Jeta", hostAge: 26, hostFrom: "🇽🇰 Prishtinë", hostVerified: true, hostRating: 4.9, hostTables: 14,
+    time: "12–14 gusht (3 ditë)", spots: 5,
+    joined: ["Jeta"], requests: [],
+    langs: ["Shqip", "English"],
+    tags: ["Udhëtim në grup", "Plazh", "Ndajmë shpenzimet"],
+    desc: "Dua të shkoj në Ksamil për 3 ditë dhe po kërkoj 4 persona të tjerë! Ndajmë banesën, karburantin e qejfin. Buxheti i përafërt ~120 € gjithsej. Nisemi herët të premten, kthehemi të dielën në darkë. 🏖️",
+    chat: [],
+  },
+];
+
+/* ── SILUETAT E QYTETEVE (SVG — pa foto të jashtme, gjithmonë funksionojnë) ── */
+const cityVariant = (c) =>
+  c === "Prizren" ? "prizren"
+  : ["Pejë", "Deçan", "Istog", "Junik", "Klinë"].includes(c) ? "peja"
+  : c === "Prishtinë" ? "prishtina"
+  : "generic";
+
+function CityScape({ variant = "generic", tone = "light", height = 78 }) {
+  const dark = tone === "dark";
+  const far = dark ? "#0D1322" : "#EFE7D2";
+  const near = dark ? "#182238" : "#E5D9BC";
+  const glow = dark ? "#E3A23C" : "#D9C79C";
+  return (
+    <svg viewBox="0 0 400 90" preserveAspectRatio="xMidYMax slice"
+      style={{ width: "100%", height, display: "block" }} aria-hidden="true">
+      {variant === "prishtina" && (
+        <>
+          <g fill={far}>
+            <rect x="0" y="50" width="34" height="40" />
+            <rect x="40" y="40" width="22" height="50" />
+            <rect x="296" y="46" width="26" height="44" />
+            <rect x="330" y="56" width="46" height="34" />
+            <rect x="380" y="44" width="20" height="46" />
+          </g>
+          <g fill={near}>
+            {/* Kulla e antenës */}
+            <rect x="70" y="30" width="6" height="60" />
+            <rect x="72" y="12" width="2" height="20" />
+            <rect x="86" y="46" width="26" height="44" />
+            {/* Biblioteka Kombëtare: kubetë */}
+            <rect x="120" y="60" width="72" height="30" />
+            <circle cx="136" cy="60" r="9" />
+            <circle cx="156" cy="55" r="12" />
+            <circle cx="178" cy="60" r="9" />
+            {/* Katedralja */}
+            <rect x="212" y="32" width="14" height="58" />
+            <rect x="217" y="20" width="4" height="14" />
+            <rect x="212" y="26" width="14" height="4" />
+            {/* NEWBORN */}
+            <rect x="246" y="74" width="44" height="16" rx="3" />
+          </g>
+          {dark && (
+            <g fill={glow} opacity="0.9">
+              <rect x="92" y="54" width="4" height="5" /><rect x="102" y="66" width="4" height="5" />
+              <rect x="8" y="60" width="4" height="5" /><rect x="46" y="50" width="4" height="5" />
+              <rect x="216" y="46" width="5" height="6" /><rect x="340" y="64" width="4" height="5" />
+              <rect x="150" y="70" width="4" height="5" /><rect x="386" y="52" width="4" height="5" />
+            </g>
+          )}
+        </>
+      )}
+      {variant === "prizren" && (
+        <>
+          {/* Kalaja mbi kodër */}
+          <g fill={far}>
+            <path d="M240 90 L305 34 L370 90 Z" />
+            <rect x="288" y="30" width="36" height="10" />
+            <rect x="290" y="24" width="5" height="8" /><rect x="302" y="24" width="5" height="8" /><rect x="314" y="24" width="5" height="8" />
+            <path d="M0 90 L60 58 L120 90 Z" />
+          </g>
+          <g fill={near}>
+            {/* Ura e Gurit */}
+            <path d="M30 90 v-20 h150 v20 h-22 v-12 a14 14 0 0 0 -28 0 v12 h-24 v-12 a14 14 0 0 0 -28 0 v12 Z" />
+            {/* Xhamia e Sinan Pashës: minarja */}
+            <rect x="206" y="34" width="7" height="56" />
+            <polygon points="203,34 216,34 209.5,22" />
+            <rect x="222" y="60" width="40" height="30" />
+            <circle cx="242" cy="60" r="14" />
+          </g>
+          {dark && (
+            <g fill={glow} opacity="0.9">
+              <rect x="236" y="68" width="4" height="5" /><rect x="250" y="68" width="4" height="5" />
+              <rect x="60" y="76" width="4" height="4" /><rect x="130" y="76" width="4" height="4" />
+              <rect x="300" y="40" width="4" height="4" />
+            </g>
+          )}
+        </>
+      )}
+      {variant === "peja" && (
+        <>
+          {/* Bjeshkët e Rugovës */}
+          <g fill={far}>
+            <path d="M0 90 L70 26 L150 90 Z" />
+            <path d="M110 90 L200 14 L300 90 Z" />
+            <path d="M260 90 L340 32 L400 90 Z" />
+          </g>
+          <g fill={near}>
+            <path d="M40 90 L110 44 L190 90 Z" />
+            <path d="M210 90 L290 40 L380 90 Z" />
+            {/* shtëpi të vogla */}
+            <rect x="150" y="76" width="18" height="14" /><polygon points="146,76 172,76 159,66" />
+            <rect x="190" y="80" width="14" height="10" /><polygon points="187,80 207,80 197,72" />
+          </g>
+          {dark && (
+            <g fill={glow} opacity="0.9">
+              <rect x="156" y="80" width="4" height="4" /><rect x="194" y="83" width="3" height="3" />
+            </g>
+          )}
+        </>
+      )}
+      {variant === "generic" && (
+        <>
+          <g fill={far}>
+            <path d="M0 90 Q80 46 180 74 T400 60 V90 Z" />
+          </g>
+          <g fill={near}>
+            <rect x="60" y="66" width="20" height="24" /><polygon points="56,66 84,66 70,54" />
+            <rect x="100" y="72" width="16" height="18" /><polygon points="97,72 119,72 108,62" />
+            <rect x="290" y="64" width="22" height="26" /><polygon points="286,64 316,64 301,52" />
+            <rect x="330" y="72" width="14" height="18" />
+          </g>
+          {dark && (
+            <g fill={glow} opacity="0.9">
+              <rect x="66" y="72" width="4" height="5" /><rect x="296" y="70" width="4" height="5" />
+            </g>
+          )}
+        </>
+      )}
+    </svg>
+  );
+}
+
+/* ── Unaza e vendeve (elementi nënshkrim) ── */function SeatRing({ total, taken, size = 44 }) {
+  const dots = [];
+  const r = size / 2 - 4;
+  for (let i = 0; i < total; i++) {
+    const angle = (i / total) * Math.PI * 2 - Math.PI / 2;
+    const x = size / 2 + r * Math.cos(angle);
+    const y = size / 2 + r * Math.sin(angle);
+    dots.push(
+      <circle key={i} cx={x} cy={y} r={4}
+        fill={i < taken ? "#244AA5" : "none"}
+        stroke={i < taken ? "#244AA5" : "#E3A23C"}
+        strokeWidth={i < taken ? 0 : 2} />
+    );
+  }
+  return (
+    <svg width={size} height={size} aria-label={`${taken} nga ${total} vende të zëna`}>
+      <circle cx={size / 2} cy={size / 2} r={size / 5.5} fill="#F0E7D8" stroke="#D9CBB2" strokeWidth="1.5" />
+      {dots}
+    </svg>
+  );
+}
+
+function Avatar({ name, photo, small, large }) {
+  const cls = `avatar ${small ? "avatar-sm" : ""} ${large ? "avatar-lg" : ""}`;
+  if (photo) return <img src={photo} alt={name} className={cls} style={{ objectFit: "cover" }} />;
+  const hues = [217, 36, 152, 265, 12, 190];
+  const h = hues[(name?.charCodeAt(0) || 0) % hues.length];
+  return (
+    <div className={cls} style={{ background: `hsl(${h} 55% 88%)`, color: `hsl(${h} 60% 32%)` }}>
+      {name?.[0]?.toUpperCase() || "?"}
+    </div>
+  );
+}
+
+function Stars({ rating }) {
+  return (
+    <span className="stars" title={`${rating} / 5`}>
+      ★ {rating.toFixed(1)}
+    </span>
+  );
+}
+
+/* ── Kartela ── */
+const formatCardNum = (v) => v.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ");
+const formatExpiry = (v) => {
+  const d = v.replace(/\D/g, "").slice(0, 4);
+  return d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d;
+};
+const validCard = (c) => {
+  const num = c.num.replace(/\s/g, "");
+  const [mm, yy] = c.exp.split("/").map(Number);
+  return num.length === 16 && c.name.trim().length >= 3 && mm >= 1 && mm <= 12 && yy >= 26 && c.cvc.replace(/\D/g, "").length === 3;
+};
+
+/* ── Distanca (Haversine) ── */
+const distKm = (a, b) => {
+  const R = 6371, toR = (x) => (x * Math.PI) / 180;
+  const dLat = toR(b.lat - a.lat), dLng = toR(b.lng - a.lng);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a.lat)) * Math.cos(toR(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+};
+/* ── HARTA: kërkon EMRIN REAL të vendit (jo koordinata të përafërta) ──
+   Nëse nikoqiri ka ngjitur linkun ekzakt të Google Maps, përdoret ai. */
+const mapsUrl = (t) =>
+  t.mapsLink && /^https?:\/\//.test(t.mapsLink)
+    ? t.mapsLink
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        t.cat === "vozitje"
+          ? `${(t.area || "").replace("Nisja: ", "")}, ${t.city}, Kosovo`
+          : t.cat === "udhetim"
+            ? t.cafe
+            : `${t.cafe}, ${t.area ? t.area + ", " : ""}${t.city}, Kosovo`
+      )}`;
+
+const nowTime = () => {
+  const n = new Date();
+  return `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
+};
+
+function HajdeApp() {
+  const [screen, setScreen] = useState("onboard");
+  const [step, setStep] = useState(0);
+  const [user, setUser] = useState({ firstName: "", lastName: "", age: "24", email: "", name: "", from: "", isTourist: null, photo: null });
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(user.email.trim());
+  const ageNum = parseInt(user.age, 10);
+  const ageValid = !isNaN(ageNum) && ageNum >= 18 && ageNum <= 99;
+  const ageTooYoung = !isNaN(ageNum) && user.age.length > 0 && ageNum < 18;
+
+  const [tables, setTables] = useState(SEED_TABLES);
+  const [city, setCity] = useState("Prishtinë");
+  const [cat, setCat] = useState("all");
+  const [query, setQuery] = useState("");
+  const [active, setActive] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [tab, setTab] = useState("zbulo");
+  const [toast, setToast] = useState(null);
+  const [msg, setMsg] = useState("");
+  const chatEndRef = useRef(null);
+  const fileRef = useRef(null);
+
+  /* Njoftimet */
+  const [notifs, setNotifs] = useState([]);
+  const [unread, setUnread] = useState(0);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const pushNotif = (text, icon = "🔔") => {
+    setNotifs((p) => [{ id: Date.now() + Math.random(), icon, text, time: nowTime() }, ...p]);
+    setUnread((u) => u + 1);
+  };
+
+  /* Lokacioni i përdoruesit */
+  const [userPos, setUserPos] = useState(null);
+  const [posState, setPosState] = useState("idle"); // idle | asking | ok | denied
+  const askLocation = () => {
+    if (!navigator.geolocation) { setPosState("denied"); return; }
+    setPosState("asking");
+    navigator.geolocation.getCurrentPosition(
+      (p) => { setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude }); setPosState("ok"); },
+      () => setPosState("denied"),
+      { enableHighAccuracy: false, timeout: 8000 }
+    );
+  };
+
+  /* Pagesa */
+  const [payFor, setPayFor] = useState(null);
+  const [payMethod, setPayMethod] = useState("card");
+  const [card, setCard] = useState({ num: "", exp: "", cvc: "", name: "" });
+  const [payState, setPayState] = useState("idle");
+  const [tickets, setTickets] = useState({});
+  const simulatedApproval = useRef(new Set());
+  const simulatedIncoming = useRef(new Set());
+
+  const [form, setForm] = useState({
+    mode: "tavoline", city: "Prishtinë", toCity: "Prizren", budget: "",
+    cafe: "", area: "", time: "", spots: 4, cat: "kafe",
+    desc: "", langs: "Shqip, English", womenOnly: false, mapsLink: "",
+  });
+  const openCreate = () => {
+    const mode = cat === "vozitje" ? "vozitje" : cat === "udhetim" ? "udhetim" : "tavoline";
+    setForm((f) => ({ ...f, city, mode, spots: mode === "vozitje" ? 3 : mode === "udhetim" ? 5 : 4 }));
+    setShowCreate(true);
+  };
+  const createLabel = cat === "vozitje" ? "Hap vozitje" : cat === "udhetim" ? "Hap udhëtim" : "Hap tavolinë";
+
+  /* Darka e së Mërkurës (Timeleft) */
+  const [showWed, setShowWed] = useState(false);
+  const [quizStep, setQuizStep] = useState(0);
+  const [quizAns, setQuizAns] = useState([]);
+  const [matchState, setMatchState] = useState("quiz"); // quiz | matching | matched
+  const [wedDone, setWedDone] = useState(false);
+  const wedTableId = useRef(null);
+
+  /* Vlerësimi pas takimit */
+  const [rateFor, setRateFor] = useState(null);
+  const [rateStars, setRateStars] = useState(0);
+  const [rateAgain, setRateAgain] = useState(null);
+  const [rated, setRated] = useState({});
+  const [rateSelect, setRateSelect] = useState([]);   // me kë dua kontakt
+  const [connections, setConnections] = useState([]); // lidhjet e konfirmuara
+
+  /* Përputhja: profili nga kuizi + afiniteti i mësuar nga sjellja */
+  const [profile, setProfile] = useState({ done: false, interests: [], langs: ["Shqip"] });
+  const [aff, setAff] = useState({});                 // { kategori: pikë të mësuara }
+  const [showMQ, setShowMQ] = useState(false);
+
+  /* Siguria: raporto / blloko */
+  const [reportFor, setReportFor] = useState(null);   // emri i personit
+  const [reportReason, setReportReason] = useState(null);
+  const [reportBlock, setReportBlock] = useState(false);
+  const [blocked, setBlocked] = useState([]);
+
+  /* ── Dritarja e detyrueshme e profilit ── */
+  const [profileView, setProfileView] = useState(null);
+  const [photoError, setPhotoError] = useState(null);
+  const hostProf = (t) => ({
+    name: t.host, age: t.hostAge, from: t.hostFrom, verified: t.hostVerified,
+    rating: t.hostRating, tablesHeld: t.hostTables, langs: t.langs,
+    photo: t.host === user.name ? user.photo : null, isHost: true,
+  });
+  const liteProf = (name) => ({
+    name,
+    photo: name === user.name ? user.photo : null,
+    age: name === user.name ? user.age : undefined,
+    from: name === user.name
+      ? (user.isTourist ? `✈️ ${user.from || "Turist"}` : "🇽🇰 Kosovë")
+      : "Pjesëmarrës me profil të verifikuar",
+  });
+
+  /* Lista e pritjes + distinktivat */
+  const simulatedWait = useRef(new Set());
+  const [badges, setBadges] = useState([]);
+  const awardBadge = (id, emoji, label) => {
+    setBadges((b) => {
+      if (b.some((x) => x.id === id)) return b;
+      setTimeout(() => {
+        pushNotif(`Fitove distinktivin ${emoji} "${label}"! Shikoje te Tavolinat e mia.`, "🏅");
+        showToast(`🏅 Distinktiv i ri: ${emoji} ${label}`);
+      }, 400);
+      return [...b, { id, emoji, label }];
+    });
+  };
+  const [mqi, setMqi] = useState(0);
+  const answerMQ = (key, val, multi, max) => {
+    if (multi) {
+      setProfile((pr) => {
+        const cur = pr[key] || [];
+        const next = cur.includes(val) ? cur.filter((x) => x !== val) : cur.length < max ? [...cur, val] : cur;
+        return { ...pr, [key]: next };
+      });
+      return;
+    }
+    setProfile((pr) => ({ ...pr, [key]: val }));
+    if (mqi < MATCH_QUIZ.length - 1) setMqi(mqi + 1);
+    else finishMQ();
+  };
+  const finishMQ = () => {
+    setProfile((pr) => ({ ...pr, done: true }));
+    setShowMQ(false); setMqi(0);
+    awardBadge("profil", "✨", "Profil i plotë");
+    pushNotif("Profili i shijeve u krijua — tavolinat tani renditen sipas përshtatjes me ty, dhe përputhja përmirësohet me çdo takim.", "✨");
+    showToast("✨ Përputhja u aktivizua!");
+  };
+
+  const isRide = (t) => t?.cat === "vozitje";
+  const tableFee = (t) => (isRide(t) ? 0 : BOOKING_FEE);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [active, tables]);
+
+  const showToast = (t) => { setToast(t); setTimeout(() => setToast(null), 2800); };
+
+  const activeTable = tables.find((t) => t.id === active);
+  const payTable = tables.find((t) => t.id === payFor);
+
+  const filtered = tables
+    .filter((t) =>
+      !blocked.includes(t.host) &&
+      t.city === city &&
+      (cat === "all" || t.cat === cat) &&
+      (query === "" || (t.cafe + t.desc + (t.tags || []).join(" ")).toLowerCase().includes(query.toLowerCase()))
+    )
+    .map((t) => ({ ...t, _match: matchScore(t, profile, aff) }))
+    .sort((a, b) => (b._match ?? 0) - (a._match ?? 0));
+  const myTables = tables.filter((t) =>
+    t.joined.includes(user.name) || (t.requests || []).some((r) => r.name === user.name)
+  );
+  const pendingRequestsForMe = tables
+    .filter((t) => t.host === user.name)
+    .reduce((n, t) => n + (t.requests || []).filter((r) => r.status === "pending").length, 0);
+
+  /* Statusi i marrëdhënies sime me tavolinën */
+  const myStatus = (t) => {
+    if (t.host === user.name) return "host";
+    if (t.joined.includes(user.name)) return "joined";
+    const r = (t.requests || []).find((x) => x.name === user.name);
+    if (r?.status === "approved") return "approved";
+    if (r?.status === "pending") return "pending";
+    if ((t.waitlist || []).includes(user.name)) return "waitlist";
+    if (t.joined.length >= t.spots) return "full";
+    return "none";
+  };
+
+  /* ── HAPI 1: Kërkesa (falas) — nikoqiri njoftohet dhe sheh kush je ── */
+  const requestJoin = (id) => {
+    const t = tables.find((x) => x.id === id);
+    if (!t) return;
+    setTables((prev) => prev.map((x) =>
+      x.id === id
+        ? { ...x, requests: [...(x.requests || []), { rid: Date.now(), name: user.name, age: user.age, from: user.isTourist ? `✈️ ${user.from || "Turist"}` : "🇽🇰 Kosovë", photo: user.photo, status: "pending" }] }
+        : x
+    ));
+    showToast(`Kërkesa u dërgua — ${t.host} po e shikon profilin tënd 👀`);
+
+    /* Simulim demo: nikoqiri e sheh foton+moshën tënde dhe aprovon pas pak sekondash */
+    if (!simulatedApproval.current.has(id)) {
+      simulatedApproval.current.add(id);
+      setTimeout(() => {
+        setTables((prev) => prev.map((x) =>
+          x.id === id
+            ? { ...x, requests: (x.requests || []).map((r) => r.name === user.name ? { ...r, status: "approved" } : r) }
+            : x
+        ));
+        pushNotif(isRide(t)
+          ? `${t.host} e aprovoi kërkesën tënde për "${t.cafe}". Konfirmo ulësen — vozitja është falas! 🚗`
+          : `${t.host} e aprovoi kërkesën tënde për "${t.cafe}". Paguaj ${tableFee(t).toFixed(2)} € për të konfirmuar vendin.`, "✅");
+        showToast(`${t.host} të aprovoi! Konfirmo vendin 🎉`);
+      }, 4000);
+    }
+  };
+
+  const cancelRequest = (id) => {
+    setTables((prev) => prev.map((x) =>
+      x.id === id ? { ...x, requests: (x.requests || []).filter((r) => r.name !== user.name) } : x
+    ));
+    showToast("Kërkesa u anulua");
+  };
+
+  /* ── HAPI 2: Pas aprovimit → pagesa (tavolinat) ose konfirmimi falas (vozitjet) ── */
+  const startPayment = (id) => { setPayState("idle"); setPayMethod("card"); setPayFor(id); };
+
+  const confirmFreeSeat = (id) => {
+    const t = tables.find((x) => x.id === id);
+    setTables((prev) => prev.map((x) =>
+      x.id === id && x.joined.length < x.spots && !x.joined.includes(user.name)
+        ? { ...x, joined: [...x.joined, user.name], requests: (x.requests || []).filter((r) => r.name !== user.name) }
+        : x
+    ));
+    awardBadge("first-join", "🎉", "Tavolina e parë");
+    pushNotif(`Ulësja u konfirmua! Shihemi te nisja: ${t?.area?.replace("Nisja: ", "") || ""} — ${t?.time}.`, "🚗");
+    showToast("Ulësja u konfirmua — falas! 🚗");
+  };
+
+  const confirmPayment = () => {
+    if (payMethod === "card" && !validCard(card)) { showToast("Kontrollo të dhënat e kartelës ✍️"); return; }
+    setPayState("processing");
+    setTimeout(() => {
+      const code = "HJD-" + String(1000 + Math.floor(Math.random() * 9000));
+      setTables((prev) => prev.map((t) =>
+        t.id === payFor && t.joined.length < t.spots && !t.joined.includes(user.name)
+          ? { ...t, joined: [...t.joined, user.name], requests: (t.requests || []).filter((r) => r.name !== user.name) }
+          : t
+      ));
+      setTickets((prev) => ({ ...prev, [payFor]: code }));
+      const joinedCat = payTable?.cat;
+      if (joinedCat) setAff((a) => ({ ...a, [joinedCat]: (a[joinedCat] || 0) + 4 }));
+      awardBadge("first-join", "🎉", "Tavolina e parë");
+      setPayState("success");
+    }, 1400);
+  };
+
+  const closePayment = (openTable) => {
+    const id = payFor;
+    setPayFor(null); setPayState("idle");
+    setCard({ num: "", exp: "", cvc: "", name: "" });
+    if (openTable && id) setActive(id);
+  };
+
+  /* ── Lista e pritjes ── */
+  const joinWaitlist = (id) => {
+    const t = tables.find((x) => x.id === id);
+    if (!t) return;
+    setTables((prev) => prev.map((x) =>
+      x.id === id ? { ...x, waitlist: [...(x.waitlist || []), user.name] } : x
+    ));
+    showToast("Je në listën e pritjes — të njoftojmë sapo të lirohet vend 🔔");
+    /* Simulim në kohë reale: dikush anulon pas pak sekondash */
+    if (!simulatedWait.current.has(id)) {
+      simulatedWait.current.add(id);
+      setTimeout(() => {
+        setTables((prev) => prev.map((x) => {
+          if (x.id !== id) return x;
+          const removable = x.joined.filter((n) => n !== x.host && n !== user.name);
+          if (!removable.length) return x;
+          const leaver = removable[removable.length - 1];
+          return {
+            ...x,
+            joined: x.joined.filter((n) => n !== leaver),
+            waitlist: (x.waitlist || []).filter((n) => n !== user.name),
+            requests: [...(x.requests || []), { rid: Date.now(), name: user.name, age: user.age, from: "Nga lista e pritjes", photo: user.photo, status: "approved" }],
+          };
+        }));
+        pushNotif(isRide(t)
+          ? `U lirua një ulëse te "${t.cafe}" — ishe i pari në radhë! Konfirmoje falas.`
+          : `U lirua një vend te "${t.cafe}" — ishe i pari në radhë! Konfirmo vendin me pagesë (pa rimbursim).`, "🔔");
+        showToast(`🔔 U lirua vend te ${t.cafe}!`);
+      }, 7000);
+    }
+  };
+  const leaveWaitlist = (id) => {
+    setTables((prev) => prev.map((x) =>
+      x.id === id ? { ...x, waitlist: (x.waitlist || []).filter((n) => n !== user.name) } : x
+    ));
+    showToast("Dole nga lista e pritjes");
+  };
+
+  /* ── Siguria: ndaje planin me një mik ── */
+  const sharePlan = async (t) => {
+    const txt = `Po shkoj te tavolina "${t.cafe}" (${t.area}, ${t.city}) — ${t.time}, përmes Hajde!. Nëse s'të lajmërohem 2 orë pas, më merr në telefon. 🛡️`;
+    try {
+      if (navigator.share) { await navigator.share({ text: txt }); showToast("Plani u nda 🛡️"); return; }
+      await navigator.clipboard.writeText(txt);
+      showToast("Plani u kopjua — ngjite në një mesazh për mikun 🛡️");
+    } catch {
+      showToast("Kopjoje manualisht: " + t.cafe + ", " + t.time);
+    }
+  };
+
+  /* ── Raporto / Blloko ── */
+  const submitReport = () => {
+    const name = reportFor;
+    if (reportBlock) {
+      setBlocked((b) => [...new Set([...b, name])]);
+      setActive(null);
+      pushNotif(`${name} u bllokua — tavolinat e tij/saj nuk do të shfaqen më. Mund ta zhbllokosh te cilësimet (në versionin real).`, "🚫");
+    }
+    pushNotif(`Raporti për ${name} u dërgua. Ekipi ynë i sigurisë e shqyrton brenda 24 orësh — faleminderit që e mban komunitetin të sigurt.`, "🛡️");
+    showToast(reportBlock ? "U raportua dhe u bllokua 🚫" : "Raporti u dërgua 🛡️");
+    setReportFor(null); setReportReason(null); setReportBlock(false);
+  };
+
+  const leaveTable = (id) => {
+    setTables((prev) => prev.map((x) =>
+      x.id === id ? { ...x, joined: x.joined.filter((n) => n !== user.name) } : x
+    ));
+    setTickets((prev) => { const p = { ...prev }; delete p[id]; return p; });
+    const lt = tables.find((x) => x.id === id);
+    showToast(isRide(lt) ? "U largove nga vozitja" : "U largove nga tavolina — pagesa nuk rimbursohet");
+  };
+
+  /* ── Nikoqiri: aprovo / refuzo kërkesat për tavolinat e MIA ── */
+  const approveRequest = (tableId, rid) => {
+    setTables((prev) => prev.map((t) => {
+      if (t.id !== tableId) return t;
+      const r = (t.requests || []).find((x) => x.rid === rid);
+      if (!r) return t;
+      if (t.joined.length >= t.spots) { showToast("Tavolina është plot — s'ka vend"); return t; }
+      pushNotif(`E aprovove ${r.name} — do të paguajë për të konfirmuar vendin.`, "🤝");
+      /* Simulim në kohë reale: personi konfirmon dhe shkruan në chat */
+      setTimeout(() => {
+        pushNotif(`${r.name} e konfirmoi vendin me pagesë. Tavolina jote po mbushet!`, "💶");
+      }, 3500);
+      setTimeout(() => {
+        setTables((pv) => pv.map((x) => x.id === tableId
+          ? { ...x, chat: [...x.chat, { from: r.name, text: "Flm që më pranove! Mezi pres 🙌", time: nowTime() }] } : x));
+        pushNotif(`${r.name.split(" ")[0]} shkroi në chatin e tavolinës tënde.`, "💬");
+      }, 6500);
+      return { ...t, joined: [...t.joined, r.name], requests: t.requests.filter((x) => x.rid !== rid) };
+    }));
+    showToast("Kërkesa u aprovua ✅");
+  };
+
+  const rejectRequest = (tableId, rid) => {
+    setTables((prev) => prev.map((t) =>
+      t.id === tableId ? { ...t, requests: (t.requests || []).filter((x) => x.rid !== rid) } : t
+    ));
+    showToast("Kërkesa u refuzua — personi nuk njoftohet për arsyen");
+  };
+
+  const sendMsg = (textOverride) => {
+    const text = (textOverride ?? msg).trim();
+    if (!text || !activeTable) return;
+    setTables((prev) => prev.map((t) =>
+      t.id === active ? { ...t, chat: [...t.chat, { from: user.name, text, time: nowTime() }] } : t
+    ));
+    if (!textOverride) setMsg("");
+  };
+  /* ── Përkthimi (real, me auto-detektim: shqip↔anglisht) ── */
+  const [translations, setTranslations] = useState({}); // { "tableId-idx": tekst | "…" }
+  const [draftTranslating, setDraftTranslating] = useState(false);
+  const TRANSLATE_PROMPT = (text) =>
+    `You are a translator. If the following chat message is in Albanian, translate it to English. If it is in any other language, translate it to Albanian. Reply with ONLY the translation — no quotes, no notes:\n\n${text}`;
+  const callTranslate = async (text) => {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: TRANSLATE_PROMPT(text) }],
+      }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const out = (data.content || []).map((c) => (c.type === "text" ? c.text : "")).join("").trim();
+    if (!out) throw new Error("bosh");
+    return out;
+  };
+  const translateMsg = async (tableId, idx, text) => {
+    const key = `${tableId}-${idx}`;
+    if (translations[key] && translations[key] !== "…") return;
+    setTranslations((tr) => ({ ...tr, [key]: "…" }));
+    try {
+      const out = await callTranslate(text);
+      setTranslations((tr) => ({ ...tr, [key]: out }));
+    } catch {
+      setTranslations((tr) => ({ ...tr, [key]: "S'u përkthye dot — provo sërish" }));
+    }
+  };
+  /* Përkthen atë që po e shkruan VETË përdoruesi, para dërgimit */
+  const translateDraft = async () => {
+    if (!msg.trim() || draftTranslating) return;
+    setDraftTranslating(true);
+    try {
+      const out = await callTranslate(msg.trim());
+      setMsg(out);
+      showToast("U përkthye — dërgoje kur të jesh gati 🌐");
+    } catch {
+      showToast("Përkthimi dështoi — provo sërish");
+    }
+    setDraftTranslating(false);
+  };
+
+  /* Zari e vendos pyetjen në fushë — përdoruesi e sheh, e ndryshon po deshi, pastaj e dërgon vetë */
+  const throwIcebreaker = () => setMsg("🎲 " + ICEBREAKERS[Math.floor(Math.random() * ICEBREAKERS.length)]);
+
+  /* ── Kuizi → përputhja → tavolina sekrete e së mërkurës ── */
+  const answerQuiz = (opt) => {
+    const ans = [...quizAns, opt];
+    setQuizAns(ans);
+    if (ans.length < QUIZ.length) { setQuizStep(quizStep + 1); return; }
+    setMatchState("matching");
+    setTimeout(() => {
+      const id = Date.now();
+      wedTableId.current = id;
+      const wedT = {
+        id, cat: "ushqim", mystery: true, revealed: false,
+        cafe: "🔒 Restoranti sekret", area: "Zbulohet 24h para", city: "Prishtinë",
+        host: "Hajde Match ✦", hostAge: null, hostFrom: "Përputhje me algoritëm",
+        hostVerified: true, hostRating: 4.9, hostTables: 120,
+        time: "E mërkurë, 20:00", spots: 6,
+        joined: MATCHED_PEOPLE.map((p) => p.name),
+        requests: [{ rid: id + 1, name: user.name, age: user.age, from: "Ti", photo: user.photo, status: "approved" }],
+        langs: [quizAns.includes("English") || ans.includes("English") ? "English" : "Shqip", "Shqip"].filter((v, i, a) => a.indexOf(v) === i),
+        tags: ["Darka e së Mërkurës", "6 të panjohur", "Përputhje me kuiz"],
+        desc: "6 persona të përputhur nga përgjigjet e kuizit — të njëjtat interesa, energji e ngjashme. Restoranti mbahet sekret deri 24 orë para darkës. Vjen, ulesh, njihesh. ✦",
+        chat: [],
+      };
+      setTables((p) => [wedT, ...p]);
+      setMatchState("matched");
+      setWedDone(true);
+      pushNotif(`U përputhe me 5 persona për Darkën e së Mërkurës! Konfirmo vendin — restoranti zbulohet 24h para.`, "✦");
+    }, 2200);
+  };
+
+  const openWedTable = () => { setShowWed(false); setMatchState("quiz"); setQuizStep(0); setQuizAns([]); if (wedTableId.current) { setActive(wedTableId.current); setTab("imet"); } };
+
+  const revealVenue = (id) => {
+    const venue = SECRET_RESTAURANTS[Math.floor(Math.random() * SECRET_RESTAURANTS.length)];
+    setTables((prev) => prev.map((t) =>
+      t.id === id ? { ...t, revealed: true, cafe: venue, area: "Qendra", mapsLink: "" } : t
+    ));
+    pushNotif(`Restoranti u zbulua: ${venue}, Prishtinë — të mërkurën në 20:00. Shihemi aty! 🍽️`, "📍");
+    showToast(`📍 ${venue} — shihemi të mërkurën!`);
+  };
+
+  /* ── Vlerësimi pas takimit ── */
+  const submitRating = () => {
+    const picks = [...rateSelect];
+    /* Sistemi mëson: yjet e larta ngrenë kategorinë, të ulëtat e ulin */
+    const rT = tables.find((t) => t.id === rateFor);
+    if (rT && profile.done) {
+      const delta = (rateStars - 3) * 4;
+      setAff((a) => ({ ...a, [rT.cat]: (a[rT.cat] || 0) + delta }));
+      const cl = CATEGORIES.find((c) => c.id === rT.cat)?.label || rT.cat;
+      setTimeout(() => pushNotif(
+        delta >= 0
+          ? `Sipas vlerësimit tënd, tavolinat "${cl}" tani renditen më lart për ty.`
+          : `Sipas vlerësimit tënd, tavolinat "${cl}" do të shfaqen më rrallë në krye.`, "✨"), 800);
+    }
+    setRated((p) => ({ ...p, [rateFor]: rateStars }));
+    awardBadge("first-rate", "📝", "Vlerësuesi");
+    setRateFor(null); setRateStars(0); setRateAgain(null); setRateSelect([]);
+    showToast("Faleminderit! Vlerësimi përmirëson përputhjet e ardhshme ⭐");
+    /* Simulim: pala tjetër të zgjedh edhe ty → përputhje e ndërsjellë */
+    if (picks.length > 0) {
+      setTimeout(() => {
+        setConnections((prev) => [...new Set([...prev, ...picks])]);
+        awardBadge("first-conn", "💫", "Lidhja e parë");
+        pushNotif(`Përputhje e ndërsjellë! ${picks[0]} gjithashtu zgjodhi të mbajë kontakt me ty — chat-i privat u hap te "Lidhjet e mia".`, "💫");
+        showToast("💫 Përputhje! Shiko njoftimet");
+      }, 3000);
+    }
+  };
+
+  /* Foto e profilit */
+  /* ── Kontrolli i fytyrës: refuzon foto të zeza / një ngjyrë / pa fytyrë ── */
+  const validatePhoto = (dataUrl) => new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = async () => {
+      try {
+        const c = document.createElement("canvas");
+        const w = (c.width = Math.min(180, img.width));
+        const h = (c.height = Math.min(180, img.height));
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        const d = ctx.getImageData(0, 0, w, h).data;
+        let sum = 0, sum2 = 0, skin = 0;
+        const n = d.length / 4;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = d[i], g = d[i + 1], b = d[i + 2];
+          const l = 0.299 * r + 0.587 * g + 0.114 * b;
+          sum += l; sum2 += l * l;
+          if (r > 60 && g > 35 && b > 25 && r > b && Math.abs(r - g) > 8) skin++;
+        }
+        const mean = sum / n;
+        const sd = Math.sqrt(Math.max(0, sum2 / n - mean * mean));
+        if (mean < 26) return resolve({ ok: false, reason: "Fotoja është shumë e errët — provo në dritë më të mirë. 🌑" });
+        if (sd < 16) return resolve({ ok: false, reason: "Fotoja duket e njëtrajtshme (një ngjyrë) — duhet foto e vërtetë ku duket fytyra. 🎨" });
+        if ("FaceDetector" in window) {
+          try {
+            const fd = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 3 });
+            const faces = await fd.detect(img);
+            if (!faces.length) return resolve({ ok: false, reason: "Nuk u dallua fytyrë në foto — sigurohu që fytyra të duket qartë dhe pa maskë. 🙂" });
+            return resolve({ ok: true, faceChecked: true });
+          } catch (err) { /* bie te heuristika */ }
+        }
+        if (skin / n < 0.03) return resolve({ ok: false, reason: "Nuk u dallua fytyrë — zgjidh një foto ku fytyra jote duket qartë. 🙂" });
+        resolve({ ok: true });
+      } catch (err) { resolve({ ok: true }); }
+    };
+    img.onerror = () => resolve({ ok: false, reason: "Fotoja s'u lexua dot — provo një tjetër." });
+    img.src = dataUrl;
+  });
+
+  const onPhotoPick = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const res = await validatePhoto(reader.result);
+      if (!res.ok) { setPhotoError(res.reason); showToast("Fotoja u refuzua ❌"); return; }
+      setPhotoError(null);
+      setUser((u) => ({ ...u, photo: reader.result }));
+      showToast(res.faceChecked ? "Fytyra u verifikua ✓" : "Fotoja u pranua ✓");
+    };
+    reader.readAsDataURL(f);
+    e.target.value = "";
+  };
+
+  /* Rregullimi i anës: kamerat selfie shpesh e kthejnë foton si pasqyrë */
+  const flipPhoto = () => {
+    if (!user.photo) return;
+    const img = new window.Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.width; c.height = img.height;
+      const ctx = c.getContext("2d");
+      ctx.translate(img.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, 0, 0);
+      setUser((u) => ({ ...u, photo: c.toDataURL("image/jpeg", 0.92) }));
+    };
+    img.src = user.photo;
+  };
+
+  const createTable = () => {
+    const ride = form.mode === "vozitje";
+    const trip = form.mode === "udhetim";
+    if (trip && !form.cafe.trim()) { showToast("Shkruaj destinacionin 🧳"); return; }
+    if (!ride && !trip && !form.cafe.trim()) { showToast("Shkruaj emrin e vendit 📍"); return; }
+    if (ride && form.city === form.toCity) { showToast("Zgjidh dy qytete të ndryshme 🚗"); return; }
+    if (!form.time.trim()) { showToast(ride ? "Shkruaj kohën e nisjes 🕐" : "Shkruaj kohën e takimit 🕐"); return; }
+    const id = Date.now();
+    const newT = {
+      id,
+      cat: ride ? "vozitje" : trip ? "udhetim" : form.cat,
+      cafe: ride ? `${form.city} → ${form.toCity}` : form.cafe.trim(),
+      budget: trip ? (form.budget || "").trim() || undefined : undefined,
+      area: ride ? `Nisja: ${form.area.trim() || "qendra"}` : trip ? `Nisja: ${form.city}` : (form.area.trim() || "Qendra"),
+      city: form.city,
+      host: user.name, hostAge: parseInt(user.age, 10) || undefined,
+      hostFrom: user.isTourist ? `✈️ ${user.from || "Turist"}` : `🇽🇰 ${form.city}`,
+      hostVerified: false, hostRating: 5.0, hostTables: 1,
+      time: form.time.trim(), spots: Number(form.spots) || 4,
+      joined: [user.name], requests: [],
+      langs: form.langs.split(",").map((s) => s.trim()).filter(Boolean),
+      tags: ride ? ["Vozitje e përbashkët", ...(form.womenOnly ? ["Vetëm femra"] : [])]
+        : trip ? ["Udhëtim në grup", ...(form.womenOnly ? ["Vetëm femra"] : [])]
+        : (form.womenOnly ? ["Vetëm femra"] : []),
+      womenOnly: form.womenOnly,
+      desc: form.desc.trim() || (ride ? "Ulëse të lira — për shoqëri rrugës!" : trip ? "Po kërkoj shoqëri për këtë udhëtim — hajde bashkohu!" : "Hajde bashkohu, të njihemi!"), chat: [],
+      mapsLink: form.mapsLink.trim(),
+    };
+    setTables((p) => [newT, ...p]);
+    awardBadge("first-host", "🪑", "Nikoqiri i ri");
+    setCity(form.city); setTab("zbulo"); setShowCreate(false);
+    setForm({ mode: "tavoline", city: form.city, toCity: form.toCity, budget: "", cafe: "", area: "", time: "", spots: 4, cat: "kafe", desc: "", langs: "Shqip, English", womenOnly: false, mapsLink: "" });
+    showToast(ride ? "Vozitja u hap! Të njoftojmë kur dikush kërkon ulëse 🚗" : trip ? "Udhëtimi u hap! Të njoftojmë kur dikush kërkon të vijë 🧳" : "Tavolina u hap! Do të njoftohesh kur dikush kërkon të vijë 🔔");
+
+    /* Simulim demo: brenda pak sekondash vijnë kërkesa reale që TI i shqyrton */
+    if (!simulatedIncoming.current.has(id)) {
+      simulatedIncoming.current.add(id);
+      const [a, b] = [FAKE_REQUESTERS[Math.floor(Math.random() * 2)], FAKE_REQUESTERS[2 + Math.floor(Math.random() * 2)]];
+      setTimeout(() => {
+        setTables((prev) => prev.map((t) =>
+          t.id === id ? { ...t, requests: [...(t.requests || []), { rid: id + 1, ...a, photo: null, status: "pending" }] } : t
+        ));
+        pushNotif(`${a.name}, ${a.age} (${a.from}) kërkon t'i bashkohet tavolinës tënde "${newT.cafe}". Shiko profilin dhe vendos.`, "🙋");
+        pushNotif(`Njoftimi u dërgua edhe në email-in tënd: ${user.email}`, "📧");
+        showToast(`🔔 Kërkesë e re — të erdhi edhe në email 📧`);
+      }, 5000);
+      setTimeout(() => {
+        setTables((prev) => prev.map((t) =>
+          t.id === id ? { ...t, requests: [...(t.requests || []), { rid: id + 2, ...b, photo: null, status: "pending" }] } : t
+        ));
+        pushNotif(`${b.name}, ${b.age} (${b.from}) kërkon t'i bashkohet tavolinës tënde "${newT.cafe}".`, "🙋");
+        pushNotif(`Njoftimi u dërgua edhe në email-in tënd: ${user.email}`, "📧");
+      }, 11000);
+    }
+  };
+
+  /* ══════════ ONBOARDING — stili Timeleft: 1 pyetje për ekran ══════════ */
+  if (screen === "onboard") {
+    const totalSteps = 4;
+    return (
+      <div className={`app onboard ${step === 0 ? "hero-bg" : ""}`}>
+        <Style />
+
+        {/* ── EKRANI HERO ── */}
+        {step === 0 && (
+          <div className="hero">
+            <div className="hero-art"><CityScape variant="prishtina" tone="dark" height={104} /></div>
+            <div className="hero-ring">
+              <SeatRing total={6} taken={4} size={92} />
+            </div>
+            <h1 className="logo-word hero-logo">hajde<span className="logo-bang">!</span></h1>
+            <h2 className="hero-line">
+              Sonte, dikush në qytet<br />ka një <em>karrige të lirë</em><br />për ty.
+            </h2>
+            <div className="hero-stats">
+              <span>☕ Kafe · pishina · darka</span>
+              <span>📍 38 komuna të Kosovës</span>
+              <span>🛡️ Profile me foto · 18+</span>
+            </div>
+            <button className="btn hero-cta" onClick={() => setStep(1)}>Hajde, fillojmë →</button>
+            <p className="hero-foot">Falas për të hyrë · Rezervimi {BOOKING_FEE.toFixed(2)} €</p>
+          </div>
+        )}
+
+        {/* ── HAPAT: 1 pyetje për ekran ── */}
+        {step > 0 && (
+          <div className="ob-inner steps">
+            <div className="steps-art"><CityScape variant="generic" tone="light" height={92} /></div>
+            <div className="step-top">
+              <button className="icon-btn" onClick={() => setStep(step - 1)} aria-label="Kthehu"><ChevronLeft size={18} /></button>
+              <div className="dots">
+                {Array.from({ length: totalSteps }).map((_, i) => (
+                  <span key={i} className={`dot ${i < step ? "on" : ""}`} />
+                ))}
+              </div>
+              <span className="step-n">{step}/{totalSteps}</span>
+            </div>
+
+            {step === 1 && (
+              <div className="step-body">
+                <p className="step-q">Si quhesh?</p>
+                <input className="input xl" autoFocus placeholder="Emri" value={user.firstName}
+                  onChange={(e) => setUser({ ...user, firstName: e.target.value })} />
+                <input className="input xl" placeholder="Mbiemri" value={user.lastName}
+                  onChange={(e) => setUser({ ...user, lastName: e.target.value })} />
+                <input className="input xl" type="email" placeholder="Email-i yt" value={user.email}
+                  onChange={(e) => setUser({ ...user, email: e.target.value })}
+                  onKeyDown={(e) => e.key === "Enter" && user.firstName.trim() && user.lastName.trim() && emailValid && setStep(2)} />
+                <p className="step-hint">📧 Në email të vijnë njoftimet e rëndësishme — p.sh. kur dikush kërkon t'i bashkohet tavolinës tënde, edhe kur s'e ke aplikacionin të hapur.</p>
+                <button className="btn primary full big-cta"
+                  disabled={!user.firstName.trim() || !user.lastName.trim() || !emailValid}
+                  onClick={() => { setUser({ ...user, name: `${user.firstName.trim()} ${user.lastName.trim()}` }); setStep(2); }}>
+                  Vazhdo
+                </button>
+              </div>
+            )}
+
+            {step === 2 && (() => {
+              const a = parseInt(user.age, 10) || 24;
+              const setA = (v) => setUser({ ...user, age: String(Math.max(18, Math.min(99, v))) });
+              const caption =
+                a < 25 ? "Energjia e viteve njëzet ✨" :
+                a < 32 ? "Mosha e artë e tavolinave ☕" :
+                a < 45 ? "Përvoja takon shoqërinë 🥂" :
+                a < 60 ? "Historitë më të mira i ke ti 🍷" : "Kurrë s'është vonë për miq të rinj 🌟";
+              return (
+                <div className="step-body">
+                  <p className="step-q">Sa vjeç je?</p>
+                  <div className="age-stage">
+                    <button className="age-btn" onClick={() => setA(a - 1)} disabled={a <= 18} aria-label="Zvogëlo">−</button>
+                    <div className="age-big-wrap">
+                      <span className="age-big">{a}</span>
+                      <span className="age-unit">vjeç</span>
+                    </div>
+                    <button className="age-btn plus" onClick={() => setA(a + 1)} disabled={a >= 99} aria-label="Rrit">+</button>
+                  </div>
+                  <input type="range" min="18" max="80" value={Math.min(a, 80)} className="age-slider"
+                    onChange={(e) => setA(Number(e.target.value))} aria-label="Zgjidh moshën" />
+                  <div className="age-scale"><span>18</span><span>30</span><span>45</span><span>60</span><span>80+</span></div>
+                  <p className="age-caption">{caption}</p>
+                  <button className="btn primary full big-cta" onClick={() => setStep(3)}>Vazhdo</button>
+                  <p className="step-hint center">Hajde! është vetëm për moshën 18+ 🛡️</p>
+                </div>
+              );
+            })()}
+
+            {step === 3 && (
+              <div className="step-body">
+                <p className="step-q">Një foto ku dukesh qartë 📸</p>
+                <div className="photo-zone">
+                  {user.photo
+                    ? <img src={user.photo} alt="Fotoja jote" className="photo-preview xl-photo" />
+                    : <button className="photo-preview xl-photo empty" onClick={() => fileRef.current?.click()} aria-label="Shto foto">
+                        <Camera size={34} />
+                      </button>}
+                  <input ref={fileRef} type="file" accept="image/*" capture="user" hidden onChange={onPhotoPick} />
+                  <div className="photo-actions">
+                    <button className="btn ghost" onClick={() => fileRef.current?.click()}>
+                      <Camera size={16} /> {user.photo ? "Ndrysho foton" : "Bëj / zgjidh një foto"}
+                    </button>
+                    {user.photo && (
+                      <button className="btn ghost" onClick={flipPhoto} title="Pasqyroje foton">
+                        <FlipHorizontal size={16} /> Ktheje anën
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {photoError && <p className="age-warn">{photoError}</p>}
+                <p className="step-hint">Fotoja kontrollohet automatikisht — duhet të tregojë <b>fytyrë reale</b> (jo e zezë, jo një ngjyrë). U tregohet vetëm nikoqirëve.{user.photo ? " Duket e kthyer mbrapsht? Prek \"Ktheje anën\"." : ""}</p>
+                <button className="btn primary full big-cta" disabled={!user.photo} onClick={() => setStep(4)}>Vazhdo</button>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="step-body">
+                <p className="step-q">Je vendas apo mysafir?</p>
+                <div className="ob-choice">
+                  <button className={`choice big ${user.isTourist === false ? "on" : ""}`}
+                    onClick={() => { setUser({ ...user, isTourist: false }); setScreen("main"); setTimeout(() => setShowMQ(true), 600); }}>
+                    <span className="choice-emoji">🇽🇰</span>Jam nga Kosova
+                  </button>
+                  <button className={`choice big ${user.isTourist === true ? "on" : ""}`}
+                    onClick={() => setUser({ ...user, isTourist: true })}>
+                    <span className="choice-emoji">✈️</span>Jam turist / mysafir
+                  </button>
+                </div>
+                {user.isTourist && (
+                  <>
+                    <input className="input xl" autoFocus placeholder="Prej nga vjen? (p.sh. Berlin)" value={user.from}
+                      onChange={(e) => setUser({ ...user, from: e.target.value })}
+                      onKeyDown={(e) => e.key === "Enter" && setScreen("main")} />
+                    <button className="btn primary full big-cta" onClick={() => { setScreen("main"); setTimeout(() => setShowMQ(true), 600); }}>Hajde, fillojmë! 🎉</button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ══════════ APLIKACIONI KRYESOR ══════════ */
+  return (
+    <div className="app">
+      <Style />
+
+      <header className="hdr">
+        <div className="hdr-art"><CityScape variant={cityVariant(city)} tone="light" height={64} /></div>
+        <div className="hdr-top">
+          <h1 className="logo-word sm">hajde<span className="logo-bang">!</span></h1>
+          <div className="hdr-right">
+            <button className="bell" onClick={() => { setShowNotifs((s) => !s); setUnread(0); }} aria-label="Njoftimet">
+              <Bell size={19} />
+              {unread > 0 && <em className="bell-badge">{unread}</em>}
+            </button>
+            <div className="hdr-user">
+              <Avatar name={user.name} photo={user.photo} small />
+              <span>{user.firstName}{user.age ? `, ${user.age}` : ""}</span>
+            </div>
+          </div>
+        </div>
+        <div className="city-row">
+          {CITIES.map((c) => (
+            <button key={c} className={`chip city ${city === c ? "on" : ""}`} onClick={() => setCity(c)}>{c}</button>
+          ))}
+        </div>
+
+        {showNotifs && (
+          <div className="notif-panel">
+            <div className="notif-hdr">
+              <strong>Njoftimet</strong>
+              <span className="notif-actions">
+                {notifs.length > 0 && <button className="notif-clear" onClick={() => setNotifs([])}>Pastro</button>}
+                <button className="clear" onClick={() => setShowNotifs(false)}><X size={13} /></button>
+              </span>
+            </div>
+            <p className="email-line">📧 Çdo kërkesë e re të dërgohet edhe në email: <strong>{user.email || "—"}</strong></p>
+            {notifs.length === 0 && <p className="muted small pad">S'ka njoftime ende. Kur dikush kërkon t'i bashkohet tavolinës tënde, e sheh këtu dhe në email. 🔔</p>}
+            {notifs.map((n) => (
+              <div key={n.id} className="notif-item">
+                <span className="notif-icon">{n.icon}</span>
+                <p>{n.text}</p>
+                <em>{n.time}</em>
+              </div>
+            ))}
+          </div>
+        )}
+      </header>
+
+      <main className="content">
+        {tab === "zbulo" && (
+          <>
+            {!profile.done && (
+              <button className="mq-banner" onClick={() => setShowMQ(true)}>
+                <span className="mq-emoji">✨</span>
+                <span className="mq-txt"><strong>Trego shijet e tua</strong> — 15 pyetje të shpejta dhe tavolinat renditen sipas përshtatjes me ty</span>
+                <span className="wed-cta">Fillo →</span>
+              </button>
+            )}
+            {!wedDone && city === "Prishtinë" && (
+              <button className="wed-banner" onClick={() => setShowWed(true)}>
+                <div className="wed-left">
+                  <span className="wed-kicker">✦ DARKA E SË MËRKURËS</span>
+                  <strong>6 të panjohur. 1 restorant sekret.</strong>
+                  <span className="wed-sub">Kuiz 2-minutësh → të përputhim me njerëz si ti</span>
+                </div>
+                <span className="wed-cta">Fillo →</span>
+              </button>
+            )}
+            <div className="search">
+              <Search size={16} />
+              <input placeholder="Kërko kafe, aktivitet…" value={query} onChange={(e) => setQuery(e.target.value)} />
+              {query && <button className="clear" onClick={() => setQuery("")} aria-label="Pastro"><X size={14} /></button>}
+            </div>
+            <div className="cat-row">
+              <button className={`chip ${cat === "all" ? "on" : ""}`} onClick={() => setCat("all")}>
+                <Sparkles size={14} /> Të gjitha
+              </button>
+              {CATEGORIES.map((c) => {
+                const I = c.icon;
+                return (
+                  <button key={c.id} className={`chip ${cat === c.id ? "on" : ""}`} onClick={() => setCat(c.id)}>
+                    <I size={14} /> {c.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="count">{filtered.length} tavolina të hapura në {city}</p>
+
+            {filtered.length === 0 && (
+              <div className="empty">
+                <SeatRing total={5} taken={0} size={56} />
+                <p><strong>Ende s'ka tavolina këtu.</strong></p>
+                <p className="muted">Bëhu i pari — hap një tavolinë dhe të tjerët do të kërkojnë të vijnë.</p>
+                <button className="btn primary" onClick={openCreate}><Plus size={16} /> {createLabel}</button>
+              </div>
+            )}
+
+            <div className="cards">
+              {filtered.map((t, idx) => {
+                const st = myStatus(t);
+                const m = t._match;
+                const mCls = m == null ? "" : m >= 85 ? "hot" : m >= 70 ? "warm" : "cool";
+                return (
+                  <article key={t.id} className={`card ${idx === 0 && m >= 85 ? "rec" : ""}`} onClick={() => setActive(t.id)}>
+                    {idx === 0 && m >= 85 && <span className="rec-ribbon">⭐ Rekomanduar për ty</span>}
+                    <div className="card-left">
+                      <SeatRing total={t.spots} taken={t.joined.length} />
+                      <span className={`seats-label ${st === "full" ? "full" : ""}`}>
+                        {st === "full" ? "Plot" : `${t.spots - t.joined.length} vende`}
+                      </span>
+                      {m != null && <span className={`match-pill ${mCls}`}>{m >= 85 ? "🔥 " : ""}{m}%</span>}
+                    </div>
+                    <div className="card-body">
+                      <div className="card-top">
+                        <h3>{t.cafe}</h3>
+                        {st === "joined" && <span className="badge joined"><Check size={12} /> Rezervuar</span>}
+                        {st === "pending" && <span className="badge pending"><Hourglass size={11} /> Në pritje</span>}
+                        {st === "waitlist" && <span className="badge pending"><BellRing size={11} /> Listë pritjeje</span>}
+                        {st === "approved" && <span className="badge approved">✓ Aprovuar — paguaj</span>}
+                        {st === "host" && <span className="badge hosting">Nikoqir{(t.requests || []).filter(r=>r.status==="pending").length > 0 ? ` · ${t.requests.filter(r=>r.status==="pending").length} kërkesa` : ""}</span>}
+                      </div>
+                      <p className="meta"><MapPin size={13} /> {t.area} · <Clock size={13} /> {t.time}
+                        {userPos && t.coords && <> · <Navigation size={12} /> {distKm(userPos, t.coords).toFixed(1)} km</>}
+                      </p>
+                      {t.womenOnly && <span className="badge women">💛 Vetëm femra</span>}
+                      {isRide(t) && <span className="badge ride">🚗 Vozitje e përbashkët · falas</span>}
+                      {t.cat === "udhetim" && <span className="badge trip">🧳 {t.budget || "Udhëtim në grup"}</span>}
+                      <p className="desc">{t.desc}</p>
+                      <div className="card-foot">
+                        <span className="host" onClick={(e) => { e.stopPropagation(); setProfileView(hostProf(t)); }} role="button" title="Shiko profilin">
+                          <Avatar name={t.host} small /> {t.host}
+                          {t.hostVerified && <BadgeCheck size={14} className="verified" />}
+                          <Stars rating={t.hostRating} />
+                        </span>
+                        <span className="langs"><Globe size={12} /> {t.langs.join(" · ")}</span>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {tab === "imet" && (
+          <>
+            {badges.length > 0 && (
+              <div className="conn-strip">
+                <p className="label">Distinktivat e mia 🏅</p>
+                <div className="badge-row">
+                  {badges.map((b) => (
+                    <span key={b.id} className="badge-chip">{b.emoji} {b.label}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {connections.length > 0 && (
+              <div className="conn-strip">
+                <p className="label">Lidhjet e mia 💫</p>
+                <div className="conn-list">
+                  {connections.map((n) => (
+                    <button key={n} className="conn-chip" onClick={() => setProfileView(liteProf(n))}>
+                      <Avatar name={n} /> <span>{n.split(" ")[0]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <h2 className="section-title">Tavolinat e mia</h2>
+            {myTables.length === 0 ? (
+              <div className="empty">
+                <SeatRing total={4} taken={1} size={56} />
+                <p><strong>S'je ulur askund ende.</strong></p>
+                <p className="muted">Shko te "Zbulo" dhe kërko t'i bashkohesh një tavoline — ose hap tënden falas.</p>
+                <button className="btn ghost" onClick={() => setTab("zbulo")}>Zbulo tavolina</button>
+              </div>
+            ) : (
+              <div className="cards">
+                {myTables.map((t) => {
+                  const st = myStatus(t);
+                  const pend = (t.requests || []).filter((r) => r.status === "pending").length;
+                  return (
+                    <article key={t.id} className="card slim" onClick={() => setActive(t.id)}>
+                      <SeatRing total={t.spots} taken={t.joined.length} size={40} />
+                      <div className="card-body">
+                        <h3>{t.cafe} <span className="muted small">· {t.city}</span></h3>
+                        <p className="meta"><Clock size={13} /> {t.time} · <Users size={13} /> {t.joined.length}/{t.spots}</p>
+                        {st === "host" && <span className="badge hosting">Nikoqir{pend > 0 ? ` · ${pend} kërkesa të reja 🔔` : ""}</span>}
+                        {st === "pending" && <span className="badge pending"><Hourglass size={11} /> Në pritje të aprovimit</span>}
+                        {st === "approved" && <span className="badge approved">✓ Aprovuar — konfirmo me pagesë</span>}
+                        {tickets[t.id] && <span className="badge ticket-mini"><Ticket size={11} /> {tickets[t.id]}</span>}
+                        {st === "joined" && !rated[t.id] && (
+                          <button className="rate-btn" onClick={(e) => { e.stopPropagation(); setRateFor(t.id); }}>
+                            <Star size={12} /> Vlerëso përvojën
+                          </button>
+                        )}
+                        {rated[t.id] && <span className="badge joined">★ E vlerësuar ({rated[t.id]}/5)</span>}
+                      </div>
+                      {t.chat.length > 0 && st === "joined" && <span className="chat-dot">{t.chat.length}</span>}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </main>
+
+      <button className="fab" onClick={openCreate} aria-label={createLabel}>
+        <Plus size={22} /> {cat === "vozitje" ? "🚗 " : cat === "udhetim" ? "🧳 " : ""}{createLabel}
+      </button>
+
+      <nav className="nav">
+        <button className={tab === "zbulo" ? "on" : ""} onClick={() => setTab("zbulo")}>
+          <Coffee size={20} /><span>Zbulo</span>
+        </button>
+        <button className={tab === "imet" ? "on" : ""} onClick={() => setTab("imet")}>
+          <Users size={20} /><span>Tavolinat e mia</span>
+          {(myTables.length > 0 || pendingRequestsForMe > 0) && (
+            <em className="nav-count">{pendingRequestsForMe > 0 ? pendingRequestsForMe : myTables.length}</em>
+          )}
+        </button>
+      </nav>
+
+      {/* ══════════ DETAJI I TAVOLINËS ══════════ */}
+      {activeTable && !payFor && (() => {
+        const st = myStatus(activeTable);
+        const pendingReqs = (activeTable.requests || []).filter((r) => r.status === "pending");
+        return (
+          <div className="sheet-wrap" onClick={() => setActive(null)}>
+            <div className="sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="sheet-art"><CityScape variant={cityVariant(activeTable.city)} tone="light" height={66} /></div>
+              <div className="sheet-hdr">
+                <button className="icon-btn" onClick={() => setActive(null)} aria-label="Mbyll"><ChevronLeft size={20} /></button>
+                <div>
+                  <h2>{activeTable.cafe}</h2>
+                  <p className="meta"><MapPin size={13} /> {activeTable.area}, {activeTable.city} · <Clock size={13} /> {activeTable.time}</p>
+                </div>
+                <SeatRing total={activeTable.spots} taken={activeTable.joined.length} size={48} />
+              </div>
+
+              {/* ── RESTORANTI SEKRET (Darka e së Mërkurës) ── */}
+              {activeTable.mystery && !activeTable.revealed && (
+                <div className="lock-card">
+                  <Lock size={18} />
+                  <div>
+                    <strong>Restoranti mbahet sekret 🤫</strong>
+                    <span>Zbulohet të mërkurën në 09:00 — 24 orë para darkës. Kështu askush s'anulon në momentin e fundit.</span>
+                  </div>
+                  <button className="btn ghost btn-sm" onClick={() => revealVenue(activeTable.id)}>⚡ Zbulo tani (demo)</button>
+                </div>
+              )}
+
+              {/* ── LOKACIONI ── */}
+              {(!activeTable.mystery || activeTable.revealed) && (
+              <div className="loc-row">
+                <div className="loc-info">
+                  <Navigation size={15} />
+                  {posState === "ok" && userPos && activeTable.coords
+                    ? <span><strong>{distKm(userPos, activeTable.coords).toFixed(1)} km</strong> larg teje</span>
+                    : posState === "asking"
+                      ? <span className="muted">Duke gjetur lokacionin tënd…</span>
+                      : posState === "denied"
+                        ? <span className="muted">Lokacioni s'u lejua — përdor hartën</span>
+                        : <button className="loc-link" onClick={askLocation}>Sa larg është nga unë?</button>}
+                </div>
+                <a className="btn ghost btn-sm" href={mapsUrl(activeTable)} target="_blank" rel="noopener noreferrer">
+                  <MapPin size={14} /> Hape në hartë
+                </a>
+              </div>
+              )}
+
+              {/* Bileta */}
+              {tickets[activeTable.id] && (
+                <div className="ticket">
+                  <div className="ticket-left">
+                    <Ticket size={22} />
+                    <div><strong>Bileta jote</strong><span className="ticket-code">{tickets[activeTable.id]}</span></div>
+                  </div>
+                  <span className="ticket-note">Trego kodin te tavolina</span>
+                </div>
+              )}
+
+              {/* ── KËRKESAT (vetëm kur TI je nikoqiri) ── */}
+              {st === "host" && (
+                <div className="requests">
+                  <p className="label">Kërkesat për t'u bashkuar ({pendingReqs.length})</p>
+                  {pendingReqs.length === 0 ? (
+                    <p className="muted small">S'ka kërkesa të reja. Kur dikush kërkon të vijë, e sheh këtu me foto e moshë — dhe vendos ti. 🔔</p>
+                  ) : pendingReqs.map((r) => (
+                    <div key={r.rid} className="req-card" onClick={() => setProfileView({ name: r.name, age: r.age, from: r.from, photo: r.photo })} role="button" title="Shiko profilin e plotë">
+                      <Avatar name={r.name} photo={r.photo} large />
+                      <div className="req-info">
+                        <strong>{r.name}, {r.age}</strong>
+                        <span className="muted small">{r.from}</span>
+                      </div>
+                      <div className="req-actions">
+                        <button className="btn-approve" onClick={(e) => { e.stopPropagation(); approveRequest(activeTable.id, r.rid); }} aria-label={`Prano ${r.name}`}>
+                          <UserCheck size={16} /> Prano
+                        </button>
+                        <button className="btn-reject" onClick={(e) => { e.stopPropagation(); rejectRequest(activeTable.id, r.rid); }} aria-label={`Refuzo ${r.name}`}>
+                          <UserX size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Nikoqiri */}
+              <div className="host-box" onClick={() => setProfileView(hostProf(activeTable))} role="button" title="Shiko profilin">
+                <Avatar name={activeTable.host} />
+                <div className="host-info">
+                  <strong>
+                    {activeTable.host}{activeTable.hostAge ? `, ${activeTable.hostAge}` : ""}
+                    {activeTable.hostVerified && <BadgeCheck size={15} className="verified" />}
+                  </strong>
+                  <span className="muted small">{activeTable.hostFrom} · {activeTable.hostTables} tavolina të mbajtura</span>
+                </div>
+                <Stars rating={activeTable.hostRating} />
+              </div>
+
+              {profile.done && st !== "host" && (() => {
+                const m = matchScore(activeTable, profile, aff);
+                return (
+                  <div className="why-box">
+                    <div className="why-score">
+                      <strong>{m}%</strong>
+                      <span>përputhje</span>
+                    </div>
+                    <div className="why-txt">
+                      <p className="why-title">Pse po ta rekomandojmë?</p>
+                      <p>{explainMatch(activeTable, profile, aff)}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <p className="sheet-desc">{activeTable.desc}</p>
+
+              {(activeTable.tags || []).length > 0 && (
+                <div className="tags">{activeTable.tags.map((tg) => <span key={tg} className="tag">{tg}</span>)}</div>
+              )}
+
+              <div className="people">
+                <p className="label">Kush është te tavolina ({activeTable.joined.length}/{activeTable.spots})</p>
+                <div className="people-row">
+                  {activeTable.joined.map((n) => (
+                    <div key={n} className="person" onClick={() => setProfileView(n === activeTable.host ? hostProf(activeTable) : liteProf(n))} role="button">
+                      <Avatar name={n} photo={n === user.name ? user.photo : null} />
+                      <span>{n === user.name ? "Ti" : n.split(" ")[0]}{n === activeTable.host && <em> · nikoqir</em>}</span>
+                    </div>
+                  ))}
+                  {Array.from({ length: Math.max(0, activeTable.spots - activeTable.joined.length) }).map((_, i) => (
+                    <div key={i} className="person free"><div className="avatar dashed">?</div><span>i lirë</span></div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Butoni sipas statusit ── */}
+              {st === "none" && (
+                <>
+                  <button className="btn full primary" onClick={() => requestJoin(activeTable.id)}>
+                    Kërko t'i bashkohesh (falas)
+                  </button>
+                  <p className="fee-note"><ShieldCheck size={11} /> {activeTable.host} sheh foton, emrin dhe moshën tënde para se të vendosë.{isRide(activeTable) ? " Vozitja është plotësisht falas." : ` Paguan ${tableFee(activeTable).toFixed(2)} € vetëm pasi të aprovohesh.`}</p>
+                </>
+              )}
+              {st === "pending" && (
+                <>
+                  <button className="btn full ghost" disabled>
+                    <Hourglass size={15} /> Në pritje — {activeTable.host} po e shikon profilin tënd…
+                  </button>
+                  <button className="link-btn" onClick={() => cancelRequest(activeTable.id)}>Anulo kërkesën</button>
+                </>
+              )}
+              {st === "approved" && (
+                <>
+                  {isRide(activeTable) ? (
+                    <button className="btn full primary glow" onClick={() => confirmFreeSeat(activeTable.id)}>
+                      ✓ U aprovove! Konfirmo ulësen — falas 🚗
+                    </button>
+                  ) : (
+                    <button className="btn full primary glow" onClick={() => startPayment(activeTable.id)}>
+                      ✓ U aprovove! Konfirmo vendin · {tableFee(activeTable).toFixed(2)} €
+                    </button>
+                  )}
+                  <p className="fee-note"><Lock size={11} /> Pagesa është përfundimtare — nuk rimbursohet nëse anulon. Paguaj vetëm nëse je i sigurt që vjen.</p>
+                </>
+              )}
+              {st === "joined" && (
+                <>
+                  <button className="btn full safety" onClick={() => sharePlan(activeTable)}>
+                    <Share2 size={15} /> Ndaje planin me një mik
+                  </button>
+                  <button className="btn full ghost" onClick={() => leaveTable(activeTable.id)}>
+                    {isRide(activeTable) ? "Largohu nga vozitja" : "Largohu nga tavolina (pa rimbursim)"}
+                  </button>
+                </>
+              )}
+              {st === "full" && (
+                <>
+                  <button className="btn full primary" onClick={() => joinWaitlist(activeTable.id)}>
+                    <BellRing size={16} /> Futu në listën e pritjes
+                  </button>
+                  <p className="fee-note">Tavolina është plot — të njoftojmë menjëherë sapo dikush të anulojë. Pa pagesë derisa të lirohet vendi.</p>
+                </>
+              )}
+              {st === "waitlist" && (
+                <>
+                  <button className="btn full ghost" disabled><Hourglass size={15} /> Në listë pritjeje — i pari në radhë</button>
+                  <button className="link-btn" onClick={() => leaveWaitlist(activeTable.id)}>Dil nga lista</button>
+                </>
+              )}
+              {st === "host" && <button className="btn full ghost" disabled>Je nikoqiri i kësaj tavoline</button>}
+
+              {/* Chat */}
+              <div className="chat">
+                <div className="chat-top">
+                  <p className="label">Biseda e tavolinës</p>
+                  {(st === "joined" || st === "host") && (
+                    <span className="lang-hint"><Languages size={13} /> Përkthim automatik</span>
+                  )}
+                </div>
+                {(st === "joined" || st === "host") ? (
+                  <>
+                    <div className="chat-msgs">
+                      {activeTable.chat.length === 0 && <p className="muted small center">Ende heshtje… thuaj diçka të parën! 👋</p>}
+                      {activeTable.chat.map((m, i) => {
+                        const tKey = `${activeTable.id}-${i}`;
+                        const tr = translations[tKey];
+                        return (
+                        <div key={i} className={`bubble ${m.from === user.name ? "mine" : ""}`}>
+                          {m.from !== user.name && <strong>{m.from}</strong>}
+                          <span>{m.text}</span>
+                          {tr && tr !== "…" && <span className="trans-out">🌐 {tr}</span>}
+                          {tr === "…" && <span className="trans-out">🌐 duke përkthyer…</span>}
+                          <span className="bubble-foot">
+                            {m.from !== user.name && !tr && (
+                              <button className="trans-btn" onClick={() => translateMsg(activeTable.id, i, m.text)}>🌐 Përkthe</button>
+                            )}
+                            <em>{m.time}</em>
+                          </span>
+                        </div>
+                        );
+                      })}
+                      <div ref={chatEndRef} />
+                    </div>
+                    <div className="chat-input">
+                      <button className="icon-btn dice" onClick={throwIcebreaker} title="Merr një pyetje për fillim bisede" aria-label="Pyetje për fillim bisede">
+                        <Dice5 size={17} />
+                      </button>
+                      <input placeholder="Shkruaj mesazh…" value={msg}
+                        onChange={(e) => setMsg(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && sendMsg()} />
+                      <button className={`icon-btn trans ${draftTranslating ? "busy" : ""}`} onClick={translateDraft}
+                        disabled={!msg.trim() || draftTranslating}
+                        title="Përktheje atë që shkrove" aria-label="Përktheje mesazhin tënd">
+                        <Languages size={16} />
+                      </button>
+                      <button className="icon-btn send" onClick={() => sendMsg()} aria-label="Dërgo"><Send size={16} /></button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="muted small">🔒 Biseda hapet pasi të aprovohesh dhe ta konfirmosh vendin.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ══════════ FLETA E PAGESËS ══════════ */}
+      {payFor && payTable && (
+        <div className="sheet-wrap" onClick={() => payState !== "processing" && closePayment(false)}>
+          <div className="sheet pay" onClick={(e) => e.stopPropagation()}>
+            {payState === "success" ? (
+              <div className="pay-success">
+                <div className="success-ring"><PartyPopper size={34} /></div>
+                <h2>Vendi u konfirmua!</h2>
+                <p className="muted">Shihemi te <strong>{payTable.cafe}</strong>, {payTable.time.toLowerCase()}.</p>
+                <div className="ticket big">
+                  <div className="ticket-left">
+                    <Ticket size={26} />
+                    <div><strong>Bileta jote</strong><span className="ticket-code">{tickets[payFor]}</span></div>
+                  </div>
+                  <span className="ticket-note">Trego kodin<br />te tavolina</span>
+                </div>
+                <button className="btn primary full" onClick={() => closePayment(true)}>Shko te tavolina 🪑</button>
+              </div>
+            ) : (
+              <>
+                <div className="sheet-hdr">
+                  <button className="icon-btn" onClick={() => closePayment(false)} disabled={payState === "processing"} aria-label="Mbyll"><X size={18} /></button>
+                  <div><h2>Konfirmo vendin</h2><p className="meta">{payTable.cafe} · {payTable.time}</p></div>
+                  <SeatRing total={payTable.spots} taken={payTable.joined.length} size={44} />
+                </div>
+
+                <div className="pay-summary">
+                  <div className="pay-row"><span>{isRide(payTable) ? "Ulësja në vozitje (e aprovuar ✓)" : "Rezervimi i vendit (i aprovuar ✓)"}</span><span>{tableFee(payTable).toFixed(2)} €</span></div>
+                  <div className="pay-row muted small"><span>{isRide(payTable) ? "Paguhet direkt — pa kosto shtesë rrugës" : "Kafeja / pijet paguhen në vend"}</span><span>—</span></div>
+                  <div className="pay-row total"><span>Gjithsej tani</span><span>{tableFee(payTable).toFixed(2)} €</span></div>
+                </div>
+
+                <p className="label">Mënyra e pagesës</p>
+                <div className="pay-methods">
+                  <button className={`method ${payMethod === "card" ? "on" : ""}`} onClick={() => setPayMethod("card")}>
+                    <CreditCard size={18} /> Kartelë
+                  </button>
+                  <button className={`method ${payMethod === "paypal" ? "on" : ""}`} onClick={() => setPayMethod("paypal")}>
+                    <Wallet size={18} /> PayPal
+                  </button>
+                </div>
+
+                {payMethod === "card" && (
+                  <div className="card-form">
+                    <input className="input" placeholder="Numri i kartelës" inputMode="numeric"
+                      value={card.num} onChange={(e) => setCard({ ...card, num: formatCardNum(e.target.value) })} />
+                    <div className="card-grid">
+                      <input className="input" placeholder="MM/VV" inputMode="numeric"
+                        value={card.exp} onChange={(e) => setCard({ ...card, exp: formatExpiry(e.target.value) })} />
+                      <input className="input" placeholder="CVC" inputMode="numeric" maxLength={3}
+                        value={card.cvc} onChange={(e) => setCard({ ...card, cvc: e.target.value.replace(/\D/g, "") })} />
+                    </div>
+                    <input className="input" placeholder="Emri në kartelë"
+                      value={card.name} onChange={(e) => setCard({ ...card, name: e.target.value })} />
+                  </div>
+                )}
+                {payMethod === "paypal" && (
+                  <p className="muted small paypal-note">Do të ridrejtohesh te PayPal për të përfunduar pagesën.</p>
+                )}
+
+                <button className="btn primary full"
+                  disabled={payState === "processing" || (payMethod === "card" && !validCard(card))}
+                  onClick={confirmPayment}>
+                  {payState === "processing"
+                    ? <span className="spinner" aria-label="Duke u procesuar" />
+                    : `Paguaj ${tableFee(payTable).toFixed(2)} € dhe konfirmo`}
+                </button>
+                <p className="fee-note"><Lock size={11} /> Pagesë e sigurt · Përfundimtare — pa rimbursim pas konfirmimit</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ KRIJO TAVOLINË ══════════ */}
+      {showCreate && (
+        <div className="sheet-wrap" onClick={() => setShowCreate(false)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-hdr">
+              <button className="icon-btn" onClick={() => setShowCreate(false)} aria-label="Mbyll"><X size={18} /></button>
+              <div><h2>{form.mode === "vozitje" ? "Hap një vozitje" : form.mode === "udhetim" ? "Hap një udhëtim" : "Hap një tavolinë"}</h2><p className="meta">falas për {form.mode === "vozitje" ? "shoferin" : form.mode === "udhetim" ? "organizatorin" : "nikoqirin"} · ti i aprovon të gjithë</p></div>
+              <SeatRing total={Number(form.spots) || 4} taken={1} size={48} />
+            </div>
+
+            <div className="mode-toggle">
+              <button className={`mode-btn ${form.mode === "tavoline" ? "on" : ""}`}
+                onClick={() => setForm({ ...form, mode: "tavoline", spots: 4 })}>🪑 Tavolinë</button>
+              <button className={`mode-btn ${form.mode === "vozitje" ? "on" : ""}`}
+                onClick={() => setForm({ ...form, mode: "vozitje", spots: 3 })}>🚗 Vozitje</button>
+              <button className={`mode-btn ${form.mode === "udhetim" ? "on" : ""}`}
+                onClick={() => setForm({ ...form, mode: "udhetim", spots: 5 })}>🧳 Udhëtim</button>
+            </div>
+
+            <label className="f-label" htmlFor="f-city">{form.mode === "vozitje" ? "Nga *" : form.mode === "udhetim" ? "Nisja nga *" : "Qyteti / Komuna *"}</label>
+            <select id="f-city" className="input select" value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}>
+              {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            {form.mode === "vozitje" && (
+              <>
+                <label className="f-label" htmlFor="f-tocity">Deri *</label>
+                <select id="f-tocity" className="input select" value={form.toCity}
+                  onChange={(e) => setForm({ ...form, toCity: e.target.value })}>
+                  {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <label className="f-label" htmlFor="f-pickup">Pika e nisjes</label>
+                <input id="f-pickup" className="input" placeholder="p.sh. te Katedralja" value={form.area}
+                  onChange={(e) => setForm({ ...form, area: e.target.value })} />
+                <p className="free-note">🚗 Vozitjet në Hajde! janë plotësisht falas — për shoqëri rrugës, jo për fitim.</p>
+              </>
+            )}
+            {form.mode === "udhetim" && (
+              <>
+                <label className="f-label" htmlFor="f-dest">Destinacioni *</label>
+                <input id="f-dest" className="input" placeholder="p.sh. Ksamil, Shqipëri" value={form.cafe}
+                  onChange={(e) => setForm({ ...form, cafe: e.target.value })} />
+                <label className="f-label" htmlFor="f-budget">Buxheti i përafërt (opsionale)</label>
+                <input id="f-budget" className="input" placeholder="p.sh. ~120 € / person" value={form.budget || ""}
+                  onChange={(e) => setForm({ ...form, budget: e.target.value })} />
+              </>
+            )}
+            {form.mode === "tavoline" && (
+              <>
+                <label className="f-label" htmlFor="f-cafe">Ku? *</label>
+                <input id="f-cafe" className="input" placeholder="p.sh. Soma Book Station" value={form.cafe}
+                  onChange={(e) => setForm({ ...form, cafe: e.target.value })} />
+                <label className="f-label" htmlFor="f-area">Lagjja / zona</label>
+                <input id="f-area" className="input" placeholder="p.sh. Qendra" value={form.area}
+                  onChange={(e) => setForm({ ...form, area: e.target.value })} />
+              </>
+            )}
+
+            <label className="f-label" htmlFor="f-maps">Linku i Google Maps (opsionale, por i saktë 🎯)</label>
+            <input id="f-maps" className="input" placeholder="Ngjite linkun e vendit nga Google Maps" value={form.mapsLink}
+              onChange={(e) => setForm({ ...form, mapsLink: e.target.value })} />
+
+            <label className="f-label" htmlFor="f-time">{form.mode === "vozitje" ? "Nisja kur? *" : form.mode === "udhetim" ? "Datat? * (p.sh. 12–14 gusht)" : "Kur? *"}</label>
+            <input id="f-time" className="input" placeholder="p.sh. Sot, 18:00" value={form.time}
+              onChange={(e) => setForm({ ...form, time: e.target.value })} />
+
+            {form.mode === "tavoline" && (<>
+            <label className="f-label">Lloji</label>
+            <div className="cat-row wrap">
+              {CATEGORIES.filter((c) => c.id !== "vozitje").map((c) => {
+                const I = c.icon;
+                return (
+                  <button key={c.id} className={`chip ${form.cat === c.id ? "on" : ""}`}
+                    onClick={() => setForm({ ...form, cat: c.id })}>
+                    <I size={14} /> {c.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            </>)}
+
+            <label className="f-label">{form.mode === "vozitje" ? `Sa ulëse të lira? (${form.spots})` : form.mode === "udhetim" ? `Sa persona kërkon? (${form.spots})` : `Sa vende gjithsej? (${form.spots})`}</label>
+            <input type="range" min={form.mode === "vozitje" ? 1 : 2} max={form.mode === "vozitje" ? 4 : 10} value={form.spots} className="range"
+              onChange={(e) => setForm({ ...form, spots: e.target.value })} />
+
+            <label className="f-label" htmlFor="f-langs">Gjuhët</label>
+            <input id="f-langs" className="input" value={form.langs}
+              onChange={(e) => setForm({ ...form, langs: e.target.value })} />
+
+            <label className="toggle-row">
+              <input type="checkbox" checked={form.womenOnly}
+                onChange={(e) => setForm({ ...form, womenOnly: e.target.checked })} />
+              <span>💛 Tavolinë vetëm për femra</span>
+            </label>
+
+            <label className="f-label" htmlFor="f-desc">Përshkrimi</label>
+            <textarea id="f-desc" className="input" rows={3} placeholder="Çka do të bëni? Kush është i mirëpritur?"
+              value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} />
+
+            <button className="btn primary full" onClick={createTable}>{form.mode === "vozitje" ? "Hape vozitjen 🚗" : form.mode === "udhetim" ? "Hape udhëtimin 🧳" : "Hape tavolinën 🪑"}</button>
+            <p className="fee-note"><ShieldCheck size={11} /> Çdo kërkesë të vjen me foto + moshë — vendos ti kush {form.mode === "vozitje" ? "hipën. Vozitjet janë plotësisht falas." : `ulet. Pjesëmarrësit paguajnë ${BOOKING_FEE.toFixed(2)} €, ti asgjë.`}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ DARKA E SË MËRKURËS — KUIZI ══════════ */}
+      {showWed && (
+        <div className="sheet-wrap" onClick={() => matchState !== "matching" && setShowWed(false)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            {matchState === "quiz" && (
+              <>
+                <div className="sheet-hdr">
+                  <button className="icon-btn" onClick={() => setShowWed(false)} aria-label="Mbyll"><X size={18} /></button>
+                  <div><h2>✦ Darka e së Mërkurës</h2><p className="meta">Pyetja {quizStep + 1} nga {QUIZ.length}</p></div>
+                </div>
+                <div className="quiz-bar"><div className="quiz-fill" style={{ width: `${(quizStep / QUIZ.length) * 100}%` }} /></div>
+                <p className="quiz-q">{QUIZ[quizStep].q}</p>
+                <div className="ob-choice">
+                  {QUIZ[quizStep].opts.map((o) => (
+                    <button key={o} className="choice" onClick={() => answerQuiz(o)}>{o}</button>
+                  ))}
+                </div>
+                <p className="fee-note"><Sparkles size={11} /> Përgjigjet përdoren vetëm për të të ulur me njerëz me interesa të ngjashme</p>
+              </>
+            )}
+            {matchState === "matching" && (
+              <div className="pay-success">
+                <div className="success-ring spin-ring"><Sparkles size={30} /></div>
+                <h2>Duke të përputhur…</h2>
+                <p className="muted">Po krahasojmë përgjigjet e tua me qindra të tjerë në Prishtinë</p>
+              </div>
+            )}
+            {matchState === "matched" && (
+              <div className="pay-success">
+                <div className="success-ring"><PartyPopper size={34} /></div>
+                <h2>U përputhe me 5 persona!</h2>
+                <p className="muted">Të njëjtat interesa, energji e ngjashme — sipas kuizit tënd.</p>
+                <div className="match-row">
+                  {MATCHED_PEOPLE.map((p) => (
+                    <div key={p.name} className="person"><Avatar name={p.name} /><span>{p.name}, {p.age}</span></div>
+                  ))}
+                </div>
+                <div className="lock-card slim-lock">
+                  <Lock size={16} />
+                  <div><strong>E mërkurë, 20:00 · Prishtinë</strong><span>Restoranti zbulohet 24 orë para darkës</span></div>
+                </div>
+                <button className="btn primary full" onClick={openWedTable}>Shko te tavolina ime ✦</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ VLERËSIMI PAS TAKIMIT ══════════ */}
+      {rateFor && (
+        <div className="sheet-wrap" onClick={() => setRateFor(null)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-hdr">
+              <button className="icon-btn" onClick={() => setRateFor(null)} aria-label="Mbyll"><X size={18} /></button>
+              <div><h2>Si ishte përvoja?</h2><p className="meta">{tables.find((t) => t.id === rateFor)?.cafe}</p></div>
+            </div>
+            <div className="rate-stars">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} className={`star-btn ${n <= rateStars ? "on" : ""}`} onClick={() => setRateStars(n)} aria-label={`${n} yje`}>
+                  <span style={{ fontSize: 32, lineHeight: 1, color: n <= rateStars ? "#E3A23C" : "#C4B694" }}>{n <= rateStars ? "★" : "☆"}</span>
+                </button>
+              ))}
+            </div>
+            <p className="label center-label">A do të takoheshe sërish me këtë grup?</p>
+            <div className="pay-methods">
+              <button className={`method ${rateAgain === true ? "on" : ""}`} onClick={() => setRateAgain(true)}>Po, patjetër 😄</button>
+              <button className={`method ${rateAgain === false ? "on" : ""}`} onClick={() => setRateAgain(false)}>Ndoshta jo</button>
+            </div>
+            <p className="label center-label">Me kë do të mbaje kontakt? 💫 (opsionale)</p>
+            <p className="muted small center" style={{ marginBottom: 8 }}>Ata nuk e marrin vesh nëse nuk të zgjedhin edhe ty — vetëm përputhjet e ndërsjella hapin chat privat.</p>
+            <div className="connect-row">
+              {(tables.find((t) => t.id === rateFor)?.joined || []).filter((n) => n !== user.name).map((n) => (
+                <button key={n} className={`conn-pick ${rateSelect.includes(n) ? "on" : ""}`}
+                  onClick={() => setRateSelect((p) => p.includes(n) ? p.filter((x) => x !== n) : [...p, n])}>
+                  <Avatar name={n} small /> {n.split(" ")[0]}
+                  {rateSelect.includes(n) && <Check size={13} />}
+                </button>
+              ))}
+            </div>
+            <button className="btn primary full" disabled={rateStars === 0 || rateAgain === null} onClick={submitRating}>
+              Dërgo vlerësimin
+            </button>
+            <p className="fee-note"><Sparkles size={11} /> Vlerësimet përdoren për përputhje më të mira dhe për yjet e nikoqirëve</p>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ PROFILI — dritarja e detyrueshme ══════════ */}
+      {profileView && (
+        <div className="sheet-wrap centerv" onClick={() => setProfileView(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button className="icon-btn modal-x" onClick={() => setProfileView(null)} aria-label="Mbyll"><X size={15} /></button>
+            {profileView.photo
+              ? <img src={profileView.photo} alt={profileView.name} className="prof-photo" />
+              : <div className="prof-photo initial">{profileView.name?.[0]?.toUpperCase()}</div>}
+            <h2 className="prof-name">
+              {profileView.name}{profileView.age ? `, ${profileView.age}` : ""}
+              {profileView.verified && <BadgeCheck size={16} className="verified" />}
+            </h2>
+            {profileView.from && <p className="prof-from">{profileView.from}</p>}
+            {profileView.isHost && (
+              <div className="prof-stats">
+                <span>★ {Number(profileView.rating).toFixed(1)}</span>
+                <span>·</span>
+                <span>{profileView.tablesHeld} tavolina të mbajtura</span>
+              </div>
+            )}
+            {profileView.langs && <p className="prof-langs"><Globe size={12} /> {profileView.langs.join(" · ")}</p>}
+            <p className="prof-note"><ShieldCheck size={13} /> Fotoja e çdo profili kalon kontrollin e fytyrës gjatë regjistrimit — foto të zeza, të njëtrajtshme apo pa fytyrë reale nuk pranohen.</p>
+            {profileView.name !== user.name && (
+              <button className="btn ghost full" onClick={() => { setReportFor(profileView.name); setProfileView(null); }}>
+                <Flag size={13} /> Raporto / Blloko
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ RAPORTO / BLLOKO ══════════ */}
+      {reportFor && (
+        <div className="sheet-wrap" onClick={() => setReportFor(null)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-hdr">
+              <button className="icon-btn" onClick={() => setReportFor(null)} aria-label="Mbyll"><X size={18} /></button>
+              <div><h2>🛡️ Raporto / Blloko</h2><p className="meta">{reportFor}</p></div>
+            </div>
+            <p className="label">Arsyeja e raportimit</p>
+            <div className="ob-choice">
+              {["Sjellje e papërshtatshme", "Profil i rremë ose foto e huaj", "Spam / reklamë", "Nuk erdhi në takim", "Tjetër"].map((r) => (
+                <button key={r} className={`choice ${reportReason === r ? "on" : ""}`} onClick={() => setReportReason(r)}>{r}</button>
+              ))}
+            </div>
+            <label className="toggle-row">
+              <input type="checkbox" checked={reportBlock} onChange={(e) => setReportBlock(e.target.checked)} />
+              <span>🚫 Blloko gjithashtu — s'do t'i shoh më tavolinat e {reportFor.split(" ")[0]}</span>
+            </label>
+            <button className="btn primary full" disabled={!reportReason} onClick={submitReport}>Dërgo raportin</button>
+            <p className="fee-note">Raportimi është anonim — {reportFor.split(" ")[0]} nuk e merr vesh kush e dërgoi. Ekipi i sigurisë përgjigjet brenda 24 orësh.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ AI MATCH — KUIZI I PROFILIT ══════════ */}
+      {showMQ && (() => {
+        const Q = MATCH_QUIZ[mqi];
+        const sel = Q.multi ? (profile[Q.key] || []) : profile[Q.key];
+        return (
+          <div className="sheet-wrap" onClick={() => setShowMQ(false)}>
+            <div className="sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="sheet-hdr">
+                <button className="icon-btn" onClick={() => mqi > 0 ? setMqi(mqi - 1) : setShowMQ(false)} aria-label="Kthehu"><ChevronLeft size={18} /></button>
+                <div><h2>✨ Profili i shijeve</h2><p className="meta">Pyetja {mqi + 1} nga {MATCH_QUIZ.length}</p></div>
+              </div>
+              <div className="quiz-bar"><div className="quiz-fill" style={{ width: `${(mqi / MATCH_QUIZ.length) * 100}%` }} /></div>
+              <p className="quiz-q">{Q.q}</p>
+              <div className="ob-choice">
+                {Q.opts.map(([val, label]) => (
+                  <button key={val}
+                    className={`choice ${Q.multi ? (sel.includes(val) ? "on" : "") : (sel === val ? "on" : "")}`}
+                    onClick={() => answerMQ(Q.key, val, Q.multi, Q.max)}>
+                    {label}{Q.multi && sel.includes(val) && "  ✓"}
+                  </button>
+                ))}
+              </div>
+              {Q.multi && (
+                <button className="btn primary full" disabled={(profile[Q.key] || []).length === 0}
+                  onClick={() => mqi < MATCH_QUIZ.length - 1 ? setMqi(mqi + 1) : finishMQ()}>
+                  Vazhdo ({(profile[Q.key] || []).length}/{Q.max})
+                </button>
+              )}
+              <button className="link-btn" onClick={() => setShowMQ(false)}>Më vonë</button>
+              <p className="fee-note">Përgjigjet përdoren VETËM për renditjen e tavolinave sipas përshtatjes — kurrë nuk u tregohen përdoruesve të tjerë.</p>
+            </div>
+          </div>
+        );
+      })()}
+
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+/* ══════════════════════════  STILI  ══════════════════════════ */
+function Style() {
+  return (
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+      * { box-sizing: border-box; margin: 0; }
+      .app { font-family: 'Manrope', system-ui, sans-serif; background: #FAF6EE; color: #1E2432; min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative; display: flex; flex-direction: column; }
+      .logo-word { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 40px; color: #244AA5; letter-spacing: -1px; }
+      .logo-word.sm { font-size: 22px; }
+      .logo-bang { color: #E3A23C; }
+      .muted { color: #7A7466; }
+      .small { font-size: 12px; }
+      .center { text-align: center; }
+      .pad { padding: 12px 14px; }
+      .verified { color: #244AA5; flex-shrink: 0; }
+      .stars { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 800; color: #B07C1E; }
+
+      /* Onboarding */
+      .onboard { justify-content: center; align-items: center; padding: 24px; background: linear-gradient(175deg, #FAF6EE 0%, #F2E9D8 100%); }
+      .ob-inner { width: 100%; max-width: 360px; }
+      .ob-logo { text-align: center; margin-bottom: 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+      .ob-tag { color: #6B6455; font-size: 15px; line-height: 1.5; font-weight: 500; }
+      .ob-trust { display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
+      .ob-trust span { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: #55503F; background: #fff; border: 1.5px solid #E8DFCC; padding: 5px 10px; border-radius: 999px; }
+      .ob-card { background: #fff; border: 1.5px solid #E8DFCC; border-radius: 20px; padding: 22px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 24px rgba(36,74,165,0.07); }
+      .ob-q { font-weight: 700; font-size: 17px; }
+      .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .age-warn { font-size: 13px; font-weight: 600; color: #A33; background: #FBEAEA; border: 1.5px solid #EFC7C7; border-radius: 12px; padding: 10px 12px; line-height: 1.4; }
+      .ob-choice { display: flex; flex-direction: column; gap: 8px; }
+      .choice { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 14px; border: 1.5px solid #E8DFCC; background: #FDFBF6; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; text-align: left; transition: all .15s; }
+      .choice.on { border-color: #244AA5; background: #EEF2FB; }
+      .choice-emoji { font-size: 22px; }
+
+
+      /* ── Onboarding i ri: Hero + hapa ── */
+      .onboard.hero-bg { background: linear-gradient(168deg, #151B29 0%, #1E2A47 55%, #244AA5 140%); }
+      .hero { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 18px; padding: 32px 26px; min-height: 100vh; width: 100%; }
+      .hero-ring { background: rgba(250,246,238,.94); border-radius: 50%; padding: 16px; box-shadow: 0 0 0 10px rgba(227,162,60,.14), 0 0 0 22px rgba(227,162,60,.06); animation: heartbeat 2.6s ease-in-out infinite; }
+      @keyframes heartbeat { 0%,100% { transform: scale(1) } 50% { transform: scale(1.04) } }
+      .hero-logo { font-size: 46px; color: #fff; margin-top: 2px; }
+      .hero-line { font-family: 'Manrope', sans-serif; font-size: 25px; font-weight: 800; color: #F3EFE5; line-height: 1.35; letter-spacing: -.3px; }
+      .hero-line em { font-style: normal; color: #E3A23C; }
+      .hero-stats { display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
+      .hero-stats span { font-size: 13.5px; font-weight: 600; color: #B9C3DB; }
+      .hero-cta { background: #E3A23C; color: #241A05; font-size: 17px; font-weight: 800; padding: 16px 34px; border-radius: 999px; box-shadow: 0 8px 28px rgba(227,162,60,.4); margin-top: 6px; }
+      .hero-foot { font-size: 12px; color: #8E99B5; font-weight: 600; }
+      @media (prefers-reduced-motion: reduce) { .hero-ring { animation: none } }
+
+      .ob-inner.steps { display: flex; flex-direction: column; min-height: 100vh; width: 100%; max-width: 420px; padding: 18px 22px 30px; }
+      .step-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8vh; }
+      .dots { display: flex; gap: 7px; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: #E3DAC5; transition: all .25s; }
+      .dot.on { background: #244AA5; width: 22px; border-radius: 999px; }
+      .step-n { font-size: 12px; font-weight: 800; color: #9A8F73; min-width: 32px; text-align: right; }
+      .step-body { display: flex; flex-direction: column; gap: 12px; }
+      .step-q { font-size: 27px; font-weight: 800; letter-spacing: -.4px; line-height: 1.25; margin-bottom: 6px; }
+      .step-hint { font-size: 13px; color: #7A7466; line-height: 1.5; font-weight: 500; }
+      .input.xl { font-size: 19px; padding: 15px 16px; border-radius: 15px; }
+      .input.xl.age-input { font-size: 34px; font-weight: 800; text-align: center; letter-spacing: 2px; max-width: 140px; }
+      .big-cta { padding: 15px 20px; font-size: 16px; margin-top: 6px; }
+      .choice.big { padding: 17px 15px; font-size: 16px; border-radius: 16px; }
+      .xl-photo { width: 128px; height: 128px; border-width: 3px; cursor: pointer; }
+
+      /* Foto profili */
+      .photo-zone { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+      .photo-preview { width: 108px; height: 108px; border-radius: 50%; object-fit: cover; border: 3px solid #E3A23C; }
+      .photo-preview.empty { display: grid; place-items: center; background: #F5EEDD; color: #C4B694; border: 2.5px dashed #D9CBB2; }
+      .photo-note { font-size: 12.5px; line-height: 1.5; color: #6B6455; background: #FDF7EA; border: 1.5px solid #EFE2C2; border-radius: 12px; padding: 10px 12px; }
+
+      /* Inputs & buttons */
+      .input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #E3DAC5; background: #fff; font-family: inherit; font-size: 15px; color: inherit; }
+      .input:focus { outline: 2px solid #244AA5; outline-offset: 1px; border-color: transparent; }
+      .input.select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2355503F' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; cursor: pointer; }
+      textarea.input { resize: vertical; }
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 20px; border-radius: 14px; border: none; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform .1s, opacity .15s; text-decoration: none; }
+      .btn:active { transform: scale(.97); }
+      .btn:disabled { opacity: .45; cursor: not-allowed; }
+      .btn.primary { background: #244AA5; color: #fff; box-shadow: 0 4px 14px rgba(36,74,165,.28); }
+      .btn.primary.glow { background: #1B7A3D; box-shadow: 0 4px 18px rgba(27,122,61,.4); }
+      .btn.ghost { background: transparent; color: #244AA5; border: 1.5px solid #244AA5; }
+      .btn.full { width: 100%; }
+      .btn-sm { padding: 8px 13px; font-size: 13px; border-radius: 11px; }
+      .link-btn { display: block; margin: 8px auto 0; background: none; border: none; font-family: inherit; font-size: 13px; font-weight: 700; color: #A33; cursor: pointer; text-decoration: underline; }
+      .range { width: 100%; accent-color: #244AA5; }
+      .f-label { font-size: 13px; font-weight: 700; color: #6B6455; margin: 8px 0 4px; display: block; }
+      .toggle-row { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 700; margin: 10px 0 2px; cursor: pointer; }
+      .toggle-row input { width: 18px; height: 18px; accent-color: #244AA5; }
+
+      /* Header */
+      .hdr { padding: 14px 16px 10px; background: #FAF6EE; position: sticky; top: 0; z-index: 5; border-bottom: 1.5px solid #EDE4D0; }
+      .hdr-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+      .hdr-right { display: flex; align-items: center; gap: 10px; }
+      .hdr-user { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 14px; }
+      .bell { position: relative; width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid #E3DAC5; background: #fff; display: grid; place-items: center; cursor: pointer; color: #454032; }
+      .bell-badge { position: absolute; top: -4px; right: -4px; background: #D33; color: #fff; font-style: normal; font-size: 10px; font-weight: 800; min-width: 17px; height: 17px; border-radius: 999px; display: grid; place-items: center; padding: 0 4px; }
+      .notif-panel { position: absolute; top: 56px; right: 12px; width: min(340px, calc(100vw - 24px)); background: #fff; border: 1.5px solid #E3DAC5; border-radius: 16px; box-shadow: 0 12px 32px rgba(30,36,50,.18); z-index: 30; max-height: 60vh; overflow-y: auto; }
+      .notif-hdr { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1.5px solid #F0EADC; font-size: 14px; }
+      .notif-item { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid #F5F0E4; font-size: 13px; line-height: 1.45; align-items: flex-start; }
+      .notif-item p { flex: 1; }
+      .notif-item em { font-style: normal; font-size: 10.5px; color: #B3AB96; white-space: nowrap; }
+      .notif-icon { font-size: 17px; }
+      .city-row { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+      .city-row::-webkit-scrollbar { display: none; }
+
+      .chip { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border-radius: 999px; border: 1.5px solid #E3DAC5; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #55503F; cursor: pointer; white-space: nowrap; transition: all .15s; }
+      .chip.on { background: #244AA5; border-color: #244AA5; color: #fff; }
+      .chip.city.on { background: #1E2432; border-color: #1E2432; }
+
+      /* Content */
+      .content { flex: 1; padding: 14px 16px 150px; }
+      .search { display: flex; align-items: center; gap: 8px; background: #fff; border: 1.5px solid #E3DAC5; border-radius: 14px; padding: 10px 14px; color: #9A937F; margin-bottom: 10px; }
+      .search input { flex: 1; border: none; outline: none; font-family: inherit; font-size: 14px; background: transparent; color: #1E2432; }
+      .clear { border: none; background: #EDE4D0; border-radius: 50%; width: 22px; height: 22px; display: grid; place-items: center; cursor: pointer; color: #55503F; }
+      .cat-row { display: flex; gap: 7px; overflow-x: auto; margin-bottom: 12px; scrollbar-width: none; }
+      .cat-row::-webkit-scrollbar { display: none; }
+      .cat-row.wrap { flex-wrap: wrap; overflow: visible; }
+      .count { font-size: 13px; color: #7A7466; font-weight: 600; margin-bottom: 10px; }
+      .section-title { font-size: 20px; font-weight: 800; margin-bottom: 14px; }
+
+      /* Cards */
+      .cards { display: flex; flex-direction: column; gap: 12px; }
+      .card { display: flex; gap: 14px; background: #fff; border: 1.5px solid #EDE4D0; border-radius: 18px; padding: 16px; cursor: pointer; transition: border-color .15s, transform .1s, box-shadow .15s; }
+      .card:hover { border-color: #E3A23C; box-shadow: 0 4px 16px rgba(227,162,60,.12); }
+      .card:active { transform: scale(.99); }
+      .card-left { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
+      .seats-label { font-size: 11px; font-weight: 800; color: #B07C1E; }
+      .seats-label.full { color: #A33; }
+      .card-body { flex: 1; min-width: 0; }
+      .card-top { display: flex; justify-content: space-between; align-items: start; gap: 8px; flex-wrap: wrap; }
+      .card h3 { font-size: 16px; font-weight: 800; }
+      .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; flex-shrink: 0; }
+      .badge.joined { color: #1B7A3D; background: #E3F4E8; }
+      .badge.pending { color: #8A6A1E; background: #FBF3DD; }
+      .badge.approved { color: #1B7A3D; background: #E3F4E8; border: 1.5px dashed #7CC79A; }
+      .badge.women { color: #A5546B; background: #FBE9EF; margin: 2px 0 4px; }
+      .badge.hosting { color: #244AA5; background: #EEF2FB; margin-top: 4px; }
+      .badge.ticket-mini { color: #6B5A2E; background: #F7EDD8; margin-top: 4px; font-variant-numeric: tabular-nums; }
+      .meta { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: #7A7466; margin: 3px 0 6px; font-weight: 600; flex-wrap: wrap; }
+      .desc { font-size: 13.5px; line-height: 1.45; color: #454032; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px; flex-wrap: wrap; }
+      .host { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; }
+      .langs { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: #7A7466; font-weight: 600; }
+      .card.slim { align-items: center; }
+      .chat-dot { background: #E3A23C; color: #fff; font-size: 11px; font-weight: 800; min-width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center; padding: 0 5px; }
+
+      .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 15px; flex-shrink: 0; }
+      .avatar-sm { width: 24px; height: 24px; font-size: 12px; }
+      .avatar-lg { width: 46px; height: 46px; font-size: 19px; }
+      .avatar.dashed { background: transparent; border: 2px dashed #D9CBB2; color: #C4B694; }
+      img.avatar { border: 1.5px solid #E3DAC5; }
+
+      /* Lokacioni */
+      .loc-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #fff; border: 1.5px solid #EDE4D0; border-radius: 14px; padding: 10px 12px; margin-bottom: 12px; flex-wrap: wrap; }
+      .loc-info { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: #454032; }
+      .loc-link { background: none; border: none; font-family: inherit; font-size: 13px; font-weight: 700; color: #244AA5; cursor: pointer; text-decoration: underline; padding: 0; }
+
+      /* Kërkesat */
+      .requests { margin-bottom: 14px; }
+      .req-card { display: flex; align-items: center; gap: 11px; background: #FFFDF6; border: 1.5px solid #EBDFC0; border-radius: 16px; padding: 11px 13px; margin-bottom: 8px; }
+      .req-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+      .req-info strong { font-size: 14.5px; }
+      .req-actions { display: flex; gap: 7px; }
+      .btn-approve { display: inline-flex; align-items: center; gap: 5px; background: #1B7A3D; color: #fff; border: none; border-radius: 11px; padding: 9px 13px; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+      .btn-reject { display: grid; place-items: center; width: 38px; height: 38px; background: #FBEAEA; color: #A33; border: 1.5px solid #EFC7C7; border-radius: 11px; cursor: pointer; }
+
+      /* Empty */
+      .empty { text-align: center; padding: 44px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .empty p { font-size: 15px; }
+
+      /* FAB & nav */
+      .fab { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 7px; background: #E3A23C; color: #2C1F04; border: none; border-radius: 999px; padding: 13px 22px; font-family: inherit; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 6px 20px rgba(227,162,60,.45); z-index: 6; transition: transform .1s; }
+      .fab:active { transform: translateX(-50%) scale(.96); }
+      .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; display: flex; background: #fff; border-top: 1.5px solid #EDE4D0; z-index: 6; }
+      .nav button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0 14px; border: none; background: none; font-family: inherit; font-size: 11.5px; font-weight: 700; color: #9A937F; cursor: pointer; position: relative; }
+      .nav button.on { color: #244AA5; }
+      .nav-count { position: absolute; top: 6px; right: calc(50% - 34px); background: #E3A23C; color: #fff; font-style: normal; font-size: 10px; font-weight: 800; min-width: 16px; height: 16px; border-radius: 999px; display: grid; place-items: center; }
+
+      /* Sheet */
+      .sheet-wrap { position: fixed; inset: 0; background: rgba(30,36,50,.45); z-index: 10; display: flex; align-items: flex-end; justify-content: center; animation: fade .2s; }
+      .sheet { background: #FAF6EE; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; border-radius: 24px 24px 0 0; padding: 18px 18px 28px; animation: up .25s cubic-bezier(.2,.8,.3,1); }
+      @keyframes fade { from { opacity: 0 } }
+      @keyframes up { from { transform: translateY(40px); opacity: 0 } }
+      @media (prefers-reduced-motion: reduce) { .sheet, .sheet-wrap, .spinner { animation: none } }
+      .sheet-hdr { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+      .sheet-hdr > div { flex: 1; min-width: 0; }
+      .sheet-hdr h2 { font-size: 19px; font-weight: 800; }
+      .sheet-desc { font-size: 14.5px; line-height: 1.55; color: #454032; margin-bottom: 12px; }
+      .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+      .tag { font-size: 12px; font-weight: 700; background: #F0E7D8; color: #6B5A2E; padding: 4px 10px; border-radius: 999px; }
+      .icon-btn { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid #E3DAC5; background: #fff; display: grid; place-items: center; cursor: pointer; color: #454032; flex-shrink: 0; }
+      .label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #9A8F73; margin: 10px 0 8px; }
+      .people { margin-bottom: 14px; }
+      .people-row { display: flex; gap: 12px; flex-wrap: wrap; }
+      .person { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; }
+      .person em { font-style: normal; color: #B07C1E; font-size: 10px; display: block; }
+      .person.free span { color: #C4B694; }
+      .fee-note { display: flex; align-items: flex-start; justify-content: center; gap: 5px; font-size: 11.5px; color: #9A8F73; font-weight: 600; margin-top: 8px; text-align: center; line-height: 1.45; }
+
+      /* Host box */
+      .host-box { display: flex; align-items: center; gap: 10px; background: #fff; border: 1.5px solid #EDE4D0; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; }
+      .host-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+      .host-info strong { display: flex; align-items: center; gap: 5px; font-size: 14.5px; }
+
+      /* Ticket */
+      .ticket { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #FFF8E8; border: 2px dashed #E3A23C; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; }
+      .ticket.big { padding: 16px; margin: 18px 0; }
+      .ticket-left { display: flex; align-items: center; gap: 10px; color: #8A6A1E; }
+      .ticket-left strong { display: block; font-size: 12px; color: #6B5A2E; }
+      .ticket-code { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 17px; color: #244AA5; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
+      .ticket-note { font-size: 10.5px; font-weight: 700; color: #B07C1E; text-align: right; line-height: 1.35; }
+
+      /* Payment */
+      .pay-summary { background: #fff; border: 1.5px solid #EDE4D0; border-radius: 16px; padding: 14px; margin-bottom: 6px; }
+      .pay-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; padding: 4px 0; gap: 10px; }
+      .pay-row.total { border-top: 1.5px solid #EDE4D0; margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 15px; }
+      .pay-methods { display: flex; gap: 8px; margin-bottom: 12px; }
+      .method { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 12px; border-radius: 14px; border: 1.5px solid #E3DAC5; background: #fff; font-family: inherit; font-size: 14px; font-weight: 700; color: #55503F; cursor: pointer; transition: all .15s; }
+      .method.on { border-color: #244AA5; background: #EEF2FB; color: #244AA5; }
+      .card-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+      .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .paypal-note { margin-bottom: 14px; }
+      .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg) } }
+
+      /* Payment success */
+      .pay-success { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 12px 4px 4px; }
+      .pay-success h2 { font-size: 21px; font-weight: 800; }
+      .success-ring { width: 68px; height: 68px; border-radius: 50%; background: #E3F4E8; color: #1B7A3D; display: grid; place-items: center; margin-bottom: 4px; }
+      .pay-success .ticket.big { width: 100%; }
+
+      /* Chat */
+      .chat { margin-top: 18px; border-top: 1.5px solid #EDE4D0; padding-top: 14px; }
+      .chat-msgs { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; margin-bottom: 10px; }
+      .bubble { background: #fff; border: 1.5px solid #EDE4D0; border-radius: 14px 14px 14px 4px; padding: 8px 12px; max-width: 82%; align-self: flex-start; font-size: 14px; display: flex; flex-direction: column; gap: 2px; }
+      .bubble strong { font-size: 11.5px; color: #244AA5; }
+      .bubble em { font-style: normal; font-size: 10px; color: #B3AB96; align-self: flex-end; }
+      .bubble.mine { align-self: flex-end; background: #244AA5; color: #fff; border: none; border-radius: 14px 14px 4px 14px; }
+      .bubble.mine em { color: #A9BCE8; }
+      .chat-input { display: flex; gap: 8px; align-items: center; }
+      .chat-input input { flex: 1; padding: 11px 14px; border-radius: 999px; border: 1.5px solid #E3DAC5; font-family: inherit; font-size: 14px; background: #fff; min-width: 0; }
+      .chat-input input:focus { outline: 2px solid #244AA5; }
+      .icon-btn.send { background: #244AA5; color: #fff; border: none; }
+      .icon-btn.dice { background: #FFF3DC; color: #B07C1E; border-color: #E9D6A8; }
+
+
+      /* Darka e së Mërkurës */
+      .wed-banner { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; background: linear-gradient(120deg, #1E2432 0%, #244AA5 90%); color: #fff; border: none; border-radius: 18px; padding: 15px 16px; margin-bottom: 12px; cursor: pointer; font-family: inherit; text-align: left; box-shadow: 0 6px 20px rgba(36,74,165,.3); transition: transform .1s; }
+      .wed-banner:active { transform: scale(.99); }
+      .wed-left { display: flex; flex-direction: column; gap: 3px; }
+      .wed-kicker { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; color: #E3A23C; }
+      .wed-banner strong { font-size: 15.5px; font-weight: 800; }
+      .wed-sub { font-size: 12px; color: #C9D4EE; font-weight: 600; }
+      .wed-cta { font-weight: 800; font-size: 14px; color: #E3A23C; white-space: nowrap; }
+      .quiz-bar { height: 6px; background: #EDE4D0; border-radius: 999px; margin-bottom: 16px; overflow: hidden; }
+      .quiz-fill { height: 100%; background: #E3A23C; border-radius: 999px; transition: width .3s; }
+      .quiz-q { font-size: 18px; font-weight: 800; margin-bottom: 14px; line-height: 1.4; }
+      .spin-ring { animation: spinslow 1.6s linear infinite; }
+      @keyframes spinslow { to { transform: rotate(360deg) } }
+      .match-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin: 8px 0; }
+      .lock-card { display: flex; align-items: center; gap: 11px; background: #1E2432; color: #fff; border-radius: 16px; padding: 13px 14px; margin-bottom: 12px; flex-wrap: wrap; }
+      .lock-card > div { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 2px; }
+      .lock-card strong { font-size: 13.5px; }
+      .lock-card span { font-size: 12px; color: #AEB6C9; line-height: 1.4; }
+      .lock-card .btn.ghost { border-color: #E3A23C; color: #E3A23C; }
+      .lock-card.slim-lock { width: 100%; background: #F0E7D8; color: #1E2432; }
+      .lock-card.slim-lock span { color: #7A7466; }
+
+      /* Vlerësimi */
+      .rate-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; background: #FFF3DC; color: #8A6A1E; border: 1.5px solid #E9D6A8; border-radius: 999px; padding: 5px 11px; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+      .rate-stars { display: flex; justify-content: center; gap: 8px; margin: 14px 0 6px; }
+      .star-btn { background: none; border: none; cursor: pointer; padding: 4px; transition: transform .1s; }
+      .star-btn:active { transform: scale(1.2); }
+      .center-label { text-align: center; }
+
+
+      /* Siluetat e qyteteve */
+      .hero { position: relative; overflow: hidden; padding-bottom: 130px !important; }
+      .hero-art { position: absolute; bottom: 0; left: 0; right: 0; opacity: .95; pointer-events: none; }
+      .ob-inner.steps { position: relative; overflow: hidden; }
+      .steps-art { position: absolute; bottom: 0; left: 0; right: 0; opacity: .55; pointer-events: none; }
+      .step-body, .step-top { position: relative; z-index: 1; }
+      /* FIX: overflow vetëm te arti, jo te header-i — që paneli i njoftimeve të mos pritet */
+      .hdr-art { height: 60px; overflow: hidden; }
+      .hdr-art { position: absolute; left: 0; right: 0; bottom: -8px; opacity: .5; pointer-events: none; }
+      .hdr-top, .city-row { position: relative; z-index: 1; }
+      .sheet-art { margin: -18px -18px 6px; opacity: .8; border-radius: 24px 24px 0 0; overflow: hidden; pointer-events: none; }
+
+      /* Lidhjet (kontaktet pas takimit) */
+      .connect-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; }
+      .conn-pick { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1.5px solid #E3DAC5; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #55503F; cursor: pointer; transition: all .15s; }
+      .conn-pick.on { border-color: #244AA5; background: #EEF2FB; color: #244AA5; }
+      .conn-strip { background: #fff; border: 1.5px solid #EDE4D0; border-radius: 18px; padding: 13px 14px 11px; margin-bottom: 16px; }
+      .conn-list { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: none; }
+      .conn-list::-webkit-scrollbar { display: none; }
+      .conn-chip { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; font-family: inherit; font-size: 12px; font-weight: 700; color: #454032; cursor: pointer; }
+
+
+      /* Përputhja */
+      .match-pill { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+      .match-pill.hot { background: #FDEBD7; color: #B4551A; border: 1.5px solid #F0BE8C; }
+      .match-pill.warm { background: #FFF3DC; color: #8A6A1E; border: 1.5px solid #E9D6A8; }
+      .match-pill.cool { background: #F0EDE4; color: #7A7466; border: 1.5px solid #E3DAC5; }
+      .card.rec { border-color: #E3A23C; position: relative; margin-top: 12px; }
+      .rec-ribbon { position: absolute; top: -11px; left: 14px; background: #E3A23C; color: #2C1F04; font-size: 11px; font-weight: 800; padding: 3px 11px; border-radius: 999px; box-shadow: 0 3px 10px rgba(227,162,60,.35); }
+      .mq-banner { display: flex; align-items: center; gap: 11px; width: 100%; background: #fff; border: 1.5px dashed #244AA5; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; cursor: pointer; font-family: inherit; text-align: left; }
+      .mq-emoji { font-size: 24px; }
+      .mq-txt { flex: 1; font-size: 12.5px; line-height: 1.45; color: #454032; font-weight: 600; }
+      .mq-banner .wed-cta { color: #244AA5; }
+      .why-box { display: flex; gap: 13px; background: linear-gradient(120deg, #EEF2FB, #FDF7EA); border: 1.5px solid #C9D4EE; border-radius: 16px; padding: 13px 14px; margin-bottom: 12px; align-items: center; }
+      .why-score { display: flex; flex-direction: column; align-items: center; min-width: 64px; }
+      .why-score strong { font-family: 'Unbounded', sans-serif; font-size: 24px; color: #244AA5; }
+      .why-score span { font-size: 10px; font-weight: 800; color: #7A7466; text-transform: uppercase; letter-spacing: .05em; }
+      .why-txt { flex: 1; }
+      .why-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #244AA5; margin-bottom: 3px; }
+      .why-txt p:not(.why-title) { font-size: 12.5px; line-height: 1.5; color: #454032; }
+
+
+      /* Distinktivat, raportimi, siguria */
+      .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+      .badge-chip { display: inline-flex; align-items: center; gap: 4px; background: #FFF8E8; border: 1.5px solid #E9D6A8; color: #6B5A2E; font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 999px; }
+      .icon-btn.flag { width: 30px; height: 30px; border-color: #EFC7C7; color: #A33; background: #FDF7F7; margin-left: 6px; }
+      .btn.safety { background: #1E2432; color: #fff; margin-bottom: 8px; }
+      .notif-actions { display: flex; align-items: center; gap: 8px; }
+      .notif-clear { background: none; border: none; font-family: inherit; font-size: 11.5px; font-weight: 800; color: #244AA5; cursor: pointer; text-decoration: underline; }
+
+
+      /* Vozitjet, përkthimi, modaliteti */
+      .badge.ride { color: #1E5A8A; background: #E3F0FA; margin: 2px 0 4px; }
+      .mode-toggle { display: flex; gap: 8px; margin-bottom: 6px; }
+      .mode-btn { flex: 1; padding: 13px; border-radius: 14px; border: 1.5px solid #E3DAC5; background: #fff; font-family: inherit; font-size: 14.5px; font-weight: 800; color: #55503F; cursor: pointer; transition: all .15s; }
+      .mode-btn.on { border-color: #244AA5; background: #EEF2FB; color: #244AA5; }
+      .chat-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .lang-row { display: flex; align-items: center; gap: 5px; color: #9A8F73; }
+      .lang-chip { border: 1.5px solid #E3DAC5; background: #fff; border-radius: 999px; padding: 3px 9px; font-family: inherit; font-size: 10.5px; font-weight: 800; color: #55503F; cursor: pointer; }
+      .lang-chip.on { background: #244AA5; border-color: #244AA5; color: #fff; }
+      .trans-out { display: block; font-size: 12.5px; font-style: italic; color: #1E5A8A; border-top: 1px dashed #D6E4F0; margin-top: 4px; padding-top: 4px; }
+      .bubble.mine .trans-out { color: #C9DCF5; border-top-color: rgba(255,255,255,.25); }
+      .bubble-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 2px; }
+      .trans-btn { background: none; border: none; font-family: inherit; font-size: 10.5px; font-weight: 800; color: #1E5A8A; cursor: pointer; padding: 0; text-decoration: underline; }
+      .bubble-foot em { font-style: normal; font-size: 10px; color: #B3AB96; }
+
+
+      /* Zgjedhësi i moshës */
+      .age-stage { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 6px 0 4px; }
+      .age-btn { width: 54px; height: 54px; border-radius: 50%; border: 2px solid #244AA5; background: #fff; color: #244AA5; font-size: 28px; font-weight: 800; font-family: inherit; cursor: pointer; display: grid; place-items: center; transition: transform .1s; line-height: 1; }
+      .age-btn.plus { background: #244AA5; color: #fff; }
+      .age-btn:active { transform: scale(.92); }
+      .age-btn:disabled { opacity: .35; cursor: not-allowed; }
+      .age-big-wrap { display: flex; flex-direction: column; align-items: center; min-width: 130px; }
+      .age-big { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 76px; color: #244AA5; line-height: 1; }
+      .age-unit { font-size: 13px; font-weight: 800; color: #B07C1E; letter-spacing: .08em; text-transform: uppercase; margin-top: 2px; }
+      .age-slider { width: 100%; accent-color: #E3A23C; height: 30px; margin-top: 8px; }
+      .age-scale { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 700; color: #9A8F73; padding: 0 2px; }
+      .age-caption { text-align: center; font-size: 14px; font-weight: 700; color: #6B5A2E; background: #FDF7EA; border: 1.5px solid #EFE2C2; border-radius: 999px; padding: 8px 16px; margin: 8px auto 2px; width: fit-content; }
+      .step-hint.center { text-align: center; }
+
+      /* Foto: veprimet */
+      .photo-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+      /* Përkthimi i thjeshtuar */
+      .lang-hint { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; color: #1E5A8A; background: #E3F0FA; padding: 4px 10px; border-radius: 999px; }
+      .icon-btn.trans { background: #E3F0FA; color: #1E5A8A; border-color: #C6DFF0; }
+      .icon-btn.trans.busy { opacity: .5; }
+      .icon-btn.trans:disabled { opacity: .35; cursor: not-allowed; }
+
+      /* Vozitje falas + udhëtimi */
+      .free-note { font-size: 12.5px; font-weight: 700; color: #1E5A8A; background: #E3F0FA; border: 1.5px solid #C6DFF0; border-radius: 12px; padding: 10px 12px; margin-top: 4px; }
+      .badge.trip { color: #7A4A9E; background: #F3EAFB; margin: 2px 0 4px; }
+
+
+      /* Modali i profilit */
+      .sheet-wrap.centerv { align-items: center; padding: 20px; }
+      .modal { background: #FAF6EE; border-radius: 24px; padding: 26px 20px 20px; max-width: 340px; width: 100%; text-align: center; position: relative; animation: up .22s cubic-bezier(.2,.8,.3,1); box-shadow: 0 20px 50px rgba(20,25,40,.35); }
+      .modal-x { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; }
+      .prof-photo { width: 128px; height: 128px; border-radius: 50%; object-fit: cover; border: 3px solid #E3A23C; margin: 4px auto 12px; display: block; }
+      .prof-photo.initial { display: grid; place-items: center; background: #F5EEDD; border: 3px dashed #D9CBB2; color: #B8A87E; font-size: 46px; font-weight: 800; font-family: 'Unbounded', sans-serif; }
+      .prof-name { font-size: 20px; font-weight: 800; display: flex; justify-content: center; align-items: center; gap: 6px; }
+      .prof-from { color: #7A7466; font-weight: 600; font-size: 13px; margin: 4px 0 8px; }
+      .prof-stats { display: flex; justify-content: center; gap: 8px; font-weight: 800; color: #B07C1E; font-size: 13.5px; margin-bottom: 6px; }
+      .prof-langs { display: flex; justify-content: center; align-items: center; gap: 5px; font-size: 12px; color: #7A7466; font-weight: 600; margin-bottom: 4px; }
+      .prof-note { font-size: 11px; color: #6B5A2E; background: #FDF7EA; border: 1.5px solid #EFE2C2; border-radius: 12px; padding: 9px 11px; margin: 12px 0; display: flex; gap: 6px; text-align: left; line-height: 1.45; align-items: flex-start; }
+      .emo { user-select: none; }
+
+      .email-line { font-size: 11px; font-weight: 600; color: #1E5A8A; background: #EAF3FA; padding: 8px 14px; border-bottom: 1px solid #DCEAF5; line-height: 1.4; }
+      .email-line strong { word-break: break-all; }
+
+      /* Toast */
+      .toast { position: fixed; bottom: 150px; left: 50%; transform: translateX(-50%); background: #1E2432; color: #fff; padding: 11px 20px; border-radius: 999px; font-size: 14px; font-weight: 700; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,.25); white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; animation: fade .2s; }
+    `}</style>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById("root")).render(<HajdeApp />);
+</script>
+</body>
+</html>

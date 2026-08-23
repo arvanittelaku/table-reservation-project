@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /privacy
+Allow: /terms
+Disallow: /api/
+
+# Block authenticated-only content
+# (these are client-side routes, this is a hint not enforcement)
+
+Sitemap: https://ejabashkohu.app/sitemap.xml

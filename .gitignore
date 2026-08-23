@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+hajde/node_modules/
+
+# Build output
+dist/
+hajde/dist/
+
+# Environment (never commit secrets)
+.env
+.env.local
+.env.*.local
+hajde/.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Supabase CLI temp/cache
+supabase/.temp/
+hajde/supabase/.temp/
+
+# Verification run artifacts (screenshots, reports)
+hajde/verification/evidence/
+
+# Generated test assets
+hajde/test-assets/
+
+# Wrangler / deploy cache
+.wrangler/
+node_modules/.cache/
+
+# IDE / hosting
+.vercel
