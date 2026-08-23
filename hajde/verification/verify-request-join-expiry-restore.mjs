@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { requireE2EEmail, requireE2EPassword } from '../scripts/_requireE2EEnv.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ts = Date.now()
@@ -20,8 +21,8 @@ const SB_URL = 'https://upxxfhvgbmddhyebaiug.supabase.co'
 const ANON =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVweHhmaHZnYm1kZGh5ZWJhaXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU1MDgsImV4cCI6MjEwMTc5MTUwOH0.ck-BzoAASwbfiBCsFk6RXkOmGj_f-SIFeIlENx64f7Q'
 
-const HOST_EMAIL = process.env.E2E_EMAIL || 'ejabashkohu@gmail.com'
-const HOST_PASSWORD = process.env.E2E_PASSWORD || 'ejaBashkohu1@@'
+const HOST_EMAIL = requireE2EEmail()
+const HOST_PASSWORD = requireE2EPassword()
 const GUEST_EMAIL = process.env.GAP_GUEST_EMAIL || 'ultreuvl@guerrillamailblock.com'
 const GUEST_PASSWORD = process.env.GAP_GUEST_PASSWORD || 'TestPass123!'
 

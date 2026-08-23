@@ -8,6 +8,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import {
+import { requireE2EEmail, requireE2EPassword } from '../scripts/_requireE2EEnv.mjs'
   isValidMapsLink,
   mapsUrlForTable,
   wednesdayMapsUrl,
@@ -24,8 +25,8 @@ const ANON_KEY =
   process.env.VITE_SUPABASE_ANON_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVweHhmaHZnYm1kZGh5ZWJhaXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU1MDgsImV4cCI6MjEwMTc5MTUwOH0.ck-BzoAASwbfiBCsFk6RXkOmGj_f-SIFeIlENx64f7Q'
 const PASSWORD = process.env.TEST_PASSWORD || 'testpass123'
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ejabashkohu@gmail.com'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ejaBashkohu1@@'
+const ADMIN_EMAIL = requireE2EEmail()
+const ADMIN_PASSWORD = requireE2EPassword()
 
 /** Real Google Maps place link for Soma Book Station, Prishtinë */
 const SOMA_MAPS_LINK =

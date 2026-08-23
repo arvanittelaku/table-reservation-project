@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url'
 import { buildEventDatetime, localDateInputValue } from '../src/lib/eventSchedule.js'
 import { formatEventTime } from '../src/lib/formatEventTime.js'
 import { mapError } from '../src/lib/errorMap.js'
+import { requireE2EEmail, requireE2EPassword } from '../scripts/_requireE2EEnv.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const BASE = (process.argv[2] || 'https://ejabashkohu.com').replace(/\/$/, '')
@@ -30,8 +31,8 @@ const AUTH_KEY = 'sb-upxxfhvgbmddhyebaiug-auth-token'
 const ADMIN_SCREEN_KEY = 'ejabashkohu-admin-screen'
 const PASSWORD = 'TestPass123!'
 
-const HOST_EMAIL = process.env.E2E_EMAIL || 'ejabashkohu@gmail.com'
-const HOST_PASSWORD = process.env.E2E_PASSWORD || 'ejaBashkohu1@@'
+const HOST_EMAIL = requireE2EEmail()
+const HOST_PASSWORD = requireE2EPassword()
 const GUEST_EMAIL = process.env.GAP_GUEST_EMAIL || 'ultreuvl@guerrillamailblock.com'
 const GUEST_PASSWORD = process.env.GAP_GUEST_PASSWORD || 'TestPass123!'
 const BLOCKER_EMAIL = process.env.GAP_BLOCKER_EMAIL || 'alkettelaku637@gmail.com'

@@ -6,14 +6,15 @@ import { chromium } from 'playwright'
 import { createClient } from '@supabase/supabase-js'
 import { mkdirSync } from 'fs'
 import { join } from 'path'
+import { requireE2EEmail, requireE2EPassword } from './_requireE2EEnv.mjs'
 
 const BASE = process.env.VERIFY_URL || 'https://4099876e.ejabashkohu.pages.dev'
 const SB_URL = 'https://upxxfhvgbmddhyebaiug.supabase.co'
 const ANON =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVweHhmaHZnYm1kZGh5ZWJhaXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU1MDgsImV4cCI6MjEwMTc5MTUwOH0.ck-BzoAASwbfiBCsFk6RXkOmGj_f-SIFeIlENx64f7Q'
 const AUTH_KEY = 'sb-upxxfhvgbmddhyebaiug-auth-token'
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ejabashkohu@gmail.com'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ejaBashkohu1@@'
+const ADMIN_EMAIL = requireE2EEmail()
+const ADMIN_PASSWORD = requireE2EPassword()
 const SHOT_DIR = join('scripts', 'screenshots', 'admin-stats-range')
 mkdirSync(SHOT_DIR, { recursive: true })
 

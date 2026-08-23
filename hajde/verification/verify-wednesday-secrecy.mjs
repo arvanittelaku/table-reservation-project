@@ -7,6 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { wednesdayMapsUrl, isValidMapsLink } from '../src/lib/eventSchedule.js'
+import { requireE2EEmail, requireE2EPassword } from '../scripts/_requireE2EEnv.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ts = Date.now()
@@ -17,8 +18,8 @@ fs.mkdirSync(OUT, { recursive: true })
 const SUPABASE_URL = 'https://upxxfhvgbmddhyebaiug.supabase.co'
 const ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVweHhmaHZnYm1kZGh5ZWJhaXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU1MDgsImV4cCI6MjEwMTc5MTUwOH0.ck-BzoAASwbfiBCsFk6RXkOmGj_f-SIFeIlENx64f7Q'
-const ADMIN_EMAIL = 'ejabashkohu@gmail.com'
-const ADMIN_PASSWORD = 'ejaBashkohu1@@'
+const ADMIN_EMAIL = requireE2EEmail()
+const ADMIN_PASSWORD = requireE2EPassword()
 const MEMBER_PASSWORD = 'TestPass123!'
 
 const report = { ts, postFix, outDir: OUT, steps: {}, tests: {} }

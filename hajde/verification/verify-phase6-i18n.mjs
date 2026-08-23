@@ -13,6 +13,7 @@ import { chromium } from 'playwright'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { requireE2EEmail, requireE2EPassword } from '../scripts/_requireE2EEnv.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const BASE = (process.argv[2] || 'https://ejabashkohu.com').replace(/\/$/, '')
@@ -29,8 +30,8 @@ const AUTH_KEY = 'sb-upxxfhvgbmddhyebaiug-auth-token'
 const ADMIN_SCREEN_KEY = 'ejabashkohu-admin-screen'
 const UI_LANG_KEY = 'ejabashkohu-ui-lang'
 
-const ADMIN_EMAIL = process.env.E2E_EMAIL || 'ejabashkohu@gmail.com'
-const ADMIN_PASSWORD = process.env.E2E_PASSWORD || 'ejaBashkohu1@@'
+const ADMIN_EMAIL = requireE2EEmail()
+const ADMIN_PASSWORD = requireE2EPassword()
 
 const LOCALES = ['sq', 'en', 'de', 'mk']
 

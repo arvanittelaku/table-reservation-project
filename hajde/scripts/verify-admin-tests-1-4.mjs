@@ -3,13 +3,14 @@
  * Run: node scripts/verify-admin-tests-1-4.mjs
  */
 import { createClient } from '@supabase/supabase-js'
+import { requireE2EEmail, requireE2EPassword } from './_requireE2EEnv.mjs'
 
 const SB_URL = 'https://upxxfhvgbmddhyebaiug.supabase.co'
 const ANON =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVweHhmaHZnYm1kZGh5ZWJhaXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU1MDgsImV4cCI6MjEwMTc5MTUwOH0.ck-BzoAASwbfiBCsFk6RXkOmGj_f-SIFeIlENx64f7Q'
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ejabashkohu@gmail.com'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ejaBashkohu1@@'
+const ADMIN_EMAIL = requireE2EEmail()
+const ADMIN_PASSWORD = requireE2EPassword()
 
 async function signup(email, firstName, lastName, password = 'TestPass123!') {
   const res = await fetch(`${SB_URL}/auth/v1/signup`, {

@@ -10,9 +10,12 @@ import { chromium } from 'playwright'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { requireE2EEmail, requireE2EPassword } from '../scripts/_requireE2EEnv.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const BASE = process.argv[2] || 'http://127.0.0.1:4173'
+const E2E_EMAIL = requireE2EEmail()
+const E2E_PASSWORD = requireE2EPassword()
 const ts = Date.now()
 const OUT = path.join(__dirname, 'evidence', 'phase4-i18n', String(ts))
 fs.mkdirSync(OUT, { recursive: true })
@@ -68,13 +71,13 @@ async function signInTestUser(page) {
   await page.waitForTimeout(400)
   const email = page.locator('input[type="email"], input[placeholder*="email" i]').first()
   if (!(await email.isVisible().catch(() => false))) return false
-  await page.getByPlaceholder('Your email').fill(process.env.E2E_EMAIL || 'ejabashkohu@gmail.com').catch(async () => {
-    await email.fill(process.env.E2E_EMAIL || 'ejabashkohu@gmail.com')
+  await page.getByPlaceholder('Your email').fill(E2E_EMAIL).catch(async () => {
+    await email.fill(E2E_EMAIL)
   })
   const pwd = page.locator('input[type="password"]').first()
   if (!(await pwd.isVisible().catch(() => false))) return false
-  await page.getByPlaceholder('Password').fill(process.env.E2E_PASSWORD || 'AdminPass123!').catch(async () => {
-    await pwd.fill(process.env.E2E_PASSWORD || 'AdminPass123!')
+  await page.getByPlaceholder('Password').fill(E2E_PASSWORD).catch(async () => {
+    await pwd.fill(E2E_PASSWORD)
   })
   await page.locator('button', { hasText: /^Sign in$|^Hyr|^Anmelden|^Најави/i }).first().click()
   await page.waitForTimeout(3000)

@@ -6,6 +6,7 @@ import { chromium } from 'playwright'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { requireE2EEmail, requireE2EPassword } from '../scripts/_requireE2EEnv.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ts = Date.now()
@@ -13,8 +14,8 @@ const OUT = path.join(__dirname, 'evidence', 'password-toggles', `single-icon-${
 fs.mkdirSync(OUT, { recursive: true })
 
 const APP = process.env.APP_URL || 'https://ejabashkohu.com'
-const ADMIN_EMAIL = 'ejabashkohu@gmail.com'
-const ADMIN_PASSWORD = 'ejaBashkohu1@@'
+const ADMIN_EMAIL = requireE2EEmail()
+const ADMIN_PASSWORD = requireE2EPassword()
 
 const report = { ts, outDir: OUT, app: APP, tests: {} }
 

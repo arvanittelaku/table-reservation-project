@@ -5,13 +5,14 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { requireE2EEmail, requireE2EPassword } from './_requireE2EEnv.mjs'
 
 const SB_URL = 'https://upxxfhvgbmddhyebaiug.supabase.co'
 const ANON =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVweHhmaHZnYm1kZGh5ZWJhaXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU1MDgsImV4cCI6MjEwMTc5MTUwOH0.ck-BzoAASwbfiBCsFk6RXkOmGj_f-SIFeIlENx64f7Q'
 
-const EXISTING_EMAIL = process.env.EXISTING_EMAIL || 'ejabashkohu@gmail.com'
-const EXISTING_PASSWORD = process.env.EXISTING_PASSWORD || 'ejaBashkohu1@@'
+const EXISTING_EMAIL = requireE2EEmail()
+const EXISTING_PASSWORD = requireE2EPassword()
 const ADMIN_EMAIL = EXISTING_EMAIL
 const ADMIN_PASSWORD = EXISTING_PASSWORD
 

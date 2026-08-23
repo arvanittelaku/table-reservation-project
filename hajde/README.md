@@ -110,9 +110,19 @@ Function secrets (SMTP credentials, service role key) are set in Supabase Dashbo
 End-to-end and i18n checks live under `verification/`. Run against local preview or production:
 
 ```bash
-node verification/verify-phase7-i18n.mjs https://ejabashkohu.com
+E2E_EMAIL=your-admin@example.com E2E_PASSWORD=your-password \
+  node verification/verify-phase7-i18n.mjs https://ejabashkohu.com
 ```
 
 Evidence output goes to `verification/evidence/` (gitignored).
 
-Optional env vars for test scripts: `E2E_EMAIL`, `E2E_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY` (admin-only tests).
+**Required env vars for verification scripts** (never commit these values):
+
+| Variable | Purpose |
+|----------|---------|
+| `E2E_EMAIL` | Admin/test account email for sign-in during automated checks |
+| `E2E_PASSWORD` | Password for that account — scripts exit immediately if unset |
+
+Some admin-only scripts also accept `SUPABASE_SERVICE_ROLE_KEY` for backend assertions.
+
+**Git history note:** An earlier commit contained a hardcoded admin password fallback in these scripts. That password should be rotated; the old value remains in git history unless you run a history rewrite (`git filter-repo` or BFG). Rotation makes the exposed password harmless — a history rewrite is only needed for strict compliance requirements and is disruptive for collaborators who have already cloned the repo.

@@ -18,6 +18,7 @@ import { fileURLToPath } from 'url'
 import { buildEventDatetime, localDateInputValue } from '../src/lib/eventSchedule.js'
 import { formatEventTime } from '../src/lib/formatEventTime.js'
 import sqLocale from '../src/i18n/locales/sq.js'
+import { requireE2EEmail, requireE2EPassword } from '../scripts/_requireE2EEnv.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const BASE = (process.argv[2] || 'http://127.0.0.1:4173').replace(/\/$/, '')
@@ -34,8 +35,8 @@ const AUTH_KEY = 'sb-upxxfhvgbmddhyebaiug-auth-token'
 const UI_LANG_KEY = 'ejabashkohu-ui-lang'
 const ADMIN_SCREEN_KEY = 'ejabashkohu-admin-screen'
 
-const ADMIN_EMAIL = process.env.E2E_EMAIL || 'ejabashkohu@gmail.com'
-const ADMIN_PASSWORD = process.env.E2E_PASSWORD || 'ejaBashkohu1@@'
+const ADMIN_EMAIL = requireE2EEmail()
+const ADMIN_PASSWORD = requireE2EPassword()
 const GUEST_EMAIL = process.env.GAP_GUEST_EMAIL || 'ultreuvl@guerrillamailblock.com'
 const GUEST_PASSWORD = process.env.GAP_GUEST_PASSWORD || 'TestPass123!'
 

@@ -8,6 +8,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { buildEventDatetime, localDateInputValue } from '../src/lib/eventSchedule.js'
 import { formatEventTime } from '../src/lib/formatEventTime.js'
+import { requireE2EEmail, requireE2EPassword } from '../scripts/_requireE2EEnv.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ts = Date.now()
@@ -22,8 +23,8 @@ const USER_A_EMAIL = 'alkettelaku637@gmail.com'
 const USER_A_PASSWORD = 'EjaAlket2026!637'
 const USER_B_EMAIL = 'artatelaku+artalive1786229625@gmail.com'
 const USER_B_PASSWORD = 'TestLive2026!'
-const USER_C_EMAIL = 'ejabashkohu@gmail.com'
-const USER_C_PASSWORD = 'ejaBashkohu1@@'
+const USER_C_EMAIL = requireE2EEmail()
+const USER_C_PASSWORD = requireE2EPassword()
 
 const report = { ts, outDir: OUT, tests: {} }
 

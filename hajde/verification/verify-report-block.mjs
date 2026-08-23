@@ -8,6 +8,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { buildEventDatetime, localDateInputValue } from '../src/lib/eventSchedule.js'
 import { formatEventTime } from '../src/lib/formatEventTime.js'
+import { requireE2EEmail, requireE2EPassword } from '../scripts/_requireE2EEnv.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ts = Date.now()
@@ -18,8 +19,8 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://upxxfhvgbmddhyeba
 const ANON_KEY =
   process.env.VITE_SUPABASE_ANON_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVweHhmaHZnYm1kZGh5ZWJhaXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU1MDgsImV4cCI6MjEwMTc5MTUwOH0.ck-BzoAASwbfiBCsFk6RXkOmGj_f-SIFeIlENx64f7Q'
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ejabashkohu@gmail.com'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ejaBashkohu1@@'
+const ADMIN_EMAIL = requireE2EEmail()
+const ADMIN_PASSWORD = requireE2EPassword()
 const USER_A_EMAIL = process.env.USER_A_EMAIL || 'alkettelaku637@gmail.com'
 const USER_A_PASSWORD = process.env.USER_A_PASSWORD || 'EjaAlket2026!637'
 const USER_B_EMAIL = process.env.USER_B_EMAIL || 'artatelaku+artalive1786229625@gmail.com'
