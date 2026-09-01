@@ -5,6 +5,8 @@ const MIN_AGE = 18
 function throwAuthError(error) {
   const e = new Error(error?.message || String(error))
   if (error?.code) e.code = error.code
+  if (error?.error_code) e.error_code = error.error_code
+  if (error?.weak_password) e.weak_password = error.weak_password
   throw e
 }
 

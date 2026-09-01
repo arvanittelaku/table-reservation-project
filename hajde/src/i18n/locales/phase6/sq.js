@@ -5,6 +5,8 @@ export const errors = {
   emailAlreadyRegistered: 'Ky email është i regjistruar tashmë.',
   passwordMinLength: 'Fjalëkalimi duhet të ketë të paktën 6 karaktere.',
   passwordInvalid: 'Fjalëkalimi nuk është i vlefshëm.',
+  passwordPolicy: 'Fjalëkalimi duhet të ketë të paktën 8 karaktere, me shkronja të mëdha, të vogla dhe numra.',
+  passwordLeaked: 'Ky fjalëkalim është përdorur gjerësisht dhe nuk është i sigurt. Provo një tjetër.',
   emailRateLimitExceeded: 'Shumë përpjekje. Prit disa minuta dhe provo sërish.',
   invalidEmail: 'Adresa e email-it nuk është e vlefshme.',
   passwordResetRateLimit:

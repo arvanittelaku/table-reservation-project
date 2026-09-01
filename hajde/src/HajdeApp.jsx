@@ -502,7 +502,7 @@ function HajdeApp() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resetCooldown, setResetCooldown] = useState(0);
   const emailValid = isEmailFormatValid(user.email);
-  const passwordValid = password.length >= 6;
+  const passwordValid = password.length >= 8;
   const ageNum = parseInt(user.age, 10);
   const ageValid = !isNaN(ageNum) && ageNum >= 18 && ageNum <= 99;
   const ageTooYoung = !isNaN(ageNum) && user.age.length > 0 && ageNum < 18;
@@ -2943,6 +2943,9 @@ function HajdeApp() {
                               void completeStep1Registration();
                             }}
                           />
+                          <p className="input-hint password-requirements">
+                            {t('onboarding.step1.passwordRequirements')}
+                          </p>
                         </div>
 
                         <p className="input-hint">

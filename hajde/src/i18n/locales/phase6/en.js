@@ -5,6 +5,8 @@ export const errors = {
   emailAlreadyRegistered: 'This email is already registered.',
   passwordMinLength: 'Password must be at least 6 characters.',
   passwordInvalid: 'Password is not valid.',
+  passwordPolicy: 'Password must be at least 8 characters and include uppercase and lowercase letters and numbers.',
+  passwordLeaked: 'This password is widely used and is not secure. Try a different one.',
   emailRateLimitExceeded: 'Too many attempts. Wait a few minutes and try again.',
   invalidEmail: 'Email address is not valid.',
   passwordResetRateLimit:

@@ -5,6 +5,8 @@ export const errors = {
   emailAlreadyRegistered: 'Овој email е веќе регистриран.',
   passwordMinLength: 'Лозинката мора да има најмалку 6 знаци.',
   passwordInvalid: 'Лозинката не е валидна.',
+  passwordPolicy: 'Лозинката мора да има најмалку 8 знаци и големи и мали букви и броеви.',
+  passwordLeaked: 'Оваа лозинка е широко користена и не е безбедна. Пробај друга.',
   emailRateLimitExceeded: 'Премногу обиди. Почекај неколку минути и обиди се повторно.',
   invalidEmail: 'Email адресата не е валидна.',
   passwordResetRateLimit:

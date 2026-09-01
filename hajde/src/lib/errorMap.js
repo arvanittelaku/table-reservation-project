@@ -92,6 +92,24 @@ export function mapError(err, locale = detectLocale()) {
   const code = err?.code
   const lower = msg.toLowerCase()
 
+  // Supabase Auth returns `error_code: weak_password` for both password
+  // composition and HaveIBeenPwned rejections. Its `weak_password.reasons`
+  // field distinguishes them; fall back to the response message because some
+  // callers only preserve the message on the thrown Error.
+  const weakReasons = err?.weak_password?.reasons || err?.weakPassword?.reasons || []
+  const isWeakPassword = err?.error_code === 'weak_password' ||
+    String(err?.code || '').toLowerCase() === 'weak_password' ||
+    lower.includes('password should contain at least one character of each') ||
+    lower.includes('password is known to be weak')
+  if (isWeakPassword) {
+    if (weakReasons.includes('characters') || lower.includes('at least one character of each')) {
+      return tr(locale, 'errors.passwordPolicy')
+    }
+    if (weakReasons.includes('pwned') || lower.includes('known to be weak') || lower.includes('easy to guess')) {
+      return tr(locale, 'errors.passwordLeaked')
+    }
+  }
+
   if (code === '42501' && lower.includes('row-level security') && lower.includes('tables')) {
     return tr(locale, 'errors.tableCreateRlsFailed')
   }
