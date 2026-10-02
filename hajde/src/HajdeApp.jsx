@@ -2688,19 +2688,14 @@ function HajdeApp() {
 
   /* ══════════ ADMIN PANEL ══════════ */
   if (screen === 'admin' && isAdmin) {
+    // Full-width console (desktop sidebar, mobile drawer); not inside the phone frame.
     return (
-      <div className="app-shell">
-        <div className="app-main">
-          <div className="app-mobile-frame">
-            <AdminPanel
-              isAdmin={isAdmin}
-              onViewAsUser={() => setAdminScreen('main')}
-              showToast={showToast}
-            />
-            {toast && <div className="toast">{toast}</div>}
-          </div>
-        </div>
-      </div>
+      <AdminPanel
+        isAdmin={isAdmin}
+        adminId={authUser?.id}
+        onViewAsUser={() => setAdminScreen('main')}
+        onSignOut={() => { if (window.confirm(t('profile.confirmSignOut'))) void handleSignOut(); }}
+      />
     );
   }
 

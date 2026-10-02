@@ -10,6 +10,7 @@ import {
 } from './phase4b/de.js'
 import { errors, toasts, notifications, payment } from './phase6/de.js'
 import { admin, termsOfService, privacyPolicy } from './phase7/de.js'
+import { adm } from './admin/de.js'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/de.js'
 
 export default {
@@ -380,6 +381,7 @@ export default {
   notifications,
   payment,
   admin,
+  adm,
   termsOfService,
   privacyPolicy,
   badges,

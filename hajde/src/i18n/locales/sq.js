@@ -10,6 +10,7 @@ import {
 } from './phase4b/sq.js'
 import { errors, toasts, notifications, payment } from './phase6/sq.js'
 import { admin, termsOfService, privacyPolicy } from './phase7/sq.js'
+import { adm } from './admin/sq.js'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/sq.js'
 
 export default {
@@ -380,6 +381,7 @@ export default {
   notifications,
   payment,
   admin,
+  adm,
   termsOfService,
   privacyPolicy,
   badges,

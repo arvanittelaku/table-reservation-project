@@ -10,6 +10,7 @@ import {
 } from './phase4b/mk.js'
 import { errors, toasts, notifications, payment } from './phase6/mk.js'
 import { admin, termsOfService, privacyPolicy } from './phase7/mk.js'
+import { adm } from './admin/mk.js'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/mk.js'
 
 export default {
@@ -380,6 +381,7 @@ export default {
   notifications,
   payment,
   admin,
+  adm,
   termsOfService,
   privacyPolicy,
   badges,
