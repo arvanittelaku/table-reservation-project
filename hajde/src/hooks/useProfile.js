@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { sb } from '../supabaseClient'
+import { fetchOwnProfile } from '../lib/ownProfile'
 
 /**
  * Loads everything the header and match scores need for the logged-in user:
@@ -13,6 +14,8 @@ export function useProfile(userId) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  // first load may share the startup request; later reloads (after edits) are fresh
+  const first = useRef(true)
   const reload = useCallback(async () => {
     if (!userId) {
       setProfile(null)
@@ -29,7 +32,7 @@ export function useProfile(userId) {
 
     try {
       const [profileRes, tasteRes, affinityRes, badgesRes] = await Promise.all([
-        sb.from('profiles').select('*').eq('id', userId).maybeSingle(),
+        fetchOwnProfile(userId, { fresh: !first.current }),
         sb
           .from('taste_profiles')
           .select('*')
@@ -45,6 +48,7 @@ export function useProfile(userId) {
       if (affinityRes.error) throw affinityRes.error
       if (badgesRes.error) throw badgesRes.error
 
+      first.current = false
       setProfile(profileRes.data)
       setTasteProfile(tasteRes.data)
       setAffinity(affinityRes.data ?? [])

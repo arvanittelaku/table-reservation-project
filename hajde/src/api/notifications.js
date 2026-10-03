@@ -1,7 +1,9 @@
+import { fetchOwnProfile } from '../lib/ownProfile'
+import { getSessionUser } from '../lib/session'
 import { sb } from '../supabaseClient'
 
 async function currentUserId() {
-  const { data, error } = await sb.auth.getUser()
+  const { data, error } = await getSessionUser()
   if (error || !data.user) return null
   return data.user.id
 }
@@ -142,7 +144,7 @@ export function subscribeNotifications(userIdOrOnNew, maybeHandlers) {
 
 /** Auth email for the notification panel (not local profile state). */
 export async function getAuthEmail() {
-  const { data, error } = await sb.auth.getUser()
+  const { data, error } = await getSessionUser()
   if (error || !data.user) return null
   return data.user.email ?? null
 }
@@ -185,11 +187,7 @@ export async function getEmailNotificationsEnabled() {
   const userId = await currentUserId()
   if (!userId) return true
 
-  const { data, error } = await sb
-    .from('profiles')
-    .select('user_preferences')
-    .eq('id', userId)
-    .maybeSingle()
+  const { data, error } = await fetchOwnProfile(userId)
 
   if (error) throw error
 

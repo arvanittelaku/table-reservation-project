@@ -33,7 +33,13 @@ export default function PasswordInput({
     <div className={wrapperClassName}>
       <input
         className={inputClass}
-        type="text"
+        // A real password input: masked natively on every browser (the old
+        // type="text" + CSS -webkit-text-security showed plain text on
+        // Firefox and some Android browsers) and recognised by password managers.
+        type={visible ? 'text' : 'password'}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         value={value}
         onChange={onChange}
         placeholder={placeholder}

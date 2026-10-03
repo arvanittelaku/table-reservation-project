@@ -1,3 +1,4 @@
+import { getSessionUser } from '../lib/session'
 import { sb } from '../supabaseClient'
 
 function throwAuthError(error) {
@@ -21,7 +22,7 @@ function throwAuthError(error) {
  * @returns {{ ok: boolean, message: string, intent: object }}
  */
 export async function startPayment(tableId, amountCents) {
-  const { data: auth, error: authError } = await sb.auth.getUser()
+  const { data: auth, error: authError } = await getSessionUser()
   if (authError || !auth.user) {
     throw new Error('You must be signed in to pay')
   }

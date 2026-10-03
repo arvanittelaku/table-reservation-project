@@ -1,3 +1,4 @@
+import { getSessionUser } from '../../lib/session'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n/I18nContext.jsx'
 import { sb } from '../../supabaseClient'
@@ -55,7 +56,7 @@ export default function AdminPanel({ isAdmin, onViewAsUser, onSignOut, adminId: 
 
   useEffect(() => {
     let alive = true
-    sb.auth.getUser().then(async ({ data }) => {
+    getSessionUser().then(async ({ data }) => {
       const uid = data?.user?.id
       if (!uid || !alive) return
       const { data: prof } = await sb.from('profiles').select('id, first_name, last_name, photo_path').eq('id', uid).maybeSingle()

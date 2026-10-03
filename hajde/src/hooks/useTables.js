@@ -9,7 +9,7 @@ import { matchScore as libMatchScore } from '../lib/matchScore'
  *   useTables({ city, category, tasteProfile, affinity })
  *   useTables(city, cat, tasteProfile, affinity)
  */
-export function useTables(cityOrOpts, categoryArg, tasteArg, affinityArg) {
+export function useTables(cityOrOpts, categoryArg, tasteArg, affinityArg, userIdArg) {
   const opts =
     cityOrOpts && typeof cityOrOpts === 'object' && !Array.isArray(cityOrOpts)
       ? cityOrOpts
@@ -18,6 +18,7 @@ export function useTables(cityOrOpts, categoryArg, tasteArg, affinityArg) {
           category: categoryArg,
           tasteProfile: tasteArg,
           affinity: affinityArg,
+          userId: userIdArg,
         }
 
   const {
@@ -25,6 +26,7 @@ export function useTables(cityOrOpts, categoryArg, tasteArg, affinityArg) {
     category,
     tasteProfile = null,
     affinity = [],
+    userId,
   } = opts
 
   const [rawTables, setRawTables] = useState([])
@@ -57,43 +59,57 @@ export function useTables(cityOrOpts, categoryArg, tasteArg, affinityArg) {
     }
   }, [city, category])
 
+  // userId undefined = auth still resolving: wait, so the feed is fetched once
+  // per signed-in user instead of once anonymously and again after login.
   useEffect(() => {
+    if (userId === undefined) return
     void refetch()
+  }, [refetch, userId])
+
+  // Realtime events arrive for the whole platform. Coalesce bursts into one
+  // refetch, and while the app is in the background just remember that the
+  // feed is stale and refresh once when the user comes back.
+  const stale = useRef(false)
+  const scheduleRefetch = useCallback((delay = 1200) => {
+    if (typeof document !== 'undefined' && document.hidden) { stale.current = true; return }
+    clearTimeout(liveTimer.current)
+    liveTimer.current = setTimeout(() => { void refetch({ silent: true }) }, delay)
+  }, [refetch])
+  useEffect(() => {
+    const onVis = () => {
+      if (!document.hidden && stale.current) { stale.current = false; void refetch({ silent: true }) }
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => { document.removeEventListener('visibilitychange', onVis); clearTimeout(liveTimer.current) }
   }, [refetch])
 
   useEffect(() => {
+    if (!userId) return undefined
     const channel = sb
       .channel(`tables-memberships:${city ?? 'all'}:${category ?? 'all'}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'memberships' },
-        () => {
-          void refetch({ silent: true })
-        },
+        () => scheduleRefetch(),
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'requests' },
-        () => {
-          void refetch({ silent: true })
-        },
+        () => scheduleRefetch(),
       )
       // New / changed / cancelled tables appear live (needs `tables` in the
       // supabase_realtime publication: migration 20261003180000).
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tables' },
-        () => {
-          clearTimeout(liveTimer.current)
-          liveTimer.current = setTimeout(() => { void refetch({ silent: true }) }, 400)
-        },
+        () => scheduleRefetch(400),
       )
       .subscribe()
 
     return () => {
       sb.removeChannel(channel)
     }
-  }, [city, category, refetch])
+  }, [city, category, scheduleRefetch, userId])
 
   const tables = useMemo(() => {
     const scored = rawTables.map((table) => ({

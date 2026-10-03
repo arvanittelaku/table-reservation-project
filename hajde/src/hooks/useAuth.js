@@ -24,10 +24,17 @@ export function useAuth() {
       }
     })
 
-    const unsubscribe = auth.onAuthStateChange((_event, session) => {
+    const unsubscribe = auth.onAuthStateChange((event, session) => {
       if (cancelled) return
       const nextUser = session?.user ?? null
-      setUser(nextUser)
+      // Token refreshes (hourly) and tab refocus emit a new user object with
+      // the same identity; keeping the old reference stops every effect keyed
+      // on the user from refetching the whole app.
+      setUser((prev) => (
+        prev && nextUser && prev.id === nextUser.id && event !== 'USER_UPDATED'
+          && !!prev.email_confirmed_at === !!nextUser.email_confirmed_at
+          ? prev : nextUser
+      ))
       if (nextUser?.email_confirmed_at || nextUser?.confirmed_at) {
         setPendingEmailConfirmation(false)
       }

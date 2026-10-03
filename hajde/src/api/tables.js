@@ -1,8 +1,9 @@
+import { getSessionUser } from '../lib/session'
 import { sb } from '../supabaseClient'
 import { formatEventTime, isTableExpired } from '../lib/formatEventTime'
 
 async function currentUserId() {
-  const { data, error } = await sb.auth.getUser()
+  const { data, error } = await getSessionUser()
   if (error || !data.user) return null
   return data.user.id
 }

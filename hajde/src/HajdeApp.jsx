@@ -42,6 +42,7 @@ import { buildWedQuizTableLangs } from './lib/wedQuizLangs'
 import { WED_QUIZ } from './lib/wednesdayQuiz'
 import { normalizeInterests, interestsForMatching } from './lib/tasteInterests'
 import { photoErrorKey } from './lib/faceValidation'
+import { fetchOwnProfile, invalidateOwnProfile } from './lib/ownProfile'
 import { sb } from './supabaseClient'
 import PrivacyPolicy from './components/PrivacyPolicy'
 import TermsOfService from './components/TermsOfService'
@@ -527,7 +528,7 @@ function HajdeApp() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [cat, setCat] = useState("all");
   const { profile: dbProfile, tasteProfile, affinity, badges: dbBadges, reload: reloadProfile, loading: profileLoading } = useProfile(authUser?.id);
-  const { tables: rawTables, loading: tablesLoading, error: tablesError, refetch: refetchTables } = useTables(city, cat, tasteProfile || dbProfile, affinity);
+  const { tables: rawTables, loading: tablesLoading, error: tablesError, refetch: refetchTables } = useTables(city, cat, tasteProfile || dbProfile, affinity, loading ? undefined : (authUser?.id || null));
   const tables = useMemo(
     () => rawTables.map((tbl) => ({
       ...tbl,
@@ -571,10 +572,7 @@ function HajdeApp() {
 
   const mapErr = useCallback((err) => mapError(err, locale), [locale]);
 
-  // Refetch tables once auth session is ready (RLS requires authenticated)
-  useEffect(() => {
-    if (authUser) refetchTables();
-  }, [authUser, refetchTables]);
+  // Tables load once auth is resolved (useTables waits for the user id).
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -605,10 +603,7 @@ function HajdeApp() {
   }, [persistAdminScreen]);
 
   const handlePostLogin = useCallback(async (userId, { preferStored = false } = {}) => {
-    const { data } = await sb.from('profiles')
-      .select('is_admin, deactivated_at')
-      .eq('id', userId)
-      .single();
+    const { data } = await fetchOwnProfile(userId);
 
     if (data?.deactivated_at) {
       setShowDeactivatedGate(true);
@@ -644,11 +639,9 @@ function HajdeApp() {
       setShowDeactivatedGate(false);
       return;
     }
-    sb.from('profiles').select('deactivated_at').eq('id', authUser.id)
-      .single().then(({ data }) => {
-        setShowDeactivatedGate(!!data?.deactivated_at);
-      });
-  }, [authUser?.id]);
+    // Reuse the profile row useProfile already loaded (no extra request).
+    if (dbProfile) setShowDeactivatedGate(!!dbProfile.deactivated_at);
+  }, [authUser?.id, dbProfile]);
 
   useEffect(() => {
     if (!authUser?.id) return;
@@ -852,6 +845,12 @@ function HajdeApp() {
   /* Përputhja: profili nga kuizi + afiniteti i mësuar nga sjellja */
   const [profile, setProfile] = useState({ done: false, groupSize: null, depth: null, time: null, energy: null, interests: [], langs: ["Shqip"] });
   const [aff, setAff] = useState({});                 // { kategori: pikë të mësuara }
+  // Affinity rows come from useProfile (already fetched); no second query.
+  useEffect(() => {
+    const map = {};
+    for (const row of affinity || []) map[row.category] = row.score;
+    setAff(map);
+  }, [affinity]);
   const [showMQ, setShowMQ] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [mqi, setMqi] = useState(0);
@@ -1091,10 +1090,9 @@ function HajdeApp() {
     let cancelled = false;
     (async () => {
       try {
-        const [ratingsRes, connRes, affRes] = await Promise.all([
+        const [ratingsRes, connRes] = await Promise.all([
           sb.from("ratings").select("table_id, stars").eq("rater_id", authUser.id),
           sb.from("connections").select("a, b").or(`a.eq.${authUser.id},b.eq.${authUser.id}`),
-          sb.from("affinity").select("category, score").eq("user_id", authUser.id),
         ]);
         if (cancelled) return;
 
@@ -1104,11 +1102,6 @@ function HajdeApp() {
           setRated(map);
         }
 
-        if (affRes.data) {
-          const map = {};
-          for (const row of affRes.data) map[row.category] = row.score;
-          setAff(map);
-        }
 
         const rows = connRes.data || [];
         if (rows.length === 0) {
@@ -2107,10 +2100,30 @@ function HajdeApp() {
     img.src = dataUrl;
   });
 
+  /* Phone photos are often 5-12 MB (or PNG/HEIC). Uploading the original as
+   * "image/jpeg" was rejected by the avatars bucket, so re-encode a real JPEG,
+   * max 1024 px on the long side (~150-300 KB), before validating/uploading. */
+  const compressPhoto = (dataUrl, maxSide = 1024, quality = 0.85) => new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+      const w = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+      const h = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h); // transparent PNG -> white, not black
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => reject(new Error("read_error"));
+    img.src = dataUrl;
+  });
+
   const dataUrlToJpegFile = async (dataUrl) => {
     const res = await fetch(dataUrl);
     const blob = await res.blob();
-    return new File([blob], "avatar.jpg", { type: blob.type || "image/jpeg" });
+    return new File([blob], "avatar.jpg", { type: "image/jpeg" });
   };
 
   /** Queue locally during onboarding; upload only after a Supabase session exists. */
@@ -2169,10 +2182,9 @@ function HajdeApp() {
     }
     const reader = new FileReader();
     reader.onload = async () => {
-      const dataUrl = reader.result;
       setUser((u) => ({ ...u, photoUploading: true }));
-
-      const validation = await validatePhoto(dataUrl);
+      // Face/quality check runs on the original; the upload uses a compressed copy.
+      const validation = await validatePhoto(reader.result);
       if (!validation.ok) {
         setPhotoError(t(photoErrorKey(validation.code)));
         // Keep previous photo if one exists — do not clear on rejection
@@ -2181,6 +2193,14 @@ function HajdeApp() {
         return;
       }
 
+      let dataUrl;
+      try {
+        dataUrl = await compressPhoto(reader.result);
+      } catch {
+        setPhotoError(t(photoErrorKey('read_error')));
+        setUser((u) => ({ ...u, photoUploading: false }));
+        return;
+      }
       setPhotoError(null);
       setUser((u) => ({ ...u, photo: dataUrl, photoUploading: false }));
 
@@ -2362,9 +2382,7 @@ function HajdeApp() {
       if (provider) {
         let row = dbProfile;
         if (!row) {
-          const { data } = await sb.from('profiles')
-            .select('first_name, last_name, age, user_preferences, onboarded_at')
-            .eq('id', authUser.id).maybeSingle();
+          const { data } = await fetchOwnProfile(authUser.id);
           row = data;
         }
         if (row && isOnboardingComplete(row)) return;
@@ -2400,11 +2418,7 @@ function HajdeApp() {
 
       let profileRow = dbProfile;
       if (!firstName && !profileRow) {
-        const { data } = await sb
-          .from('profiles')
-          .select('first_name, last_name, age, user_preferences, onboarded_at')
-          .eq('id', authUser.id)
-          .maybeSingle();
+        const { data } = await fetchOwnProfile(authUser.id);
         profileRow = data;
       }
 
@@ -2533,6 +2547,7 @@ function HajdeApp() {
         p_from_place: nextUser.isTourist ? (nextUser.from?.trim() || null) : null,
       });
       if (onboardErr) throw onboardErr;
+      invalidateOwnProfile();
       if (socialOnboarding) {
         // keep auth metadata in sync so the header shows the chosen name
         void sb.auth.updateUser({ data: { first_name: nextUser.firstName.trim(), last_name: nextUser.lastName.trim() } });
