@@ -111,6 +111,9 @@ export const notifications = {
   tutorApproved: 'Profili yt i mësuesit u aprovua! Studentët tani mund të të gjejnë.',
   tutorRejected: 'Profili yt i mësuesit nuk u aprovua. Arsyeja: {{reason}}',
   tutorSuspended: 'Profili yt i mësuesit u pezullua. Arsyeja: {{reason}}',
+  premiumActivated: 'Premium u aktivizua deri më {{at}}. Faleminderit!',
+  wednesdayGrouped: 'U përputhe me {{count}} persona për Darkën e së Mërkurës ({{at}})! Restoranti zbulohet 24 orë para.',
+  wednesdayWaitlisted: 'Për darkën e {{at}} nuk mjaftuan vendet. Je në listën e pritjes dhe ke përparësi javën tjetër.',
 }
 
 export const payment = {

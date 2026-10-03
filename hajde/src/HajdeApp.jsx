@@ -49,6 +49,9 @@ import LandingPage from './components/LandingPage'
 import AdminPanel from './components/AdminPanel'
 import Lessons from './components/lessons/Lessons.jsx'
 import WhatsAppButton from './components/WhatsAppButton.jsx'
+import { PlansSheet, HomeCityPicker } from './components/plans/Plans.jsx'
+import { usePlan } from './hooks/usePlan'
+import { plansApi } from './api/plans'
 import { notifText, BADGE_LABEL_KEY } from './lib/notifText'
 import { awardBadgeOnce } from './api/notifications'
 import LanguageSwitcher from './components/LanguageSwitcher'
@@ -133,22 +136,6 @@ const FAKE_REQUESTERS = [
 
 /* ── DARKA E SË MËRKURËS (modeli Timeleft) — display via t('wednesdayQuiz.*') ── */
 const QUIZ = WED_QUIZ;
-const MATCHED_PEOPLE = [
-  { name: "Vesa", age: 26 }, { name: "Dritan", age: 28 }, { name: "Lena", age: 24 },
-  { name: "Bind", age: 27 }, { name: "Sara", age: 25 },
-];
-function getNextWednesday8pm() {
-  const now = new Date();
-  const day = now.getDay();
-  let daysUntilWed = (3 - day + 7) % 7;
-  if (daysUntilWed === 0 && (now.getHours() > 20 || (now.getHours() === 20 && now.getMinutes() > 0))) {
-    daysUntilWed = 7;
-  }
-  const d = new Date(now);
-  d.setDate(d.getDate() + daysUntilWed);
-  d.setHours(20, 0, 0, 0);
-  return d;
-}
 
 /* ══ AI MATCH: kuizi i profilit (5 pyetje) — labels via t('tasteQuiz.*') ══ */
 const MATCH_QUIZ = [
@@ -524,6 +511,16 @@ function HajdeApp() {
   const ageValid = !isNaN(ageNum) && ageNum >= 18 && ageNum <= 99;
   const ageTooYoung = !isNaN(ageNum) && user.age.length > 0 && ageNum < 18;
   const [city, setCity] = useState("Prishtinë");
+  /* Packages: Bazike = home city only + monthly hosting limit; Premium = all. */
+  const { plan, reload: reloadPlan, available: plansReady, isPremium, limitReached } = usePlan(authUser?.id);
+  const [showPlans, setShowPlans] = useState(false);
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const homeCity = plan?.home_city || null;
+  const basicLocked = plansReady && !!plan && !isPremium;
+  useEffect(() => {
+    if (basicLocked && homeCity && city !== homeCity) setCity(homeCity);
+  }, [basicLocked, homeCity, city]);
+  const visibleCities = basicLocked ? (homeCity ? [homeCity] : []) : CITIES;
   const [locationSuggestedCity, setLocationSuggestedCity] = useState(null);
   const [showLocationBanner, setShowLocationBanner] = useState(false);
   const [showDeactivatedGate, setShowDeactivatedGate] = useState(false);
@@ -1912,55 +1909,54 @@ function HajdeApp() {
     setWedLangSel([]);
     setWedShowOtherInput(false);
     setWedOtherText('');
-    setMatchState("quiz");
+    setMatchState(wedStatus?.signup ? "signed" : "quiz");
     setShowWed(true);
+    plansApi.myWednesday().then(applyWedStatus).catch(() => {});
   };
 
-  /* ── Kuizi → përputhja → tavolina sekrete e së mërkurës ── */
+  /* ── Kuizi → regjistrim për të mërkurën. Grupet e vërteta (6 persona) formohen
+        të martën 20:00 nga serveri; Premium kanë përparësi. ── */
+  const [wedStatus, setWedStatus] = useState(null);
+  const applyWedStatus = useCallback((res) => {
+    setWedStatus(res || null);
+    const sgn = res?.signup;
+    if (sgn?.table_id) wedTableId.current = sgn.table_id;
+    if (sgn?.group_id) wedTableGroupId.current = sgn.group_id;
+    return sgn;
+  }, []);
+  useEffect(() => {
+    if (!authUser?.id) { setWedStatus(null); return; }
+    plansApi.myWednesday().then(applyWedStatus).catch(() => {});
+  }, [authUser?.id, applyWedStatus]);
+
   const runWedMatching = (ans) => {
     if (typeof window !== 'undefined') {
       try { window.__lastWedQuizAns = ans; } catch (_) { /* ignore */ }
     }
     setMatchState("matching");
-    setTimeout(async () => {
+    (async () => {
       try {
-        const selectedCity = city || "Prishtinë";
-        const nextWednesday8pm = getNextWednesday8pm();
+        const selectedCity = (basicLocked && homeCity) || city || "Prishtinë";
         const langs = buildWedQuizTableLangs(ans[4]);
-
-        const { data: groupId, error: groupErr } = await sb.rpc('create_wednesday_dinner_group', {
-          p_city: selectedCity,
-          p_dinner_date: nextWednesday8pm.toISOString(),
-        });
-        if (groupErr) throw groupErr;
-        wedTableGroupId.current = groupId;
-
-        const created = await apiCreateTable({
-          kind: "darka_e_merkures",
-          category: "ushqim",
-          title: t('wednesdaySeed.title'),
-          area: t('tableDetail.areaReveal24h'),
-          city: selectedCity,
-          time_label: t('wednesdayQuiz.matchedWhen').split(' · ')[0],
-          event_datetime: nextWednesday8pm.toISOString(),
-          starts_at: nextWednesday8pm.toISOString(),
-          spots: 6,
-          mystery: true,
-          revealed: false,
-          langs,
-          tags: [t('wednesdaySeed.tagWednesday'), t('wednesdaySeed.tagStrangers'), t('wednesdaySeed.tagQuizMatch')],
-          description: t('wednesdaySeed.description'),
-        });
-        wedTableId.current = created.id;
-        await refetchTables();
-        setMatchState("matched");
+        const res = await plansApi.signupWednesday(selectedCity, langs);
+        applyWedStatus(res);
+        setMatchState("signed");
         setWedDone(true);
-        pushNotif('wednesdayMatch', {}, "");
       } catch (err) {
         setMatchState("quiz");
         showToast(mapErr(err));
       }
-    }, 2200);
+    })();
+  };
+
+  const cancelWedSignup = async () => {
+    try {
+      await plansApi.cancelWednesday();
+      applyWedStatus(await plansApi.myWednesday());
+      setShowWed(false);
+      setMatchState("quiz");
+      setWedDone(false);
+    } catch (err) { showToast(mapErr(err)); }
   };
 
   const advanceWedQuizAnswer = (value) => {
@@ -2279,7 +2275,7 @@ function HajdeApp() {
         : trip
           ? t('feed.areaDepartureCity', { city: form.city })
           : (form.area.trim() || t('feed.areaCenter')),
-      city: form.city,
+      city: basicLocked && homeCity ? homeCity : form.city,
       to_city: ride ? form.toCity : null,
       budget: trip ? ((form.budget || "").trim() || null) : null,
       time_label: timeLabel,
@@ -2298,6 +2294,7 @@ function HajdeApp() {
       await apiCreateTable(payload);
       awardBadge("first-host", "", t('badges.firstHost'));
       if (sportMode) { setCat("sport"); setSportFilter(form.sport); }
+      void reloadPlan();
       setCity(form.city); setTab("zbulo"); setShowCreate(false);
       setForm(defaultCreateForm());
       await refetchTables();
@@ -3486,6 +3483,11 @@ function HajdeApp() {
         <div className="hdr-top">
           <h1 className="logo-word sm">eja<span className="logo-bang">Bashkohu</span></h1>
           <div className="hdr-right">
+            {plansReady && plan && (
+              <button type="button" className={`premium-pill ${isPremium ? '' : 'basic'}`} onClick={() => setShowPlans(true)}>
+                {isPremium ? `★ ${t('plans.premium')}` : t('plans.goPremium')}
+              </button>
+            )}
             <button
               className="bell"
               onClick={() => {
@@ -3555,9 +3557,14 @@ function HajdeApp() {
           </div>
         )}
         <div className="city-row">
-          {CITIES.map((c) => (
+          {visibleCities.map((c) => (
             <button key={c} className={`chip city ${city === c ? "on" : ""}`} onClick={() => setCity(c)}>{c}</button>
           ))}
+          {basicLocked && (
+            <button type="button" className="chip city locked" onClick={() => setShowPlans(true)}>
+              🔒 {t('plans.allCitiesLocked')}
+            </button>
+          )}
         </div>
 
         {showNotifs && (
@@ -3844,6 +3851,17 @@ function HajdeApp() {
       )}
 
       <WhatsAppButton email={authUser?.email} context={tab} />
+
+      {showPlans && plan && (
+        <PlansSheet plan={plan} email={authUser?.email} showToast={showToast} mapErr={mapErr}
+          onClose={() => setShowPlans(false)} onChanged={reloadPlan}
+          onChangeCity={() => { setShowPlans(false); setShowCityPicker(true); }} />
+      )}
+      {plansReady && plan && ((!isPremium && !homeCity) || showCityPicker) && (
+        <HomeCityPicker cities={CITIES} initial={homeCity || city} showToast={showToast} mapErr={mapErr}
+          canClose={!!homeCity} onClose={() => setShowCityPicker(false)}
+          onSaved={async (c) => { setShowCityPicker(false); setCity(c); await reloadPlan(); await refetchTables(); }} />
+      )}
 
       <nav className="nav">
         <button className={tab === "zbulo" ? "on" : ""} onClick={() => setTab("zbulo")}>
@@ -4360,10 +4378,17 @@ function HajdeApp() {
             </div>
 
             <label className="f-label" htmlFor="f-city">{form.mode === "vozitje" ? t('createTable.labelCityFrom') : form.mode === "udhetim" ? t('createTable.labelCityStart') : t('createTable.labelCityTavoline')}</label>
-            <select id="f-city" className="input select" value={form.city}
+            <select id="f-city" className="input select" value={basicLocked && homeCity ? homeCity : form.city}
+              disabled={basicLocked}
               onChange={(e) => setForm({ ...form, city: e.target.value })}>
-              {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {(basicLocked && homeCity ? [homeCity] : CITIES).map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
+            {basicLocked && plan?.table_limit != null && (
+              <div className={`usage-meter ${limitReached ? 'full' : ''}`}>
+                <span>{t('plans.usage', { used: plan.tables_this_month, limit: plan.table_limit })}</span>
+                <span className="bar"><span style={{ width: `${Math.min(100, (plan.tables_this_month / Math.max(1, plan.table_limit)) * 100)}%` }} /></span>
+              </div>
+            )}
 
             {form.mode === "vozitje" && (
               <>
@@ -4520,7 +4545,13 @@ function HajdeApp() {
             <textarea id="f-desc" className="input" rows={3} placeholder={t('createTable.descriptionPlaceholder')}
               value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} />
 
-            <button className="btn primary full" onClick={createTable}>{form.mode === "sport" ? t('sports.submit') : form.mode === "vozitje" ? t('createTable.submitRide') : form.mode === "udhetim" ? t('createTable.submitTrip') : t('createTable.submitTable')}</button>
+            {limitReached ? (
+              <div className="upsell">
+                <strong>{t('plans.limitReachedTitle', { limit: plan.table_limit })}</strong>
+                <span>{t('plans.limitReachedSub')}</span>
+                <button type="button" className="btn primary" onClick={() => setShowPlans(true)}>{t('plans.seePremium')}</button>
+              </div>
+            ) : (<button className="btn primary full" onClick={createTable}>{form.mode === "sport" ? t('sports.submit') : form.mode === "vozitje" ? t('createTable.submitRide') : form.mode === "udhetim" ? t('createTable.submitTrip') : t('createTable.submitTable')}</button>)}
             <p className="fee-note"><ShieldCheck size={11} /> {form.mode === "vozitje" ? t('createTable.feeNoteRide') : t('createTable.feeNoteTable', { fee: BOOKING_FEE.toFixed(2) })}</p>
           </div>
         </div>
@@ -4613,23 +4644,42 @@ function HajdeApp() {
                 <p className="muted">{t('wednesdayQuiz.matchingSub')}</p>
               </div>
             )}
-            {matchState === "matched" && (
-              <div className="pay-success">
-                <div className="success-ring"><PartyPopper size={34} /></div>
-                <h2>{t('wednesdayQuiz.matchedTitle')}</h2>
-                <p className="muted">{t('wednesdayQuiz.matchedSub')}</p>
-                <div className="match-row">
-                  {MATCHED_PEOPLE.map((p) => (
-                    <div key={p.name} className="person"><Avatar name={p.name} /><span>{p.name}, {p.age}</span></div>
-                  ))}
+            {matchState === "signed" && (() => {
+              const sg = wedStatus?.signup;
+              if (!sg) return null;
+              const when = new Date(sg.dinner_date).toLocaleString(locale === 'sq' ? 'sq-AL' : locale, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+              const deadline = new Date(sg.deadline).toLocaleString(locale === 'sq' ? 'sq-AL' : locale, { weekday: 'long', hour: '2-digit', minute: '2-digit' });
+              return (
+                <div className="pay-success wed-signed">
+                  <div className="success-ring"><PartyPopper size={34} /></div>
+                  {sg.status === 'signed_up' && (<>
+                    <h2>{t('plans.wedSignedTitle')}</h2>
+                    <p className="muted">{t('plans.wedSignedSub', { when, city: sg.city, deadline })}</p>
+                    <p className="muted small">{wedStatus?.premium ? t('plans.wedPremiumFirst') : t('plans.wedBasicNote')}</p>
+                    {!wedStatus?.premium && <button type="button" className="btn ghost" onClick={() => { setShowWed(false); setShowPlans(true); }}>{t('plans.seePremium')}</button>}
+                    <button type="button" className="btn ghost full" onClick={cancelWedSignup}>{t('plans.wedCancel')}</button>
+                  </>)}
+                  {sg.status === 'grouped' && (<>
+                    <h2>{t('wednesdayQuiz.matchedTitle')}</h2>
+                    <p className="muted">{t('plans.wedGroupedSub', { count: Math.max(0, (sg.members || []).length - 1), when })}</p>
+                    <div className="match-row person-grid">
+                      {(sg.members || []).map((p) => (
+                        <div key={p.user_id} className="person"><Avatar name={p.first_name} /><span>{p.first_name}{p.age ? `, ${p.age}` : ''}</span></div>
+                      ))}
+                    </div>
+                    <div className="lock-card slim-lock">
+                      <Lock size={16} />
+                      <div><strong>{when}</strong><span>{t('wednesdayQuiz.matchedVenueHint')}</span></div>
+                    </div>
+                    {sg.table_id && <button className="btn primary full" onClick={openWedTable}>{t('wednesdayQuiz.goToMyTable')}</button>}
+                  </>)}
+                  {sg.status === 'waitlisted' && (<>
+                    <h2>{t('plans.wedWaitlistedTitle')}</h2>
+                    <p className="muted">{t('plans.wedWaitlistedSub')}</p>
+                  </>)}
                 </div>
-                <div className="lock-card slim-lock">
-                  <Lock size={16} />
-                  <div><strong>{t('wednesdayQuiz.matchedWhen')}</strong><span>{t('wednesdayQuiz.matchedVenueHint')}</span></div>
-                </div>
-                <button className="btn primary full" onClick={openWedTable}>{t('wednesdayQuiz.goToMyTable')}</button>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       )}

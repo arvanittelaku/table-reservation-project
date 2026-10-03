@@ -11,6 +11,18 @@ export default function Wednesday() {
   const ctx = useAdmin()
   const [tab, setTab] = useState('upcoming')
   const [editing, setEditing] = useState(null) // restaurant object or {} for new
+  const [forming, setForming] = useState(false)
+  const signupsQ = useLoader(() => adminApi.wednesdaySignups().catch(() => []), [ctx.refreshKey])
+  const signups = signupsQ.data || []
+  const formNow = async () => {
+    if (!window.confirm(t('adm.wed.formBody'))) return
+    setForming(true)
+    try {
+      await adminApi.formWednesday()
+      ctx.toast(t('adm.wed.toastFormed'))
+      reload(); signupsQ.reload(); ctx.bump()
+    } catch (err) { ctx.toast(err.message) } finally { setForming(false) }
+  }
   const { data, error, loading, reload } = useLoader(() => adminApi.listWednesday(), [ctx.refreshKey])
 
   const now = Date.now()
@@ -38,6 +50,11 @@ export default function Wednesday() {
           <h1>{t('adm.nav.wednesday')}</h1>
           <p className="adm-muted">{t('adm.wed.subtitle')}</p>
         </div>
+        {tab === 'signups' && (
+          <div className="adm-page-actions">
+            <button type="button" className="adm-btn primary" disabled={forming} onClick={formNow}>{t('adm.wed.formNow')}</button>
+          </div>
+        )}
         {tab === 'restaurants' && (
           <div className="adm-page-actions">
             <button type="button" className="adm-btn primary" onClick={() => setEditing({})}>{t('adm.wed.addRestaurant')}</button>
@@ -56,12 +73,31 @@ export default function Wednesday() {
         options={[
           { value: 'upcoming', label: t('adm.wed.upcoming'), count: upcoming.length },
           { value: 'past', label: t('adm.wed.past'), count: past.length },
+          { value: 'signups', label: t('adm.wed.signups'), count: signups.length },
           { value: 'restaurants', label: t('adm.wed.restaurants'), count: restaurants.length },
         ]}
       />
       <ErrorBox error={error} onRetry={reload} />
 
-      {loading && !data ? <SkeletonRows rows={4} cols={4} /> : tab !== 'restaurants' ? (
+      {tab === 'signups' ? (
+        signups.length === 0 ? <div className="adm-card"><Empty>{t('adm.wed.noSignups')}</Empty></div> : (
+          <div className="adm-card adm-table-wrap">
+            <table className="adm-table">
+              <tbody>
+                {signups.map((s) => (
+                  <tr key={s.user_id + s.dinner_date}>
+                    <td><Avatar path={s.photo_path} name={fullName(s)} size={28} /> {fullName(s)}{s.age ? `, ${s.age}` : ''}</td>
+                    <td>{s.city}</td>
+                    <td>{fmtDate(s.dinner_date, locale)}</td>
+                    <td>{s.is_premium && <Pill tone="good">Premium</Pill>}</td>
+                    <td><Pill tone={s.status === 'grouped' ? 'good' : s.status === 'waitlisted' ? 'warn' : 'info'}>{t(`adm.wed.signupStatus.${s.status}`)}</Pill></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : loading && !data ? <SkeletonRows rows={4} cols={4} /> : tab !== 'restaurants' ? (
         list.length === 0 ? <div className="adm-card"><Empty>{t('adm.wed.noGroups')}</Empty></div> : (
           <div className="adm-wed-grid">
             {list.map((g) => (

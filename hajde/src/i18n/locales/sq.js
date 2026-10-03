@@ -13,6 +13,7 @@ import { admin, termsOfService, privacyPolicy } from './phase7/sq.js'
 import { adm } from './admin/sq.js'
 import { social, sports, browse, support } from './social/sq.js'
 import { lessons } from './lessons/sq.js'
+import { plans } from './plans/sq.js'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/sq.js'
 
 export default {
@@ -387,6 +388,7 @@ export default {
   social,
   sports,
   lessons,
+  plans,
   browse,
   support,
   termsOfService,

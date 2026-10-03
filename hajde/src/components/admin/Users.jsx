@@ -199,6 +199,7 @@ export function UserDetail({ id, onClose }) {
               {p.photo_path ? null : <p className="adm-muted small">{t('adm.users.noPhoto')}</p>}
             </div>
           </div>
+          {!p.is_admin && <PremiumBox userId={p.id} name={name} />}
 
           <Facts
             items={[
@@ -431,5 +432,56 @@ export function UserDetail({ id, onClose }) {
         onClose={() => setDialog(null)}
       />
     </Drawer>
+  )
+}
+
+function PremiumBox({ userId, name }) {
+  const { t, locale } = useI18n()
+  const ctx = useAdmin()
+  const [plan, setPlan] = useState('premium_1m')
+  const [dialog, setDialog] = useState(null)
+  const { data, reload } = useLoader(() => adminApi.plansOverview().catch(() => null), [userId, ctx.refreshKey])
+  if (!data) return null
+  const subs = (data.subscriptions || []).filter((s) => s.user_id === userId && s.status === 'active')
+  const now = Date.now()
+  const until = subs.filter((s) => new Date(s.ends_at).getTime() > now).reduce((m, s) => (!m || s.ends_at > m ? s.ends_at : m), null)
+  const premiumPlans = (data.plans || []).filter((x) => x.tier === 'premium')
+  const run = (fn, msg) => async (v) => {
+    try { await fn(v); ctx.toast(msg); reload(); ctx.bump() } catch (err) { ctx.toast(err.message); throw err }
+  }
+  return (
+    <section className="adm-card adm-premium-box" style={{ padding: 14, margin: '12px 0', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+      <div style={{ flex: '1 1 180px' }}>
+        <Pill tone={until ? 'good' : 'neutral'}>{until ? t('adm.packages.premium') : t('adm.packages.basicTier')}</Pill>
+        {until && <p className="adm-muted small" style={{ margin: '6px 0 0' }}>{t('adm.packages.premiumUntil', { date: fmtDate(until, locale, false) })}</p>}
+      </div>
+      <Select
+        value={plan}
+        onChange={setPlan}
+        options={premiumPlans.map((x) => ({ value: x.id, label: t(`adm.packages.planNames.${x.id}`) }))}
+      />
+      <button type="button" className="adm-btn primary" onClick={() => setDialog('grant')}>{t('adm.packages.grant')}</button>
+      {until && <button type="button" className="adm-btn danger" onClick={() => setDialog('revoke')}>{t('adm.packages.revoke')}</button>}
+      <ConfirmDialog
+        open={dialog === 'grant'}
+        title={`${t('adm.packages.grantTitle')} · ${name}`}
+        body={t(`adm.packages.planNames.${plan}`)}
+        reasonLabel={t('adm.packages.reason')}
+        reasonOptional
+        confirmLabel={t('adm.packages.grant')}
+        onConfirm={run((note) => adminApi.grantPremium(userId, plan, note), t('adm.packages.toastActivated'))}
+        onClose={() => setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog === 'revoke'}
+        title={`${t('adm.packages.revokeTitle')} · ${name}`}
+        body={t('adm.packages.revokeBody')}
+        reasonLabel={t('adm.packages.reason')}
+        confirmLabel={t('adm.packages.revoke')}
+        danger
+        onConfirm={run((r) => adminApi.revokePremium(userId, r), t('adm.packages.toastRevoked'))}
+        onClose={() => setDialog(null)}
+      />
+    </section>
   )
 }

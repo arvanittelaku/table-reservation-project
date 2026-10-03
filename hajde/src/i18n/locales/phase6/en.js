@@ -111,6 +111,9 @@ export const notifications = {
   tutorApproved: 'Your teacher profile was approved! Students can now find you.',
   tutorRejected: 'Your teacher profile was not approved. Reason: {{reason}}',
   tutorSuspended: 'Your teacher profile was suspended. Reason: {{reason}}',
+  premiumActivated: 'Premium is active until {{at}}. Thank you!',
+  wednesdayGrouped: 'You were matched with {{count}} people for Wednesday Dinner ({{at}})! The restaurant is revealed 24 hours before.',
+  wednesdayWaitlisted: 'There were not enough seats for the {{at}} dinner. You are on the waitlist and get priority next week.',
 }
 
 export const payment = {

@@ -153,6 +153,7 @@ const PATHS = {
   wednesday: 'M4 4h16v16H4zM4 9h16M9 4v5M15 4v5',
   activity: 'M3 12h4l3 8 4-16 3 8h4',
   tutors: 'M2 8l10-5 10 5-10 5-10-5zM6 10v5c2 2 10 2 12 0v-5',
+  packages: 'M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1z',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
   close: 'M6 6l12 12M18 6L6 18',
   chevronL: 'M15 6l-6 6 6 6',

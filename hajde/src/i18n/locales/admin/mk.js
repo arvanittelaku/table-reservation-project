@@ -2,6 +2,7 @@
 export const adm = {
   brandTag: 'Админ конзола',
   nav: {
+    packages: "Пакети",
     overview: 'Преглед',
     users: 'Корисници',
     tables: 'Маси',
@@ -376,6 +377,13 @@ export const adm = {
     },
   },
   wed: {
+    formNow: "Формирај групи сега",
+    formTitle: "Формирај групи",
+    formBody: "Групите се формираат прво со Premium членови. Корисниците се известуваат веднаш.",
+    toastFormed: "Групите се формирани",
+    signups: "Пријави",
+    noSignups: "Нема пријави",
+    signupStatus: {"signed_up":"Пријавен","grouped":"Во група","waitlisted":"На чекање","cancelled":"Откажан"},
     subtitle: 'Групи, учесници и ресторани',
     secrecyNote: 'Само админите го гледаат ресторанот однапред. Учесниците дознаваат 24 часа пред вечерата.',
     upcoming: 'Претстојни',
@@ -421,6 +429,11 @@ export const adm = {
       details: 'Детали',
     },
     actions: {
+      premium_order_paid: "Нарачката означена како платена",
+      premium_granted: "Доделен Premium",
+      premium_revoked: "Одземен Premium",
+      plan_updated: "Изменет пакет",
+      wednesday_formed: "Формирани групи за среда",
       user_banned: 'Казни корисник',
       user_notified: 'Испрати известување',
       user_deactivated: 'Деактивира сметка',
@@ -440,6 +453,7 @@ export const adm = {
       tutor_suspended: 'Суспендира наставник',
     },
   },
+  packages: {"subtitle":"Premium претплати, нарачки и ограничувања на основниот пакет","kpi":{"active":"Активни Premium","pending":"Нарачки на чекање","revenue30":"Приход 30 дена","total":"Вкупно {total}","expiring":"Истекуваат наскоро","expiringSub":"во рок од 7 дена"},"tabs":{"orders":"Нарачки","subs":"Претплати","plans":"Пакети"},"noOrders":"Нема нарачки","noSubs":"Нема претплати","col":{"plan":"Пакет","code":"Код","period":"Период","source":"Извор"},"orderStatus":{"pending":"На чекање","paid":"Платена","cancelled":"Откажана"},"markPaid":"Означи како платена","markPaidTitle":"Потврди плаќање","markPaidBody":"Premium ќе се активира веднаш за овој корисник.","cancelOrderTitle":"Откажи нарачка","cancelOrder":"Откажи","toastActivated":"Premium е активиран","toastCancelled":"Нарачката е откажана","toastSaved":"Пакетот е зачуван","toastRevoked":"Premium е одземен","source":{"admin_grant":"Доделено од админ","manual_payment":"Рачно плаќање","provider":"Онлајн плаќање"},"revoked":"Одземен","current":"Активен","upcoming":"Претстоен","expired":"Истечен","basicRules":"Само свој град · месечен лимит на маси","perMonthCalc":"{price} / месец","hidden":"Скриен","planNames":{"basic":"Основен","premium_1m":"Premium 1 месец","premium_3m":"Premium 3 месеци","premium_12m":"Premium 12 месеци"},"tableLimit":"Маси месечно","price":"Цена (€)","visible":"Видлив во апликацијата","editNote":"Промените важат за нови нарачки.","premium":"Premium","basicTier":"Основен","premiumUntil":"Premium до {date}","grant":"Додели Premium","grantTitle":"Додели Premium","revoke":"Одземи Premium","revokeTitle":"Одземи Premium","revokeBody":"Корисникот веднаш се враќа на основниот пакет.","reason":"Причина"},
   toast: {
     notified: 'Известувањето е испратено',
     struck: 'Корисникот е казнет',

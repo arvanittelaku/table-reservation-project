@@ -13,6 +13,7 @@ import { Bans, Reports } from './Moderation.jsx'
 import Wednesday from './Wednesday.jsx'
 import Activity from './Activity.jsx'
 import Tutors from './Tutors.jsx'
+import Packages from './Packages.jsx'
 import './admin.css'
 
 const SECTIONS = [
@@ -20,6 +21,7 @@ const SECTIONS = [
   { key: 'users', icon: 'users', Comp: Users },
   { key: 'tables', icon: 'tables', Comp: Tables },
   { key: 'payments', icon: 'payments', Comp: Payments },
+  { key: 'packages', icon: 'packages', Comp: Packages, badge: 'orders_pending' },
   { key: 'reports', icon: 'reports', Comp: Reports, badge: 'reports_pending' },
   { key: 'bans', icon: 'bans', Comp: Bans },
   { key: 'tutors', icon: 'tutors', Comp: Tutors, badge: 'tutors_pending' },
@@ -68,8 +70,12 @@ export default function AdminPanel({ isAdmin, onViewAsUser, onSignOut, adminId: 
     adminApi.dashboard('day')
       .then(async (d) => {
         // pending teacher applications (lessons migration; ignore if not applied yet)
-        const pending = await adminApi.listTutors('pending').then((r) => (r || []).length).catch(() => 0)
-        if (alive) { setCounts({ ...(d?.totals || {}), tutors_pending: pending }); setSetupMissing(false) }
+        // optional sections: their migrations may not be applied yet
+        const [pending, orders] = await Promise.all([
+          adminApi.listTutors('pending').then((r) => (r || []).length).catch(() => 0),
+          adminApi.plansOverview().then((r) => (r?.orders || []).filter((o) => o.status === 'pending').length).catch(() => 0),
+        ])
+        if (alive) { setCounts({ ...(d?.totals || {}), tutors_pending: pending, orders_pending: orders }); setSetupMissing(false) }
       })
       .catch((err) => { if (alive && isMissingRpc(err)) setSetupMissing(true) })
     return () => { alive = false }

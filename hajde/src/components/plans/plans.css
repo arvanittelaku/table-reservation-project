@@ -1,0 +1,38 @@
+.pl-sheet { max-height: 92vh; overflow-y: auto; position: relative; display: flex; flex-direction: column; gap: 12px; }
+.pl-sheet h2 { font-size: 21px; font-weight: 800; padding-right: 36px; }
+.pl-close { position: absolute; top: 10px; right: 12px; border: 0; background: #F1EDE4; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; cursor: pointer; line-height: 1; }
+.pl-active { background: #FFF4E5; color: #8A4B12; border-radius: 12px; padding: 10px 12px; font-weight: 700; font-size: 13.5px; }
+.pl-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pl-tier { position: relative; border: 1.5px solid #E8DFCC; border-radius: 16px; padding: 12px; background: #fff; display: flex; flex-direction: column; gap: 6px; }
+.pl-tier.premium { border-color: #E3B04B; background: linear-gradient(180deg, #FFFBF1, #fff); }
+.pl-tier.current { box-shadow: 0 0 0 2px #1A1A2E inset; }
+.pl-tier h3 { font-size: 15px; font-weight: 800; }
+.pl-tier.premium h3 { color: #A16207; }
+.pl-price { font-weight: 800; font-size: 14px; color: #1A1A2E; }
+.pl-tier ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; color: #45455A; }
+.pl-tier li::before { content: "✓ "; color: #16A34A; font-weight: 800; }
+.pl-badge { position: absolute; top: -9px; right: 10px; background: #1A1A2E; color: #fff; font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.pl-packs { display: flex; flex-direction: column; gap: 8px; }
+.pl-pack { position: relative; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 2px 10px; align-items: center; text-align: left; border: 1.5px solid #E8DFCC; background: #fff; border-radius: 16px; padding: 14px; font: inherit; color: inherit; cursor: pointer; }
+.pl-pack:hover:not(:disabled) { border-color: #E3B04B; }
+.pl-pack.best { border-color: #E3B04B; background: #FFFBF1; }
+.pl-pack-name { font-weight: 800; font-size: 15px; }
+.pl-pack-price { font-weight: 800; font-size: 18px; color: #1A1A2E; text-align: right; }
+.pl-pack-sub { font-size: 12.5px; color: #77778A; }
+.pl-pack-cta { font-size: 12.5px; font-weight: 800; color: #FF6B35; text-align: right; }
+.pl-ribbon { position: absolute; top: -9px; left: 12px; background: #E3B04B; color: #1A1A2E; font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.pl-order { border: 1.5px dashed #E3B04B; background: #FFFBF1; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.pl-order h3 { font-size: 15px; font-weight: 800; }
+.pl-code strong { font-family: ui-monospace, Menlo, monospace; letter-spacing: .04em; }
+.pl-wa { background: #25D366 !important; box-shadow: none !important; text-decoration: none; }
+/* app-wide bits */
+.premium-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: linear-gradient(90deg, #F5C451, #E3B04B); color: #1A1A2E; border: 0; cursor: pointer; font-family: inherit; }
+.premium-pill.basic { background: #F1EDE4; color: #55503F; }
+.chip.city.locked { color: #8A8478; background: #F7F4EE; border-style: dashed; }
+.usage-meter { display: flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 700; color: #55503F; background: #FBF8F1; border: 1.5px solid #EFE8DA; border-radius: 12px; padding: 8px 12px; }
+.usage-meter .bar { flex: 1; height: 6px; border-radius: 999px; background: #EFE8DA; overflow: hidden; }
+.usage-meter .bar span { display: block; height: 100%; background: #FF6B35; border-radius: 999px; }
+.usage-meter.full .bar span { background: #B91C1C; }
+.upsell { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; background: #FFFBF1; border: 1.5px solid #F2D58F; border-radius: 14px; padding: 12px; font-size: 13.5px; }
+.wed-signed { display: flex; flex-direction: column; gap: 10px; text-align: center; align-items: center; }
+.wed-signed .person-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }

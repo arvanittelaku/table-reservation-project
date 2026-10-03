@@ -13,6 +13,7 @@ import { admin, termsOfService, privacyPolicy } from './phase7/en.js'
 import { adm } from './admin/en.js'
 import { social, sports, browse, support } from './social/en.js'
 import { lessons } from './lessons/en.js'
+import { plans } from './plans/en.js'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/en.js'
 
 export default {
@@ -387,6 +388,7 @@ export default {
   social,
   sports,
   lessons,
+  plans,
   browse,
   support,
   termsOfService,

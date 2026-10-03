@@ -2,6 +2,7 @@
 export const adm = {
   brandTag: 'Admin console',
   nav: {
+    packages: "Packages",
     overview: 'Overview',
     users: 'Users',
     tables: 'Tables',
@@ -376,6 +377,13 @@ export const adm = {
     },
   },
   wed: {
+    formNow: "Form groups now",
+    formTitle: "Form groups",
+    formBody: "Groups are formed with Premium members first. Users are notified immediately.",
+    toastFormed: "Groups formed",
+    signups: "Sign-ups",
+    noSignups: "No sign-ups",
+    signupStatus: {"signed_up":"Signed up","grouped":"Grouped","waitlisted":"Waitlisted","cancelled":"Cancelled"},
     subtitle: 'Groups, participants and restaurants',
     secrecyNote: 'Only admins can see the restaurant early. Participants learn it 24 hours before the dinner.',
     upcoming: 'Upcoming',
@@ -421,6 +429,11 @@ export const adm = {
       details: 'Details',
     },
     actions: {
+      premium_order_paid: "Marked order as paid",
+      premium_granted: "Granted Premium",
+      premium_revoked: "Revoked Premium",
+      plan_updated: "Updated plan",
+      wednesday_formed: "Formed Wednesday groups",
       user_banned: 'Struck user',
       user_notified: 'Sent notification',
       user_deactivated: 'Deactivated account',
@@ -440,6 +453,7 @@ export const adm = {
       tutor_suspended: 'Suspended teacher',
     },
   },
+  packages: {"subtitle":"Premium subscriptions, orders and basic plan limits","kpi":{"active":"Active Premium","pending":"Pending orders","revenue30":"Revenue 30 days","total":"Total {total}","expiring":"Expiring soon","expiringSub":"within 7 days"},"tabs":{"orders":"Orders","subs":"Subscriptions","plans":"Plans"},"noOrders":"No orders","noSubs":"No subscriptions","col":{"plan":"Plan","code":"Code","period":"Period","source":"Source"},"orderStatus":{"pending":"Pending","paid":"Paid","cancelled":"Cancelled"},"markPaid":"Mark as paid","markPaidTitle":"Confirm payment","markPaidBody":"Premium will be activated immediately for this user.","cancelOrderTitle":"Cancel order","cancelOrder":"Cancel","toastActivated":"Premium activated","toastCancelled":"Order cancelled","toastSaved":"Plan saved","toastRevoked":"Premium revoked","source":{"admin_grant":"Admin grant","manual_payment":"Manual payment","provider":"Online payment"},"revoked":"Revoked","current":"Active","upcoming":"Upcoming","expired":"Expired","basicRules":"Home city only · monthly table limit","perMonthCalc":"{price} / month","hidden":"Hidden","planNames":{"basic":"Basic","premium_1m":"Premium 1 month","premium_3m":"Premium 3 months","premium_12m":"Premium 12 months"},"tableLimit":"Tables per month","price":"Price (€)","visible":"Visible in app","editNote":"Changes apply to new orders.","premium":"Premium","basicTier":"Basic","premiumUntil":"Premium until {date}","grant":"Grant Premium","grantTitle":"Grant Premium","revoke":"Revoke Premium","revokeTitle":"Revoke Premium","revokeBody":"The user returns to the basic plan immediately.","reason":"Reason"},
   toast: {
     notified: 'Notification sent',
     struck: 'User struck',

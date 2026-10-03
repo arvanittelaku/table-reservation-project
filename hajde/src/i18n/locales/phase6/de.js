@@ -111,6 +111,9 @@ export const notifications = {
   tutorApproved: 'Dein Lehrkraft-Profil wurde freigegeben! Lernende können dich jetzt finden.',
   tutorRejected: 'Dein Lehrkraft-Profil wurde nicht freigegeben. Grund: {{reason}}',
   tutorSuspended: 'Dein Lehrkraft-Profil wurde gesperrt. Grund: {{reason}}',
+  premiumActivated: 'Premium ist aktiv bis {{at}}. Danke!',
+  wednesdayGrouped: 'Du wurdest für das Mittwochsdinner ({{at}}) mit {{count}} Personen gematcht! Das Restaurant wird 24 Stunden vorher enthüllt.',
+  wednesdayWaitlisted: 'Für das Dinner am {{at}} reichten die Plätze nicht. Du stehst auf der Warteliste und hast nächste Woche Vorrang.',
 }
 
 export const payment = {

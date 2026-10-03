@@ -2,6 +2,7 @@
 export const adm = {
   brandTag: 'Admin-Konsole',
   nav: {
+    packages: "Pakete",
     overview: 'Übersicht',
     users: 'Nutzer',
     tables: 'Tische',
@@ -376,6 +377,13 @@ export const adm = {
     },
   },
   wed: {
+    formNow: "Gruppen jetzt bilden",
+    formTitle: "Gruppen bilden",
+    formBody: "Premium-Mitglieder werden zuerst eingeteilt. Nutzer werden sofort benachrichtigt.",
+    toastFormed: "Gruppen gebildet",
+    signups: "Anmeldungen",
+    noSignups: "Keine Anmeldungen",
+    signupStatus: {"signed_up":"Angemeldet","grouped":"In Gruppe","waitlisted":"Warteliste","cancelled":"Storniert"},
     subtitle: 'Gruppen, Teilnehmende und Restaurants',
     secrecyNote: 'Nur Admins sehen das Restaurant vorab. Teilnehmende erfahren es 24 Stunden vor dem Dinner.',
     upcoming: 'Kommend',
@@ -421,6 +429,11 @@ export const adm = {
       details: 'Details',
     },
     actions: {
+      premium_order_paid: "Bestellung als bezahlt markiert",
+      premium_granted: "Premium vergeben",
+      premium_revoked: "Premium entzogen",
+      plan_updated: "Paket geändert",
+      wednesday_formed: "Mittwochsgruppen gebildet",
       user_banned: 'Nutzer verwarnt',
       user_notified: 'Benachrichtigung gesendet',
       user_deactivated: 'Konto deaktiviert',
@@ -440,6 +453,7 @@ export const adm = {
       tutor_suspended: 'Lehrkraft gesperrt',
     },
   },
+  packages: {"subtitle":"Premium-Abos, Bestellungen und Limits des Basispakets","kpi":{"active":"Aktive Premium","pending":"Offene Bestellungen","revenue30":"Umsatz 30 Tage","total":"Gesamt {total}","expiring":"Läuft bald ab","expiringSub":"innerhalb 7 Tagen"},"tabs":{"orders":"Bestellungen","subs":"Abos","plans":"Pakete"},"noOrders":"Keine Bestellungen","noSubs":"Keine Abos","col":{"plan":"Paket","code":"Code","period":"Zeitraum","source":"Quelle"},"orderStatus":{"pending":"Offen","paid":"Bezahlt","cancelled":"Storniert"},"markPaid":"Als bezahlt markieren","markPaidTitle":"Zahlung bestätigen","markPaidBody":"Premium wird für diesen Nutzer sofort aktiviert.","cancelOrderTitle":"Bestellung stornieren","cancelOrder":"Stornieren","toastActivated":"Premium aktiviert","toastCancelled":"Bestellung storniert","toastSaved":"Paket gespeichert","toastRevoked":"Premium entzogen","source":{"admin_grant":"Vom Admin","manual_payment":"Manuelle Zahlung","provider":"Online-Zahlung"},"revoked":"Entzogen","current":"Aktiv","upcoming":"Bevorstehend","expired":"Abgelaufen","basicRules":"Nur eigene Stadt · Tischlimit pro Monat","perMonthCalc":"{price} / Monat","hidden":"Verborgen","planNames":{"basic":"Basis","premium_1m":"Premium 1 Monat","premium_3m":"Premium 3 Monate","premium_12m":"Premium 12 Monate"},"tableLimit":"Tische pro Monat","price":"Preis (€)","visible":"In der App sichtbar","editNote":"Änderungen gelten für neue Bestellungen.","premium":"Premium","basicTier":"Basis","premiumUntil":"Premium bis {date}","grant":"Premium vergeben","grantTitle":"Premium vergeben","revoke":"Premium entziehen","revokeTitle":"Premium entziehen","revokeBody":"Der Nutzer wechselt sofort zum Basispaket.","reason":"Grund"},
   toast: {
     notified: 'Benachrichtigung gesendet',
     struck: 'Nutzer verwarnt',

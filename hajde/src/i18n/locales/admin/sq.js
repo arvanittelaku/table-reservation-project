@@ -2,6 +2,7 @@
 export const adm = {
   brandTag: 'Paneli i adminit',
   nav: {
+    packages: "Pakot",
     overview: 'Përmbledhje',
     users: 'Përdoruesit',
     tables: 'Tavolinat',
@@ -376,6 +377,13 @@ export const adm = {
     },
   },
   wed: {
+    formNow: "Formo grupet tani",
+    formTitle: "Formo grupet",
+    formBody: "Grupet formohen me Premium të parët. Përdoruesit njoftohen menjëherë.",
+    toastFormed: "Grupet u formuan",
+    signups: "Regjistrimet",
+    noSignups: "Nuk ka regjistrime",
+    signupStatus: {"signed_up":"Regjistruar","grouped":"Në grup","waitlisted":"Në pritje","cancelled":"Anuluar"},
     subtitle: 'Grupet, pjesëmarrësit dhe restorantet',
     secrecyNote: 'Vetëm adminët e shohin restorantin para kohe. Pjesëmarrësit e mësojnë 24 orë para darkës.',
     upcoming: 'Të ardhshme',
@@ -421,6 +429,11 @@ export const adm = {
       details: 'Detaje',
     },
     actions: {
+      premium_order_paid: "Shënoi porosinë si të paguar",
+      premium_granted: "Dha Premium",
+      premium_revoked: "Hoqi Premium",
+      plan_updated: "Ndryshoi pakon",
+      wednesday_formed: "Formoi grupet e Mërkurës",
       user_banned: 'Pezulloi përdoruesin',
       user_notified: 'Dërgoi njoftim',
       user_deactivated: 'Çaktivizoi llogarinë',
@@ -440,6 +453,7 @@ export const adm = {
       tutor_suspended: 'Pezulloi mësuesin',
     },
   },
+  packages: {"subtitle":"Abonimet Premium, porositë dhe kufizimet e pakos bazike","kpi":{"active":"Premium aktivë","pending":"Porosi në pritje","revenue30":"Të ardhura 30 ditë","total":"Gjithsej {total}","expiring":"Skadojnë së shpejti","expiringSub":"brenda 7 ditëve"},"tabs":{"orders":"Porositë","subs":"Abonimet","plans":"Pakot"},"noOrders":"Nuk ka porosi","noSubs":"Nuk ka abonime","col":{"plan":"Pakoja","code":"Kodi","period":"Periudha","source":"Burimi"},"orderStatus":{"pending":"Në pritje","paid":"E paguar","cancelled":"E anuluar"},"markPaid":"Shëno si të paguar","markPaidTitle":"Konfirmo pagesën","markPaidBody":"Premium do të aktivizohet menjëherë për këtë përdorues.","cancelOrderTitle":"Anulo porosinë","cancelOrder":"Anulo","toastActivated":"Premium u aktivizua","toastCancelled":"Porosia u anulua","toastSaved":"Pakoja u ruajt","toastRevoked":"Premium u hoq","source":{"admin_grant":"Dhënë nga admini","manual_payment":"Pagesë manuale","provider":"Pagesë online"},"revoked":"I hequr","current":"Aktiv","upcoming":"I ardhshëm","expired":"Skaduar","basicRules":"Vetëm qyteti i vet · kufi tavolinash në muaj","perMonthCalc":"{price} / muaj","hidden":"E fshehur","planNames":{"basic":"Bazike","premium_1m":"Premium 1 muaj","premium_3m":"Premium 3 muaj","premium_12m":"Premium 12 muaj"},"tableLimit":"Tavolina në muaj","price":"Çmimi (€)","visible":"E dukshme në aplikacion","editNote":"Ndryshimet vlejnë për porositë e reja.","premium":"Premium","basicTier":"Bazike","premiumUntil":"Premium deri më {date}","grant":"Jep Premium","grantTitle":"Jep Premium","revoke":"Hiq Premium","revokeTitle":"Hiq Premium","revokeBody":"Përdoruesi kthehet në pakon bazike menjëherë.","reason":"Arsyeja"},
   toast: {
     notified: 'Njoftimi u dërgua',
     struck: 'Përdoruesi u pezullua',
