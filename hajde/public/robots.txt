@@ -8,4 +8,4 @@ Disallow: /api/
 # Block authenticated-only content
 # (these are client-side routes, this is a hint not enforcement)
 
-Sitemap: https://ejabashkohu.app/sitemap.xml
+Sitemap: https://ejabashkohu.com/sitemap.xml

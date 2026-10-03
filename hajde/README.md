@@ -66,6 +66,12 @@ npm run build
 npx wrangler pages deploy dist --project-name ejabashkohu --branch production
 ```
 
+Run the deploy command from `hajde/` so Wrangler also uploads `functions/`
+(the Pages Function that builds WhatsApp/Facebook link previews for shared
+tables at `/t/<code>`). It reads the Supabase URL and anon key from
+`dist/share-config.json`, written by `npm run build` from `.env`; no extra
+Cloudflare settings are needed.
+
 **Important:** `--branch production` is required to update the live custom domain `ejabashkohu.com`. Deploying with `--branch main` (or omitting the flag) publishes to a preview URL only and does **not** update the live site.
 
 Verify the live bundle after deploy:
@@ -76,7 +82,9 @@ curl -s https://ejabashkohu.com | grep -oE 'index-[A-Za-z0-9_-]+\.js'
 
 ## Database migrations
 
-SQL migrations live in `supabase/migrations/`. Apply them **manually** via the Supabase SQL Editor (Dashboard → SQL → New query → paste migration → Run).
+SQL migrations live in `supabase/migrations/`. Apply them **manually** via the Supabase SQL Editor (Dashboard → SQL → New query → paste migration → Run), oldest first. Every migration is safe to run again.
+
+**Which ones are live?** Paste `supabase/check-migrations.sql` into the SQL Editor and run it: one row per migration, ✅ live or ❌ missing. It is read-only.
 
 The Supabase CLI account used on this project does not have sufficient privileges for `supabase db push` against the linked remote. Always apply migrations in filename order and verify with the relevant script under `verification/` when available.
 

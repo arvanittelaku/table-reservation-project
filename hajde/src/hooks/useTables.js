@@ -85,31 +85,25 @@ export function useTables(cityOrOpts, categoryArg, tasteArg, affinityArg, userId
 
   useEffect(() => {
     if (!userId) return undefined
+    // Only rows of the city on screen. Joins, leaves and request decisions
+    // touch their table (tables.activity_at, migration 20261003230000), so this
+    // one filtered subscription covers seats changing too. Previously every app
+    // listened to every membership/request change on the whole platform.
     const channel = sb
-      .channel(`tables-memberships:${city ?? 'all'}:${category ?? 'all'}`)
+      .channel(`feed-tables:${city ?? 'all'}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'memberships' },
-        () => scheduleRefetch(),
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'requests' },
-        () => scheduleRefetch(),
-      )
-      // New / changed / cancelled tables appear live (needs `tables` in the
-      // supabase_realtime publication: migration 20261003180000).
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tables' },
-        () => scheduleRefetch(400),
+        city
+          ? { event: '*', schema: 'public', table: 'tables', filter: `city=eq.${city}` }
+          : { event: '*', schema: 'public', table: 'tables' },
+        () => scheduleRefetch(600),
       )
       .subscribe()
 
     return () => {
       sb.removeChannel(channel)
     }
-  }, [city, category, scheduleRefetch, userId])
+  }, [city, scheduleRefetch, userId])
 
   const tables = useMemo(() => {
     const scored = rawTables.map((table) => ({

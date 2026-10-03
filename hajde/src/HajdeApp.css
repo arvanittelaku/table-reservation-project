@@ -2162,3 +2162,11 @@ body { overflow-x: clip; }
 .wa-app { width: 50px; padding: 0; justify-content: center; }
 .wa-landing { bottom: 20px; }
 @media (min-width: 1100px) { .wa-app { bottom: 24px; right: 24px; width: auto; padding: 0 18px 0 14px; } .wa-app .wa-label { display: inline; } }
+
+/* placeholder while a lazily loaded screen (admin, lessons) downloads */
+.lazy-loading { min-height: 40vh; display: flex; align-items: center; justify-content: center; }
+.lazy-loading::after {
+  content: ''; width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid rgba(0, 0, 0, 0.12); border-top-color: #FF6B35; animation: lazy-spin 0.8s linear infinite;
+}
+@keyframes lazy-spin { to { transform: rotate(360deg) } }

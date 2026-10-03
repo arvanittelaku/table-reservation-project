@@ -1,0 +1,38 @@
+.share-wrap {
+  position: fixed; inset: 0; z-index: 1200;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(15, 18, 25, 0.55);
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  padding: 16px;
+}
+@media (min-width: 640px) { .share-wrap { align-items: center; } }
+.share-card {
+  position: relative; width: 100%; max-width: 420px;
+  background: #fff; color: #1d2230; border-radius: 22px;
+  padding: 26px 22px 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: share-up 0.22s ease-out;
+}
+@keyframes share-up { from { transform: translateY(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+.share-x {
+  position: absolute; top: 10px; right: 12px; width: 36px; height: 36px;
+  border: 0; background: transparent; font-size: 26px; line-height: 1; color: #7a8091; cursor: pointer;
+}
+.share-kicker { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #c2462e; }
+.share-title { margin: 0 0 6px; font-size: 22px; line-height: 1.2; font-family: 'Unbounded', 'Manrope', sans-serif; }
+.share-meta { margin: 0 0 12px; color: #5b6172; font-size: 14px; }
+.share-seats { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.share-pill { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: #f1f2f5; color: #3b4152; }
+.share-pill.ok { background: #e5f6ec; color: #17733f; }
+.share-pill.off { background: #fbeae6; color: #a33a24; }
+.share-host { margin: 0 0 8px; font-size: 14px; color: #3b4152; }
+.share-body { margin: 0 0 16px; font-size: 14px; line-height: 1.45; color: #5b6172; }
+.share-secondary { margin-top: 8px; }
+.icon-btn.share-btn { margin-left: auto; }
+.share-row { padding: 0 18px 10px; }
+.share-row .btn.share-main {
+  display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center;
+  padding: 11px 14px; border-radius: 14px; font-weight: 600; font-size: 15px;
+  background: #f3f4f7; color: #1d2230; border: 1px solid #e3e5ea; cursor: pointer;
+}
+.share-row.nudge .btn.share-main { background: #c2462e; color: #fff; border-color: #c2462e; animation: share-pulse 1.6s ease-in-out 2; }
+@keyframes share-pulse { 50% { box-shadow: 0 0 0 6px rgba(194, 70, 46, 0.18) } }

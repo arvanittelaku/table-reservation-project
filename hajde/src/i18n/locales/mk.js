@@ -14,6 +14,7 @@ import { adm } from './admin/mk.js'
 import { social, sports, browse, support } from './social/mk.js'
 import { lessons } from './lessons/mk.js'
 import { plans } from './plans/mk.js'
+import { share } from './share/mk.js'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/mk.js'
 
 export default {
@@ -389,6 +390,7 @@ export default {
   sports,
   lessons,
   plans,
+  share,
   browse,
   support,
   termsOfService,

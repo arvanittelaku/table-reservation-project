@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
           <p style="font-size:16px;color:#1A1A2E"><b>${requester_name}</b> kërkon t'i bashkohet tavolinës tënde
           <b>"${table_title}"</b>.</p>
           <p style="color:#6B7280">Hap aplikacionin për ta parë profilin me foto e moshë — dhe vendos ti.</p>
-          <a href="https://ejabashkohu.app" style="display:inline-block;background:#FF6B35;color:#fff;
+          <a href="https://ejabashkohu.com" style="display:inline-block;background:#FF6B35;color:#fff;
              padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:bold">Shiko kërkesën →</a>
           <p style="font-size:11px;color:#9A8F73;margin-top:18px">Merr këtë email sepse ke tavolinë të hapur në ejaBashkohu.
           Mund t'i fikësh njoftimet me email te Cilësimet.</p>

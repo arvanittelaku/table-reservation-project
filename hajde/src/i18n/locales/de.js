@@ -14,6 +14,7 @@ import { adm } from './admin/de.js'
 import { social, sports, browse, support } from './social/de.js'
 import { lessons } from './lessons/de.js'
 import { plans } from './plans/de.js'
+import { share } from './share/de.js'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/de.js'
 
 export default {
@@ -389,6 +390,7 @@ export default {
   sports,
   lessons,
   plans,
+  share,
   browse,
   support,
   termsOfService,

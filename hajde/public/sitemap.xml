@@ -3,25 +3,25 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
   <url>
-    <loc>https://ejabashkohu.app/</loc>
+    <loc>https://ejabashkohu.com/</loc>
     <lastmod>2026-08-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="sq"
-                href="https://ejabashkohu.app/" />
+                href="https://ejabashkohu.com/" />
     <xhtml:link rel="alternate" hreflang="en"
-                href="https://ejabashkohu.app/" />
+                href="https://ejabashkohu.com/" />
   </url>
 
   <url>
-    <loc>https://ejabashkohu.app/privacy</loc>
+    <loc>https://ejabashkohu.com/privacy</loc>
     <lastmod>2026-08-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://ejabashkohu.app/terms</loc>
+    <loc>https://ejabashkohu.com/terms</loc>
     <lastmod>2026-08-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>

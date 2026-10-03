@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useI18n } from '../../i18n/I18nContext.jsx'
 import { plansApi } from '../../api/plans'
-import { fmtDate } from '../admin/ui.jsx'
+import { fmtDate } from '../../lib/format.js'
 import './plans.css'
 
 const euro = (cents) => `€${(cents / 100).toFixed(2)}`

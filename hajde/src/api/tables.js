@@ -65,6 +65,7 @@ export function toUiTable(row) {
 
   return {
     id: row.id,
+    shareCode: row.share_code || null,
     host_id: row.host_id,
     kind: row.kind,
     cat: row.category,
@@ -229,7 +230,9 @@ export async function getTable(id) {
   if (error) throwDb(error)
   if (!data) return null
 
-  const ui = toUiTable(data)
+  const userId = await currentUserId()
+  const myRequest = userId ? (data.requests ?? []).find((r) => r.user_id === userId) ?? null : null
+  const ui = toUiTable({ ...data, my_request: myRequest, my_request_status: myRequest?.status ?? null })
   return {
     ...ui,
     waitlist_count: ui.waitlistIds.length,

@@ -16,11 +16,21 @@ export function useAuth() {
   useEffect(() => {
     let cancelled = false
 
-    auth.getUser().then((current) => {
-      if (!cancelled) {
-        setUser(current)
-        setPendingEmailConfirmation(!!current && !current.email_confirmed_at && !current.confirmed_at)
-        setLoading(false)
+    // Start from the session saved on the device so the app can load at once;
+    // confirm it with the Auth server a few seconds later, off the critical
+    // path (a deleted or banned account is then signed out).
+    let verifyTimer = null
+    auth.getSessionUser().then((current) => {
+      if (cancelled) return
+      setUser(current)
+      setPendingEmailConfirmation(!!current && !current.email_confirmed_at && !current.confirmed_at)
+      setLoading(false)
+      if (current) {
+        verifyTimer = setTimeout(() => {
+          auth.verifySession().then((state) => {
+            if (!cancelled && state === 'invalid') void auth.signOut().catch(() => {})
+          })
+        }, 4000)
       }
     })
 
@@ -43,6 +53,7 @@ export function useAuth() {
 
     return () => {
       cancelled = true
+      clearTimeout(verifyTimer)
       unsubscribe()
     }
   }, [])

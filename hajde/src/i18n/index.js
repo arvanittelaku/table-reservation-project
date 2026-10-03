@@ -1,13 +1,35 @@
 import sq from './locales/sq.js'
-import en from './locales/en.js'
-import de from './locales/de.js'
-import mk from './locales/mk.js'
 
 export const STORAGE_KEY = 'ejabashkohu-ui-lang'
 export const SUPPORTED = ['sq', 'en', 'de', 'mk']
 export const DEFAULT = 'sq'
 
-export const LOCALES = { sq, en, de, mk }
+/* Albanian is built in (default language and fallback for any missing key).
+ * The others (~110 KB each) are downloaded only for people who use them,
+ * instead of every visitor downloading all four languages. */
+export const LOCALES = { sq }
+
+const LOADERS = {
+  en: () => import('./locales/en.js'),
+  de: () => import('./locales/de.js'),
+  mk: () => import('./locales/mk.js'),
+}
+const pending = {}
+
+export function isLocaleLoaded(locale) {
+  return !!LOCALES[locale]
+}
+
+/** Make sure a language's texts are available; resolves when ready. */
+export function loadLocale(locale) {
+  if (LOCALES[locale] || !LOADERS[locale]) return Promise.resolve()
+  if (!pending[locale]) {
+    pending[locale] = LOADERS[locale]()
+      .then((m) => { LOCALES[locale] = m.default })
+      .catch((err) => { delete pending[locale]; throw err })
+  }
+  return pending[locale]
+}
 
 function getNestedKey(obj, path) {
   return path.split('.').reduce((o, k) => o?.[k], obj)

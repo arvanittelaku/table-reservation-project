@@ -99,7 +99,30 @@ export async function signOut() {
   if (error) throwAuthError(error)
 }
 
-/** Current auth user, or null. */
+/** User from the session saved on this device (no network). */
+export async function getSessionUser() {
+  const { data } = await sb.auth.getSession()
+  return data?.session?.user ?? null
+}
+
+/**
+ * Ask the Auth server whether the saved session is still valid.
+ * 'invalid' only when the server rejects it (deleted/banned user, revoked
+ * session); network problems give 'unknown' so offline users stay signed in.
+ */
+export async function verifySession() {
+  try {
+    const { data, error } = await sb.auth.getUser()
+    if (!error && data?.user) return 'ok'
+    const status = error?.status
+    if (status === 401 || status === 403 || /user.*(not|does not) exist|invalid jwt|session.*not found/i.test(error?.message || '')) return 'invalid'
+    return 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
+/** Current auth user, or null. Asks the Auth server (one network request). */
 export async function getUser() {
   const { data, error } = await sb.auth.getUser()
   if (error) return null

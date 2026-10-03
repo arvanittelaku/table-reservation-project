@@ -1,4 +1,4 @@
-import { fmtDate } from '../components/admin/ui.jsx'
+import { fmtDate } from './format.js'
 
 /**
  * Notifications are stored with a `kind` + `params` and translated when shown,

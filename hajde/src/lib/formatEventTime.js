@@ -14,7 +14,7 @@ export function formatEventTime(isoString, locale = 'sq') {
   const loc = LOCALE_MAP[locale] || LOCALE_MAP.sq
   const today = new Date()
   const isToday = d.toDateString() === today.toDateString()
-  const timeStr = d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })
+  const timeStr = d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: locale === 'en' })
 
   if (isToday) return `${TODAY_LABELS[locale] || TODAY_LABELS.sq}, ${timeStr}`
 

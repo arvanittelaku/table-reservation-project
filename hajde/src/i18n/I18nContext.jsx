@@ -1,14 +1,24 @@
-import { createContext, useContext, useState } from 'react'
-import { detectLocale, persistLocale, t as translateFn } from './index.js'
+import { createContext, useContext, useEffect, useState } from 'react'
+import { detectLocale, isLocaleLoaded, loadLocale, persistLocale, t as translateFn } from './index.js'
 
 const I18nContext = createContext(null)
 
 export function I18nProvider({ children }) {
   const [locale, setLocaleState] = useState(detectLocale)
+  // re-render once a lazily loaded language arrives
+  const [, setLoadedTick] = useState(0)
+
+  useEffect(() => {
+    if (isLocaleLoaded(locale)) return
+    let alive = true
+    loadLocale(locale).then(() => { if (alive) setLoadedTick((n) => n + 1) }).catch(() => {})
+    return () => { alive = false }
+  }, [locale])
 
   const setLocale = (newLocale) => {
-    setLocaleState(newLocale)
     persistLocale(newLocale)
+    // switch only when the texts are there, so the screen never flashes another language
+    loadLocale(newLocale).then(() => setLocaleState(newLocale)).catch(() => setLocaleState(newLocale))
   }
 
   const translate = (key, vars) => translateFn(locale, key, vars)

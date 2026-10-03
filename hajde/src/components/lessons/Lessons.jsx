@@ -5,7 +5,7 @@ import { sb } from '../../supabaseClient'
 import { lessonsApi, JITSI_DOMAIN, JITSI_ROOM_PREFIX } from '../../api/lessons'
 import { LESSON_CATEGORIES, ALL_SUBJECTS, DURATIONS } from '../../lib/lessonSubjects'
 import { coordsOf } from '../../lib/kosovoGeo'
-import { fmtDate, fmtRelative } from '../admin/ui.jsx'
+import { fmtDate, fmtRelative } from '../../lib/format.js'
 import './lessons.css'
 
 const euros = (cents) => `€${(Number(cents || 0) / 100).toFixed(cents % 100 ? 2 : 0)}`

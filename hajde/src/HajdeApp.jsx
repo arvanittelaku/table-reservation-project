@@ -5,7 +5,8 @@ import { useTables } from './hooks/useTables'
 import { useNotifications } from './hooks/useNotifications'
 import { useRequests } from './hooks/useRequests'
 import { useChat } from './hooks/useChat'
-import { createTable as apiCreateTable, saveTasteProfile } from './api/tables'
+import { createTable as apiCreateTable, saveTasteProfile, getTable as apiGetTable } from './api/tables'
+import { SharePreviewCard, ShareIcon, clearPendingShare, fetchSharePreview, parseShareCode, readPendingShare, shareTableLink } from './components/share/Share.jsx'
 import {
   requestJoin as apiRequestJoin,
   confirmFreeSeat as apiConfirmFreeSeat,
@@ -47,8 +48,9 @@ import { sb } from './supabaseClient'
 import PrivacyPolicy from './components/PrivacyPolicy'
 import TermsOfService from './components/TermsOfService'
 import LandingPage from './components/LandingPage'
-import AdminPanel from './components/AdminPanel'
-import Lessons from './components/lessons/Lessons.jsx'
+// Admin console and lessons are downloaded only when opened (smaller startup bundle).
+const AdminPanel = React.lazy(() => import('./components/AdminPanel'))
+const Lessons = React.lazy(() => import('./components/lessons/Lessons.jsx'))
 import WhatsAppButton from './components/WhatsAppButton.jsx'
 import { PlansSheet, HomeCityPicker } from './components/plans/Plans.jsx'
 import { usePlan } from './hooks/usePlan'
@@ -643,23 +645,30 @@ function HajdeApp() {
     if (dbProfile) setShowDeactivatedGate(!!dbProfile.deactivated_at);
   }, [authUser?.id, dbProfile]);
 
-  useEffect(() => {
-    if (!authUser?.id) return;
+  // Groups formed by the admin before sign-ups existed: only looked up when
+  // my_wednesday() (below) has no group, instead of on every start.
+  const loadLegacyWedGroup = useCallback(() => (
     sb.rpc('get_my_wednesday_groups')
       .then(({ data }) => {
-        if (!data?.length) return;
-        const upcoming = data
+        const upcoming = (data || [])
           .filter((r) => r.dinner_date && new Date(r.dinner_date) >= new Date())
           .sort((a, b) => new Date(a.dinner_date) - new Date(b.dinner_date))[0];
         if (upcoming) wedTableGroupId.current = upcoming.group_id;
-      });
-  }, [authUser?.id]);
+        return upcoming?.group_id || null;
+      }, () => null)
+  ), []);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(null);
+  /* A table opened from a share link that is not in the current feed
+     (other category, full, past…) is loaded on its own. */
+  const [extraTable, setExtraTable] = useState(null);
+  const [shareCode, setShareCode] = useState(() => readPendingShare());
+  const [sharePreview, setSharePreview] = useState(null);
+  const [shareNudge, setShareNudge] = useState(null); // table id just created by me
   const [tickets, setTickets] = useState({});
   /** Optimistic joined seats after stub payment (until refetch catches up) */
   const [confirmedSeats, setConfirmedSeats] = useState(() => new Set());
-  const activeTableForChat = tables.find((t) => t.id === active);
+  const activeTableForChat = tables.find((t) => t.id === active) || (extraTable?.id === active ? extraTable : undefined);
   const chatUnlocked = canAccessTableChat(
     activeTableForChat,
     authUser?.id,
@@ -1376,7 +1385,86 @@ function HajdeApp() {
     setTimeout(() => setToast(null), 2800);
   }, []);
 
-  const activeTable = tables.find((t) => t.id === active);
+  const activeTable = tables.find((t) => t.id === active) || (extraTable?.id === active ? extraTable : undefined);
+
+  /* ── Share links: /t/<code> ───────────────────────────────────────────── */
+  // 1. Resolve the code to a safe preview (works signed out too).
+  useEffect(() => {
+    if (!shareCode || loading) return;
+    let cancelled = false;
+    fetchSharePreview(shareCode)
+      .then((p) => {
+        if (cancelled) return;
+        if (!p) {
+          showToast(t('share.notFound'));
+          clearPendingShare(); setShareCode(null); setSharePreview(null);
+          if (parseShareCode()) window.history.replaceState(null, '', '/');
+          return;
+        }
+        setSharePreview(p);
+      })
+      .catch(() => { /* migration not applied yet: ignore the link */ });
+    return () => { cancelled = true; };
+  }, [shareCode, loading, authUser?.id]);
+
+  // 2. Signed in and allowed: open the real table (from the feed or loaded alone).
+  useEffect(() => {
+    if (!sharePreview?.can_open || !sharePreview.id || screen !== 'main') return;
+    const id = sharePreview.id;
+    let cancelled = false;
+    (async () => {
+      if (!tables.some((x) => x.id === id)) {
+        try {
+          const one = await apiGetTable(id);
+          if (cancelled || !one) return;
+          setExtraTable(one);
+        } catch { return; }
+      }
+      if (cancelled) return;
+      setActive(id);
+      clearPendingShare(); setShareCode(null); setSharePreview(null);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharePreview, screen]);
+
+  // 3. Keep the address bar in sync, so the link of an open table can be copied
+  //    from the browser too and the back button closes the table.
+  useEffect(() => {
+    const code = activeTable?.shareCode;
+    const onTablePath = !!parseShareCode();
+    if (active && code) {
+      if (window.location.pathname !== `/t/${code}`) {
+        if (onTablePath) window.history.replaceState({ t: code }, '', `/t/${code}`);
+        else window.history.pushState({ t: code }, '', `/t/${code}`);
+      }
+    } else if (!active && onTablePath && !shareCode) {
+      window.history.replaceState(null, '', '/');
+    }
+  }, [active, activeTable?.shareCode, shareCode]);
+  useEffect(() => {
+    const onPop = () => {
+      const code = parseShareCode();
+      if (!code) { setActive(null); return; }
+      const inFeed = tables.find((x) => x.shareCode === code) || (extraTable?.shareCode === code ? extraTable : null);
+      if (inFeed) setActive(inFeed.id); else setShareCode(code);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [tables, extraTable]);
+
+  // 4. A table opened outside the feed stays fresh after joins/requests.
+  useEffect(() => {
+    if (!extraTable || active !== extraTable.id || tables.some((x) => x.id === extraTable.id)) return;
+    let cancelled = false;
+    apiGetTable(extraTable.id).then((one) => { if (!cancelled && one) setExtraTable(one); }).catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawTables]);
+
+  const shareActiveTable = (tbl) => shareTableLink(tbl, { t, showToast });
+  const dismissShare = () => { clearPendingShare(); setShareCode(null); setSharePreview(null); if (parseShareCode()) window.history.replaceState(null, '', '/'); };
+
   const payTable = tables.find((t) => t.id === payFor);
 
   useEffect(() => {
@@ -1405,19 +1493,24 @@ function HajdeApp() {
   }, [activeTable?.id, activeTable?.members]);
 
   useEffect(() => {
-    const gid = wedTableGroupId.current;
-    if (!activeTable?.mystery || !gid) {
+    if (!activeTable?.mystery) {
       setRestaurant(null);
       setRevealChecked(false);
       return;
     }
+    let cancelled = false;
     setRevealChecked(false);
-    sb.rpc('get_wednesday_restaurant', { p_group: gid })
-      .then(({ data }) => {
-        setRestaurant(data || null);
-        setRevealChecked(true);
-      });
-  }, [activeTable?.id, activeTable?.mystery]);
+    (async () => {
+      const gid = wedTableGroupId.current || await loadLegacyWedGroup();
+      if (cancelled) return;
+      if (!gid) { setRestaurant(null); return; }
+      const { data } = await sb.rpc('get_wednesday_restaurant', { p_group: gid });
+      if (cancelled) return;
+      setRestaurant(data || null);
+      setRevealChecked(true);
+    })();
+    return () => { cancelled = true; };
+  }, [activeTable?.id, activeTable?.mystery, loadLegacyWedGroup]);
 
   const displayMessages = (chatMessages || []).map((m) => ({
     id: m.id,
@@ -1919,8 +2012,10 @@ function HajdeApp() {
   }, []);
   useEffect(() => {
     if (!authUser?.id) { setWedStatus(null); return; }
-    plansApi.myWednesday().then(applyWedStatus).catch(() => {});
-  }, [authUser?.id, applyWedStatus]);
+    plansApi.myWednesday()
+      .then(applyWedStatus)
+      .catch(() => { void loadLegacyWedGroup(); }); // plans migration not installed yet
+  }, [authUser?.id, applyWedStatus, loadLegacyWedGroup]);
 
   const runWedMatching = (ans) => {
     if (typeof window !== 'undefined') {
@@ -2311,13 +2406,15 @@ function HajdeApp() {
     };
 
     try {
-      await apiCreateTable(payload);
+      const created = await apiCreateTable(payload);
       awardBadge("first-host", "", t('badges.firstHost'));
       if (sportMode) { setCat("sport"); setSportFilter(form.sport); }
       void reloadPlan();
       setCity(form.city); setTab("zbulo"); setShowCreate(false);
       setForm(defaultCreateForm());
       await refetchTables();
+      // Open the new table with a "share with friends" prompt.
+      if (created?.id) { setExtraTable(created); setActive(created.id); setShareNudge(created.id); }
       showToast(ride ? t('createTable.toastRideOpened') : trip ? t('createTable.toastTripOpened') : sportMode ? t('sports.toastOpened') : t('createTable.toastTableOpened'));
     } catch (err) {
       console.error("[ejaBashkohu] Table creation failed:", err);
@@ -2794,12 +2891,14 @@ function HajdeApp() {
   if (screen === 'admin' && isAdmin) {
     // Full-width console (desktop sidebar, mobile drawer); not inside the phone frame.
     return (
-      <AdminPanel
-        isAdmin={isAdmin}
-        adminId={authUser?.id}
-        onViewAsUser={() => setAdminScreen('main')}
-        onSignOut={() => { if (window.confirm(t('profile.confirmSignOut'))) void handleSignOut(); }}
-      />
+      <React.Suspense fallback={<div className="lazy-loading" aria-busy="true" />}>
+        <AdminPanel
+          isAdmin={isAdmin}
+          adminId={authUser?.id}
+          onViewAsUser={() => setAdminScreen('main')}
+          onSignOut={() => { if (window.confirm(t('profile.confirmSignOut'))) void handleSignOut(); }}
+        />
+      </React.Suspense>
     );
   }
 
@@ -2817,6 +2916,14 @@ function HajdeApp() {
           <div className="policy-overlay">
             <TermsOfService onBack={() => setShowPolicy(null)} />
           </div>
+        )}
+        {!authUser && sharePreview && (
+          <SharePreviewCard
+            preview={sharePreview} t={t} locale={locale}
+            onPrimary={() => { setSharePreview(null); void startRegistration(); }}
+            onSecondary={() => { setSharePreview(null); setStep(0); setShowSignIn(true); setAuthError(null); }}
+            onClose={() => setSharePreview(null)}
+          />
         )}
         <div className="app-main">
           <div className={`app-mobile-frame is-hero`}>
@@ -3786,7 +3893,7 @@ function HajdeApp() {
         )}
 
         {tab === "mesime" && (
-          <Lessons key={lessonsView.key} initialView={lessonsView.view} authUser={authUser} cities={CITIES} city={city} showToast={showToast} mapErr={mapErr} myName={user.name} />
+          <React.Suspense fallback={<div className="lazy-loading" aria-busy="true" />}><Lessons key={lessonsView.key} initialView={lessonsView.view} authUser={authUser} cities={CITIES} city={city} showToast={showToast} mapErr={mapErr} myName={user.name} /></React.Suspense>
         )}
 
         {tab === "imet" && (
@@ -3867,6 +3974,14 @@ function HajdeApp() {
 
       <WhatsAppButton email={authUser?.email} context={tab} />
 
+      {authUser && sharePreview && !sharePreview.can_open && (
+        <SharePreviewCard
+          preview={sharePreview} t={t} locale={locale}
+          onPrimary={() => { const prem = sharePreview.reason === 'premium_city'; dismissShare(); if (prem) setShowPlans(true); }}
+          onSecondary={dismissShare}
+          onClose={dismissShare}
+        />
+      )}
       {showPlans && plan && (
         <PlansSheet plan={plan} email={authUser?.email} showToast={showToast} mapErr={mapErr}
           onClose={() => setShowPlans(false)} onChanged={reloadPlan}
@@ -3920,6 +4035,13 @@ function HajdeApp() {
                 </div>
                 <SeatRing total={activeTable.spots} taken={activeTable.joined.length} size={48} />
               </div>
+              {activeTable.kind !== 'darka_e_merkures' && (
+                <div className={`share-row ${shareNudge === activeTable.id ? 'nudge' : ''}`}>
+                  <button type="button" className="btn share-main" onClick={() => { void shareActiveTable(activeTable); setShareNudge(null); }}>
+                    <ShareIcon size={16} /> {shareNudge === activeTable.id ? t('share.shareNow') : t('share.button')}
+                  </button>
+                </div>
+              )}
 
               {/* ── RESTORANTI SEKRET (Darka e së Mërkurës) ── */}
               {tableExpired && (
