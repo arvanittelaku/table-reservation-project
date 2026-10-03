@@ -97,6 +97,12 @@ export const notifications = {
     'Matched with 5 people for Wednesday Dinner! Confirm your seat. Restaurant revealed 24h before.',
   hostSeatConfirmedNotif: '{{guest}} confirmed their seat at "{{table}}".',
   tableClosedByHostNotif: 'Table "{{table}}" was closed by the host.',
+  requestNew: '{{name}} wants to join "{{title}}". Check their profile and decide.',
+  requestApprovedGuest: 'You were approved for "{{title}}". Confirm your seat.',
+  waitlistSpot: 'A seat opened up at "{{title}}" and you were first in line! Confirm it.',
+  mutualMatch: 'It\'s a mutual match! A private chat opened in "My connections".',
+  accountSuspended: 'Your account was suspended. Reason: {{reason}}. Strike {{count}}/3.',
+  tableCancelledByAdmin: '"{{title}}" was cancelled by the ejaBashkohu team. Reason: {{reason}}',
 }
 
 export const payment = {

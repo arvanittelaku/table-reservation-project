@@ -1,6 +1,6 @@
 /** Phase 8 — remaining hardcoded UI strings (MK) */
 export const badges = {
-  profileComplete: 'Комpletен профил',
+  profileComplete: 'Комплетен профил',
   firstJoin: 'Прва маса',
   firstRate: 'Прва оценка',
   firstHost: 'Нов домаќин',

@@ -97,6 +97,12 @@ export const notifications = {
     'Mit 5 Personen für Mittwochs-Dinner gematcht! Platz bestätigen. Restaurant 24h vorher enthüllt.',
   hostSeatConfirmedNotif: '{{guest}} hat den Platz bei „{{table}}“ bestätigt.',
   tableClosedByHostNotif: 'Tisch „{{table}}“ wurde vom Gastgeber geschlossen.',
+  requestNew: '{{name}} möchte „{{title}}“ beitreten. Sieh dir das Profil an und entscheide.',
+  requestApprovedGuest: 'Du wurdest für „{{title}}“ angenommen. Bestätige deinen Platz.',
+  waitlistSpot: 'Bei „{{title}}“ ist ein Platz frei geworden und du warst als Erste:r dran! Bestätige ihn.',
+  mutualMatch: 'Gegenseitiges Match! Ein privater Chat wurde unter „Meine Verbindungen“ geöffnet.',
+  accountSuspended: 'Dein Konto wurde gesperrt. Grund: {{reason}}. Verwarnung {{count}}/3.',
+  tableCancelledByAdmin: '„{{title}}“ wurde vom ejaBashkohu-Team abgesagt. Grund: {{reason}}',
 }
 
 export const payment = {

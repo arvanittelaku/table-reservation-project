@@ -46,6 +46,8 @@ import PrivacyPolicy from './components/PrivacyPolicy'
 import TermsOfService from './components/TermsOfService'
 import LandingPage from './components/LandingPage'
 import AdminPanel from './components/AdminPanel'
+import { notifText, BADGE_LABEL_KEY } from './lib/notifText'
+import { awardBadgeOnce } from './api/notifications'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import PasswordInput from './components/PasswordInput'
 import { useI18n } from './i18n/I18nContext.jsx'
@@ -512,7 +514,7 @@ function HajdeApp() {
   const [showDeactivatedGate, setShowDeactivatedGate] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [cat, setCat] = useState("all");
-  const { profile: dbProfile, tasteProfile, affinity, reload: reloadProfile, loading: profileLoading } = useProfile(authUser?.id);
+  const { profile: dbProfile, tasteProfile, affinity, badges: dbBadges, reload: reloadProfile, loading: profileLoading } = useProfile(authUser?.id);
   const { tables: rawTables, loading: tablesLoading, error: tablesError, refetch: refetchTables } = useTables(city, cat, tasteProfile || dbProfile, affinity);
   const tables = useMemo(
     () => rawTables.map((tbl) => ({
@@ -1254,16 +1256,22 @@ function HajdeApp() {
 
   /* Lista e pritjes + distinktivat */
   const simulatedWait = useRef(new Set());
+  // Badge ids the user owns. Source of truth is the `badges` table: the server
+  // awards each badge once per user ever (award_badge RPC), so reloading the app
+  // or opening another table never re-awards "Nikoqiri i ri".
   const [badges, setBadges] = useState([]);
-  const awardBadge = (id, emoji, label) => {
-    setBadges((b) => {
-      if (b.some((x) => x.id === id)) return b;
-      setTimeout(() => {
-        pushNotif(t('notifications.badgeEarned', { label }), "");
-        showToast(t('toasts.badgeEarned', { label }));
-      }, 400);
-      return [...b, { id, emoji, label }];
-    });
+  useEffect(() => {
+    if (!authUser?.id) { setBadges([]); return; }
+    setBadges((dbBadges || []).map((b) => b.badge_id));
+  }, [authUser?.id, dbBadges]);
+  const awardBadge = (id) => {
+    if (!authUser?.id || badges.includes(id)) return;
+    awardBadgeOnce(id)
+      .then((isNew) => {
+        setBadges((prev) => (prev.includes(id) ? prev : [...prev, id]));
+        if (isNew) showToast(t('toasts.badgeEarned', { label: t(`badges.${BADGE_LABEL_KEY[id]}`) }));
+      })
+      .catch((err) => console.error('[ejaBashkohu] award_badge failed:', err));
   };
   const answerQuiz = (key, value) => {
     setQuizAnswers((prev) => ({ ...prev, [key]: value }));
@@ -1321,11 +1329,11 @@ function HajdeApp() {
         interests: completed.interests || [],
       });
       void reloadProfile();
-      void pushNotif(t('notifications.tasteProfileSaved'), "");
+      void pushNotif('tasteProfileSaved', {}, "");
     } catch (err) {
       console.error("Failed to save taste profile:", err);
       // Local state still works; user can continue
-      void pushNotif(t('notifications.tasteProfileLocalFailed'), "");
+      void pushNotif('tasteProfileLocalFailed', {}, "");
     }
 
     awardBadge("profil", "", t('badges.profileComplete'));
@@ -1474,7 +1482,7 @@ function HajdeApp() {
       });
       await refetchTables();
       awardBadge("first-join", "", t('badges.firstJoin'));
-      pushNotif(t('notifications.seatConfirmedRide', { area: tbl?.area?.replace("Nisja: ", "") || "", time: tbl?.time || "" }), "►");
+      pushNotif('seatConfirmedRide', { area: tbl?.area?.replace("Nisja: ", "") || "", time: tbl?.time || "" }, "►");
       showToast(t('toasts.seatConfirmedFree'));
     } catch (err) {
       showToast(mapErr(err));
@@ -1555,6 +1563,9 @@ function HajdeApp() {
           const { error: notifErr } = await sb.from("notifications").insert({
             user_id: hostId,
             icon: "check",
+            // kind + params: the host reads this in THEIR language, not the guest's
+            kind: 'hostSeatConfirmedNotif',
+            params: { guest: user.firstName || t('feed.profileMe'), table: tableTitle },
             body: t('notifications.hostSeatConfirmedNotif', {
               guest: user.firstName || t('feed.profileMe'),
               table: tableTitle,
@@ -1571,7 +1582,7 @@ function HajdeApp() {
           return next;
         });
         setPayState("success");
-        void pushNotif(t('notifications.seatConfirmedTicket', { code }), "");
+        void pushNotif('seatConfirmedTicket', { code }, "");
 
         // Refresh feed so host/guest seat counts + chat RLS membership sync
         await refetchTables();
@@ -1744,7 +1755,7 @@ function HajdeApp() {
         setBlockPromptFor({ id: reportedId, name });
       }
 
-      void pushNotif(t('notifications.reportSubmitted'), "");
+      void pushNotif('reportSubmitted', {}, "");
       showToast(reportBlock ? t('reportBlockSheet.reportSuccessAndBlockedToast') : t('reportBlockSheet.reportSuccessToast'));
     } catch (err) {
       console.error("Report failed:", err);
@@ -1774,7 +1785,7 @@ function HajdeApp() {
     try {
       await approveRequestLive(tableId, rid);
       await refetchTables();
-      void pushNotif(t('notifications.requestApproved'), "");
+      void pushNotif('requestApproved', {}, "");
       showToast(t('toasts.requestApproved'));
     } catch (err) {
       showToast(mapErr(err));
@@ -1906,7 +1917,7 @@ function HajdeApp() {
         await refetchTables();
         setMatchState("matched");
         setWedDone(true);
-        pushNotif(t('notifications.wednesdayMatch'), "");
+        pushNotif('wednesdayMatch', {}, "");
       } catch (err) {
         setMatchState("quiz");
         showToast(mapErr(err));
@@ -3442,7 +3453,7 @@ function HajdeApp() {
             {notifs.map((n) => (
               <div key={n.id} className="notif-item">
                 <span className="notif-icon" aria-hidden="true" />
-                <p>{n.text}</p>
+                <p>{notifText(n, t)}</p>
                 <em>{n.time}</em>
               </div>
             ))}
@@ -3592,8 +3603,8 @@ function HajdeApp() {
               <div className="conn-strip">
                 <p className="label">{t('feed.myBadges')}</p>
                 <div className="badge-row">
-                  {badges.map((b) => (
-                    <span key={b.id} className="badge-chip">{b.label}</span>
+                  {badges.filter((b) => BADGE_LABEL_KEY[b]).map((b) => (
+                    <span key={b} className="badge-chip">{t(`badges.${BADGE_LABEL_KEY[b]}`)}</span>
                   ))}
                 </div>
               </div>
@@ -3969,6 +3980,8 @@ function HajdeApp() {
                           await sb.from('notifications').insert({
                             user_id: m.user_id,
                             icon: 'info',
+                            kind: 'tableClosedByHostNotif',
+                            params: { table: activeTable?.cafe || activeTable?.title || '' },
                             body: t('notifications.tableClosedByHostNotif', {
                               table: activeTable?.cafe || activeTable?.title || '',
                             }),

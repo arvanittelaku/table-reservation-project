@@ -55,18 +55,28 @@ export async function clearAllNotifications() {
 }
 
 /** Insert a notification for the current user (client-side events). */
-export async function insertNotification({ body, icon = '🔔' }) {
+export async function insertNotification({ body, icon = '🔔', kind = null, params = {} }) {
   const userId = await currentUserId()
   if (!userId) throw new Error('Not signed in')
 
   const { data, error } = await sb
     .from('notifications')
-    .insert({ user_id: userId, body, icon })
+    .insert({ user_id: userId, body, icon, kind, params })
     .select()
     .single()
 
   if (error) throw error
   return data
+}
+
+/**
+ * Award a badge once per user, ever (server-side, atomic). Returns true only the
+ * first time; the server also writes the single "badge earned" notification.
+ */
+export async function awardBadgeOnce(badgeId) {
+  const { data, error } = await sb.rpc('award_badge', { p_badge: badgeId })
+  if (error) throw error
+  return data === true
 }
 
 /**

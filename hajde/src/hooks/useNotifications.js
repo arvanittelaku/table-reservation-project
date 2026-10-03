@@ -9,11 +9,13 @@ import {
   setEmailNotificationsEnabled,
   subscribeNotifications,
 } from '../api/notifications'
+import { useI18n } from '../i18n/I18nContext.jsx'
+import { notifText } from '../lib/notifText'
 
 function formatNotifTime(iso) {
   if (!iso) return ''
   try {
-    return new Date(iso).toLocaleTimeString('sq-AL', {
+    return new Date(iso).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
     })
@@ -28,6 +30,8 @@ function mapNotif(row) {
     icon: row.icon || '🔔',
     text: row.body,
     body: row.body,
+    kind: row.kind || null,
+    params: row.params || {},
     time: formatNotifTime(row.created_at),
     read: !!row.read,
     created_at: row.created_at,
@@ -59,6 +63,9 @@ function playChime() {
  * @param {string|null|undefined} userId
  */
 export function useNotifications(userId) {
+  const { t } = useI18n()
+  const tRef = useRef(t)
+  tRef.current = t
   const [notifs, setNotifs] = useState([])
   const [loading, setLoading] = useState(!!userId)
   const [error, setError] = useState(null)
@@ -131,7 +138,7 @@ export function useNotifications(userId) {
           playChime()
           try {
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-              new Notification('ejaBashkohu', { body: row.body || 'Njoftim i ri', icon: undefined })
+              new Notification('ejaBashkohu', { body: notifText(mapNotif(row), tRef.current), icon: undefined })
             }
           } catch {
             /* ignore */
@@ -173,11 +180,16 @@ export function useNotifications(userId) {
   }, [userId, refetch])
 
   /** Client-side notification (also lands in the bell via DB + realtime). */
+  /**
+   * pushNotif(kind, params, icon): stores kind + params so every viewer sees it in
+   * their own language. `body` keeps the current-language text as a fallback.
+   */
   const pushNotif = useCallback(
-    async (text, icon = '🔔') => {
+    async (kind, params = {}, icon = '🔔') => {
       if (!userId) return
       try {
-        await insertNotification({ body: text, icon })
+        const body = notifText({ kind, params, body: kind }, tRef.current)
+        await insertNotification({ body, icon, kind, params })
       } catch (e) {
         setError(e)
       }

@@ -86,7 +86,7 @@ export const notifications = {
   loading: 'Се вчитува…',
   emptyState: 'Уште нема известувања.',
   defaultTitle: 'ejaBashkohu',
-  badgeEarned: 'Ја добив значката "{{label}}"! Види ја кај Мои маси.',
+  badgeEarned: 'Ја доби значката "{{label}}"! Види ја кај Мои маси.',
   tasteProfileSaved: 'Профилот на вкус е зачуван. Масите се сортирани за тебе.',
   tasteProfileLocalFailed: 'Профилот е локално зачуван. Синхронизацијата не успеа. Обиди се подоцна.',
   seatConfirmedRide: 'Местото е потврдено! Се гледаме на тргување: {{area}}, {{time}}.',
@@ -96,7 +96,13 @@ export const notifications = {
   wednesdayMatch:
     'Се совпадна со 5 луѓе за Среда вечера! Потврди место. Ресторанот се открива 24ч пред.',
   hostSeatConfirmedNotif: '{{guest}} го потврди местото на „{{table}}“.',
-  tableClosedByHostNotif: 'Мasata „{{table}}“ ја затвори домаќинот.',
+  tableClosedByHostNotif: 'Масата „{{table}}“ ја затвори домаќинот.',
+  requestNew: '{{name}} сака да се приклучи на „{{title}}“. Погледни го профилот и одлучи.',
+  requestApprovedGuest: 'Одобрен си за „{{title}}“. Потврди го местото.',
+  waitlistSpot: 'Се ослободи место на „{{title}}“ и ти беше прв на ред! Потврди го.',
+  mutualMatch: 'Заемно совпаѓање! Отворен е приватен разговор во „Мои врски“.',
+  accountSuspended: 'Твојата сметка е суспендирана. Причина: {{reason}}. Казна {{count}}/3.',
+  tableCancelledByAdmin: '„{{title}}“ е откажана од тимот на ejaBashkohu. Причина: {{reason}}',
 }
 
 export const payment = {

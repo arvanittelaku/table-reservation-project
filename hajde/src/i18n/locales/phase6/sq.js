@@ -97,6 +97,12 @@ export const notifications = {
     'U përputhe me 5 persona për Darkën e së Mërkurës! Konfirmo vendin. Restoranti zbulohet 24h para.',
   hostSeatConfirmedNotif: '{{guest}} konfirmoi vendin te "{{table}}".',
   tableClosedByHostNotif: 'Tavolina "{{table}}" u mbyll nga nikoqiri.',
+  requestNew: '{{name}} kërkon t\'i bashkohet "{{title}}". Shiko profilin dhe vendos.',
+  requestApprovedGuest: 'U aprovove për "{{title}}". Konfirmo vendin.',
+  waitlistSpot: 'U lirua një vend te "{{title}}". Ishe i pari në radhë! Konfirmoje.',
+  mutualMatch: 'Përputhje e ndërsjellë! Chat-i privat u hap te "Lidhjet e mia".',
+  accountSuspended: 'Llogaria jote u pezullua. Arsyeja: {{reason}}. Pezullim {{count}}/3.',
+  tableCancelledByAdmin: 'Tavolina "{{title}}" u anulua nga ekipi i ejaBashkohu. Arsyeja: {{reason}}',
 }
 
 export const payment = {
