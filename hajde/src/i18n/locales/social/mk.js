@@ -1,0 +1,51 @@
+/** Google/Apple sign-in + sports (MK) */
+export const social = {
+  or: 'или',
+  continueGoogle: 'Продолжи со Google',
+  continueApple: 'Продолжи со Apple',
+  redirecting: 'Пренасочување…',
+  stepTitle: 'Како да те викаме?',
+  stepSub: 'Се најави со {{provider}} како {{email}}. Заврши ги чекорите за другите да имаат доверба во твојот профил.',
+  otherAccount: 'Користи друга сметка',
+  errors: {
+    providerDisabled: 'Најавата со оваа сметка сè уште не е овозможена. Засега користи е-пошта.',
+    completeProfile: 'Пополни го профилот (име, возраст, фотографија) пред да продолжиш.',
+    nameRequired: 'Внеси име и презиме.',
+  },
+}
+
+export const sports = {
+  mode: 'Спорт',
+  title: 'Отвори игра',
+  meta: 'Најди играчи за фудбал, кошарка и повеќе',
+  fab: 'Отвори игра',
+  pickSport: 'Кој спорт?',
+  pickSportRequired: 'Избери спорт',
+  level: 'Ниво',
+  venue: 'Терен / сала',
+  venuePh: 'пр. Вештачки терен Дарданија',
+  players: 'Вкупно играчи, вклучувајќи те тебе: {{count}}',
+  submit: 'Отвори игра',
+  toastOpened: 'Играта е отворена! Играчите од овој спорт ќе ја видат.',
+  defaultDesc: 'Ни недостасуваат играчи. Дојди да играме!',
+  allSports: 'Сите спортови',
+  playersBadge: '{{count}} играчи',
+  emptySport: 'Сè уште нема игри {{sport}} во {{city}}. Отвори ја првата!',
+  list: {
+    football: 'Фудбал',
+    basketball: 'Кошарка',
+    volleyball: 'Одбојка',
+    tennis: 'Тенис',
+    padel: 'Падел',
+    table_tennis: 'Пинг-понг',
+    badminton: 'Бадминтон',
+    running: 'Трчање',
+    fitness: 'Фитнес',
+  },
+  levels: {
+    any: 'Секое ниво',
+    beginner: 'Почетник',
+    intermediate: 'Средно',
+    advanced: 'Напредно',
+  },
+}

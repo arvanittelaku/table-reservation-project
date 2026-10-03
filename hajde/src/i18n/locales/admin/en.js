@@ -115,6 +115,7 @@ export const adm = {
     vozitje: 'Ride',
     udhetim: 'Trip',
     darka_e_merkures: 'Wednesday Dinner',
+    sport: 'Sport',
   },
   fields: {
     id: 'ID',

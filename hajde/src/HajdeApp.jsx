@@ -15,13 +15,14 @@ import {
 } from './api/requests'
 import { uploadAvatar, saveAvatarToProfile, getAvatarUrl, clearAvatarCache } from './api/storage'
 import { checkEmailDomain } from './api/checkEmail'
-import { resendSignupConfirmation } from './api/auth'
+import { resendSignupConfirmation, signInWithProvider } from './api/auth'
 import { isEmailFormatValid } from './lib/emailValidation'
 import {
   savePendingRegistration,
   loadPendingRegistration,
   clearPendingRegistration,
   isOnboardingComplete,
+  socialProviderOf,
 } from './lib/onboardingPersist'
 import { mapError, parseResetRateLimitSeconds } from './lib/errorMap'
 import { parseAuthHashError, clearAuthHashFromUrl } from './lib/authHashError'
@@ -110,6 +111,15 @@ const CATEGORIES = [
   { id: "vozitje", label: "Vozitje", icon: Car },
   { id: "udhetim", label: "Udhëtim", icon: Plane },
 ];
+
+/* Sports: every game belongs to exactly one sport (DB-enforced), so the feed can
+   filter strictly: volleyball players never see football games and vice versa. */
+const SPORTS = ["football", "basketball", "volleyball", "tennis", "padel", "table_tennis", "badminton", "running", "fitness"];
+const SKILL_LEVELS = ["any", "beginner", "intermediate", "advanced"];
+const SPORT_FILTER_KEY = "ejabashkohu-sport-filter";
+const readSportFilter = () => {
+  try { const v = localStorage.getItem(SPORT_FILTER_KEY); return SPORTS.includes(v) ? v : "all"; } catch { return "all"; }
+};
 
 /* Profile demo që dërgojnë kërkesa te tavolinat e tua (simulim i palës tjetër) */
 const FAKE_REQUESTERS = [
@@ -485,6 +495,9 @@ function HajdeApp() {
   const avatarFlushing = useRef(false);
   /** User id from step-1 signUp — photo upload must match this session only */
   const [registrationUserId, setRegistrationUserId] = useState(null);
+  /** 'google' | 'apple' while a social sign-up is finishing onboarding (step 1 = name only). */
+  const [socialOnboarding, setSocialOnboarding] = useState(null);
+  const [oauthBusy, setOauthBusy] = useState(null);
   const [memberPhotos, setMemberPhotos] = useState({});
   const [password, setPassword] = useState("");
   const [showSignIn, setShowSignIn] = useState(false);
@@ -526,11 +539,13 @@ function HajdeApp() {
   const catLabel = (id) => t(`feed.categories.${id}`);
   const tagLabel = (code) => t(`feed.tagCodes.${code}`) || code;
   const createFabLabel = () => {
+    if (cat === 'sport') return t('sports.fab');
     if (cat === 'vozitje') return t('feed.openTableVozitje');
     if (cat === 'udhetim') return t('feed.openTableUdhetim');
     return t('feed.openTableTavoline');
   };
   const formCreateFabLabel = () => {
+    if (form.mode === 'sport') return t('sports.fab');
     if (form.mode === 'vozitje') return t('feed.openTableVozitje');
     if (form.mode === 'udhetim') return t('feed.openTableUdhetim');
     return t('feed.openTableTavoline');
@@ -766,7 +781,13 @@ function HajdeApp() {
     mode: "tavoline", city: "Prishtinë", toCity: "Prizren", budget: "",
     cafe: "", area: "", eventDate: "", eventTime: "", spots: 4, cat: "kafe",
     desc: "", langs: ["sq"], womenOnly: false, menOnly: false, mapsLink: "",
+    sport: "", level: "any",
   });
+  const [sportFilter, setSportFilterState] = useState(readSportFilter);
+  const setSportFilter = (v) => {
+    setSportFilterState(v);
+    try { localStorage.setItem(SPORT_FILTER_KEY, v); } catch { /* ignore */ }
+  };
   const defaultCreateForm = () => ({
     mode: "tavoline",
     city: "Prishtinë",
@@ -782,15 +803,18 @@ function HajdeApp() {
     womenOnly: false,
     menOnly: false,
     mapsLink: "",
+    sport: "",
+    level: "any",
   });
   const openCreate = () => {
-    const mode = cat === "vozitje" ? "vozitje" : cat === "udhetim" ? "udhetim" : "tavoline";
+    const mode = cat === "vozitje" ? "vozitje" : cat === "udhetim" ? "udhetim" : cat === "sport" ? "sport" : "tavoline";
     const schedule = defaultEventSchedule();
     setForm((f) => ({
       ...f,
       city,
       mode,
-      spots: mode === "vozitje" ? 3 : mode === "udhetim" ? 5 : 4,
+      spots: mode === "vozitje" ? 3 : mode === "udhetim" ? 5 : mode === "sport" ? 10 : 4,
+      sport: mode === "sport" && sportFilter !== "all" ? sportFilter : f.sport,
       eventDate: schedule.eventDate,
       eventTime: schedule.eventTime,
     }));
@@ -851,6 +875,7 @@ function HajdeApp() {
   const startRegistration = async () => {
     await signOut();
     resetLocalUserState();
+    setSocialOnboarding(null);
     setAuthError(null);
     setAuthBusy(false);
     setAgreedToTerms(false);
@@ -860,6 +885,8 @@ function HajdeApp() {
 
   const clearAuthSessionState = ({ showSignInAfter = false } = {}) => {
     resetLocalUserState();
+    setSocialOnboarding(null);
+    setOauthBusy(null);
     clearNotifs();
     setUnread(0);
     setActive(null);
@@ -1410,6 +1437,7 @@ function HajdeApp() {
       !blocked.includes(t.host) &&
       t.city === city &&
       (cat === "all" || t.cat === cat) &&
+      (cat !== "sport" || sportFilter === "all" || t.sport === sportFilter) &&
       (query === "" || (t.cafe + t.desc + (t.tags || []).join(" ")).toLowerCase().includes(query.toLowerCase()))
     )
     .map((t) => ({ ...t, _match: matchScore(t, profile, aff) }))
@@ -2203,6 +2231,8 @@ function HajdeApp() {
   const createTable = async () => {
     const ride = form.mode === "vozitje";
     const trip = form.mode === "udhetim";
+    const sportMode = form.mode === "sport";
+    if (sportMode && !SPORTS.includes(form.sport)) { showToast(t('sports.pickSportRequired')); return; }
     if (trip && !form.cafe.trim()) { showToast(t('createTable.toastDestinationRequired')); return; }
     if (!ride && !trip && !form.cafe.trim()) { showToast(t('createTable.toastVenueRequired')); return; }
     if (ride && form.city === form.toCity) { showToast(t('createTable.toastDifferentCities')); return; }
@@ -2231,8 +2261,8 @@ function HajdeApp() {
         : (form.womenOnly ? ['women_only'] : form.menOnly ? ['men_only'] : []);
 
     const payload = {
-      kind: ride ? "vozitje" : trip ? "udhetim" : "tavoline",
-      category: ride ? "vozitje" : trip ? "udhetim" : form.cat,
+      kind: ride ? "vozitje" : trip ? "udhetim" : sportMode ? "sport" : "tavoline",
+      category: ride ? "vozitje" : trip ? "udhetim" : sportMode ? "sport" : form.cat,
       title: ride ? `${form.city} → ${form.toCity}` : form.cafe.trim(),
       area: ride
         ? t('feed.areaDeparture', { place: form.area.trim() || t('createTable.defaultAreaCenter') })
@@ -2246,20 +2276,22 @@ function HajdeApp() {
       event_datetime: eventDatetime,
       starts_at: eventDatetime,
       spots: Number(form.spots) || 4,
-      ...(form.mode === "tavoline" ? { women_only: !!form.womenOnly, men_only: !!form.menOnly } : {}),
+      ...(form.mode === "tavoline" || sportMode ? { women_only: !!form.womenOnly, men_only: !!form.menOnly } : {}),
+      ...(sportMode ? { sport: form.sport, skill_level: SKILL_LEVELS.includes(form.level) ? form.level : "any" } : {}),
       langs: langs.length ? langs : ["sq"],
       tags,
-      description: form.desc.trim() || (ride ? t('feed.defaultDescRide') : trip ? t('feed.defaultDescTrip') : t('feed.defaultDescTable')),
+      description: form.desc.trim() || (ride ? t('feed.defaultDescRide') : trip ? t('feed.defaultDescTrip') : sportMode ? t('sports.defaultDesc') : t('feed.defaultDescTable')),
       maps_link: form.mapsLink.trim() || null,
     };
 
     try {
       await apiCreateTable(payload);
       awardBadge("first-host", "", t('badges.firstHost'));
+      if (sportMode) { setCat("sport"); setSportFilter(form.sport); }
       setCity(form.city); setTab("zbulo"); setShowCreate(false);
       setForm(defaultCreateForm());
       await refetchTables();
-      showToast(ride ? t('createTable.toastRideOpened') : trip ? t('createTable.toastTripOpened') : t('createTable.toastTableOpened'));
+      showToast(ride ? t('createTable.toastRideOpened') : trip ? t('createTable.toastTripOpened') : sportMode ? t('sports.toastOpened') : t('createTable.toastTableOpened'));
     } catch (err) {
       console.error("[ejaBashkohu] Table creation failed:", err);
       showToast(mapErr(err));
@@ -2315,7 +2347,38 @@ function HajdeApp() {
         return;
       }
 
-      if (step >= 2 && step <= 4 && registrationUserId === authUser.id) return;
+      if (step >= 1 && step <= 4 && registrationUserId === authUser.id) return;
+
+      // Google / Apple: the account exists but name, age, photo and terms are not
+      // done yet, so start at step 1 (name only, prefilled) and run every step.
+      const provider = socialProviderOf(authUser);
+      if (provider) {
+        let row = dbProfile;
+        if (!row) {
+          const { data } = await sb.from('profiles')
+            .select('first_name, last_name, age, user_preferences, onboarded_at')
+            .eq('id', authUser.id).maybeSingle();
+          row = data;
+        }
+        if (row && isOnboardingComplete(row)) return;
+        const meta = authUser.user_metadata || {};
+        const clean = (v) => (v && v !== 'Përdorues' && v !== '-' ? v : '');
+        const full = (meta.full_name || meta.name || '').trim();
+        setRegistrationUserId(authUser.id);
+        setSocialOnboarding(provider);
+        setUser((prev) => ({
+          ...prev,
+          email: authUser.email || prev.email,
+          firstName: clean(row?.first_name) || meta.given_name || full.split(' ')[0] || '',
+          lastName: clean(row?.last_name) || meta.family_name || full.split(' ').slice(1).join(' ') || '',
+          age: '',
+        }));
+        setAgreedToTerms(false);
+        setScreen('onboard');
+        setShowSignIn(false);
+        setStep(1);
+        return;
+      }
 
       const pending = loadPendingRegistration();
       if (pending?.userId && pending.userId !== authUser.id) return;
@@ -2332,7 +2395,7 @@ function HajdeApp() {
       if (!firstName && !profileRow) {
         const { data } = await sb
           .from('profiles')
-          .select('first_name, last_name, age, user_preferences')
+          .select('first_name, last_name, age, user_preferences, onboarded_at')
           .eq('id', authUser.id)
           .maybeSingle();
         profileRow = data;
@@ -2444,12 +2507,6 @@ function HajdeApp() {
         throw new Error(t('onboarding.registration.sessionMismatch'));
       }
 
-      await sb.from('profiles').update({
-        age: parseInt(nextUser.age, 10) || 18,
-        is_tourist: nextUser.isTourist === true,
-        from_place: nextUser.isTourist ? (nextUser.from?.trim() || null) : null,
-      }).eq('id', uid);
-
       if (pendingAvatarFile.current) {
         try {
           setUser((u) => ({ ...u, photoUploading: true }));
@@ -2459,31 +2516,22 @@ function HajdeApp() {
         }
       }
 
-      try {
-        const { data: existing } = await sb
-          .from('profiles')
-          .select('user_preferences')
-          .eq('id', uid)
-          .maybeSingle();
-        const prev =
-          existing?.user_preferences && typeof existing.user_preferences === 'object'
-            ? existing.user_preferences
-            : {};
-        await sb
-          .from('profiles')
-          .update({
-            user_preferences: {
-              ...prev,
-              terms_agreed: true,
-              terms_agreed_at: new Date().toISOString(),
-              terms_version: '2026-08',
-            },
-          })
-          .eq('id', uid);
-      } catch (prefsErr) {
-        console.warn('[ejaBashkohu] terms_agreed nuk u ruajt:', prefsErr);
+      // Server validates name + age (18+) and marks onboarding complete; until then
+      // the DB refuses hosting/joining (applies to email and Google/Apple sign-ups).
+      const { error: onboardErr } = await sb.rpc('complete_onboarding', {
+        p_first_name: (nextUser.firstName || '').trim(),
+        p_last_name: (nextUser.lastName || '').trim(),
+        p_age: parseInt(nextUser.age, 10) || 18,
+        p_is_tourist: nextUser.isTourist === true,
+        p_from_place: nextUser.isTourist ? (nextUser.from?.trim() || null) : null,
+      });
+      if (onboardErr) throw onboardErr;
+      if (socialOnboarding) {
+        // keep auth metadata in sync so the header shows the chosen name
+        void sb.auth.updateUser({ data: { first_name: nextUser.firstName.trim(), last_name: nextUser.lastName.trim() } });
       }
 
+      setSocialOnboarding(null);
       setRegistrationUserId(null);
       clearPendingRegistration();
       setStep(0);
@@ -2531,6 +2579,29 @@ function HajdeApp() {
     setScreen('onboard');
     setShowSignIn(false);
   };
+
+  const handleSocialSignIn = async (provider) => {
+    setAuthError(null);
+    setOauthBusy(provider);
+    try {
+      await signInWithProvider(provider); // browser navigates away on success
+    } catch (err) {
+      setAuthError(mapErr(err));
+      setOauthBusy(null);
+    }
+  };
+
+  const socialButtons = (
+    <div className="social-auth">
+      <button type="button" className="social-btn google" disabled={!!oauthBusy} onClick={() => void handleSocialSignIn('google')}>
+        {oauthBusy === 'google' ? t('social.redirecting') : t('social.continueGoogle')}
+      </button>
+      <button type="button" className="social-btn apple" disabled={!!oauthBusy} onClick={() => void handleSocialSignIn('apple')}>
+        {oauthBusy === 'apple' ? t('social.redirecting') : t('social.continueApple')}
+      </button>
+      <div className="social-or"><span>{t('social.or')}</span></div>
+    </div>
+  );
 
   const handleSignIn = async (e) => {
     e?.preventDefault?.();
@@ -2837,6 +2908,7 @@ function HajdeApp() {
                   ) : (
                     <form className="ob-card" style={{ width: "100%", maxWidth: 340 }} onSubmit={handleSignIn}>
                       <p className="ob-q" style={{ color: "#1E2432" }}>{t('auth.signInTitle')}</p>
+                      {socialButtons}
                       <input
                         className="input xl"
                         type="email"
@@ -2905,10 +2977,48 @@ function HajdeApp() {
                       </div>
                     </div>
 
-                    {step === 1 && (
+                    {step === 1 && socialOnboarding && (
+                      <div className="step-body">
+                        <h2 className="step-title">{t('social.stepTitle')}</h2>
+                        <p className="step-sub">{t('social.stepSub', { provider: socialOnboarding === 'apple' ? 'Apple' : 'Google', email: user.email || '' })}</p>
+                        <div className="input-group">
+                          <input className="input modern" placeholder={t('onboarding.step1.firstNameLabel')} value={user.firstName}
+                            onChange={(e) => setUser({ ...user, firstName: e.target.value })} autoFocus maxLength={40} />
+                          <input className="input modern" placeholder={t('onboarding.step1.lastNameLabel')} value={user.lastName}
+                            onChange={(e) => setUser({ ...user, lastName: e.target.value })} maxLength={40} />
+                        </div>
+                        <div className="terms-row">
+                          <input type="checkbox" id="terms-check-social" checked={agreedToTerms}
+                            onChange={(e) => setAgreedToTerms(e.target.checked)} className="terms-checkbox" />
+                          <label htmlFor="terms-check-social" className="terms-label">
+                            {t('onboarding.step1.termsText')}{' '}
+                            <button type="button" className="link-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPolicy('terms'); }}>{t('onboarding.step1.termsLink')}</button>
+                            {' '}{t('onboarding.step1.termsAnd')}{' '}
+                            <button type="button" className="link-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPolicy('privacy'); }}>{t('onboarding.step1.privacyLink')}</button>
+                          </label>
+                        </div>
+                        {authError && <p className="age-warn">{authError}</p>}
+                        <button type="button" className="btn primary full modern-btn"
+                          disabled={!user.firstName.trim() || !user.lastName.trim() || !agreedToTerms}
+                          onClick={() => {
+                            setUser((u) => ({ ...u, name: `${u.firstName.trim()} ${u.lastName.trim()}`, age: u.age || '24' }));
+                            setAuthError(null);
+                            setStep(2);
+                          }}>
+                          {t('onboarding.step1.continueBtn')}
+                        </button>
+                        <button type="button" className="onboard-signin-link"
+                          onClick={async () => { setSocialOnboarding(null); setRegistrationUserId(null); await signOut(); setStep(0); }}>
+                          <span>{t('social.otherAccount')}</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {step === 1 && !socialOnboarding && (
                       <div className="step-body">
                         <h2 className="step-title">{t('onboarding.step1.title')}</h2>
                         <p className="step-sub">{t('onboarding.step1.stepSub')}</p>
+                        {socialButtons}
 
                         <div className="input-group">
                           <input
@@ -3495,6 +3605,22 @@ function HajdeApp() {
                   </button>
               ))}
             </div>
+            {cat === "sport" && (() => {
+              const inCity = tables.filter((x) => x.cat === "sport" && x.city === city && !blocked.includes(x.host_id));
+              const count = (sp) => inCity.filter((x) => x.sport === sp).length;
+              return (
+                <div className="cat-row sport-row" role="tablist" aria-label={t('sports.pickSport')}>
+                  <button className={`chip ${sportFilter === "all" ? "on" : ""}`} onClick={() => setSportFilter("all")}>
+                    {t('sports.allSports')} <span className="chip-count">{inCity.length}</span>
+                  </button>
+                  {SPORTS.map((sp) => (
+                    <button key={sp} className={`chip ${sportFilter === sp ? "on" : ""}`} onClick={() => setSportFilter(sp)}>
+                      {t(`sports.list.${sp}`)} <span className="chip-count">{count(sp)}</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {!tablesLoading && !tablesError && (
               <p className="count">{t('feed.openTablesCount', { count: filtered.length, city })}</p>
@@ -3539,8 +3665,12 @@ function HajdeApp() {
             {!tablesLoading && !tablesError && filtered.length === 0 && (
               <div className="empty">
                 <SeatRing total={5} taken={0} size={56} />
-                <p><strong>{t('feed.emptyFeedTitle')}</strong></p>
-                <p className="muted">{t('feed.emptyFeedSub')}</p>
+                {cat === "sport" && sportFilter !== "all" ? (
+                  <p><strong>{t('sports.emptySport', { sport: t(`sports.list.${sportFilter}`), city })}</strong></p>
+                ) : (<>
+                  <p><strong>{t('feed.emptyFeedTitle')}</strong></p>
+                  <p className="muted">{t('feed.emptyFeedSub')}</p>
+                </>)}
                 <button className="btn primary" onClick={openCreate}><Plus size={16} /> {createFabLabel()}</button>
               </div>
             )}
@@ -3578,6 +3708,12 @@ function HajdeApp() {
                         <span className="badge men">{t('feed.badgeMenOnly')}</span>
                       )}
                       {isRide(tbl) && <span className="badge ride">{t('feed.badgeRide')}</span>}
+                      {tbl.sport && (
+                        <span className="badge sport">
+                          {t(`sports.list.${tbl.sport}`)} · {t('sports.playersBadge', { count: tbl.spots })}
+                          {tbl.skillLevel && tbl.skillLevel !== "any" ? ` · ${t(`sports.levels.${tbl.skillLevel}`)}` : ""}
+                        </span>
+                      )}
                       {tbl.cat === "udhetim" && <span className="badge trip">{tbl.budget || t('feed.badgeTrip')}</span>}
                       <p className="desc">{localizeTableDescription(tbl.desc, t)}</p>
                       <div className="card-foot">
@@ -3697,6 +3833,12 @@ function HajdeApp() {
                 <button className="icon-btn" onClick={() => setActive(null)} aria-label={t('tableDetail.close')}><ChevronLeft size={20} /></button>
                 <div>
                   <h2>{activeTable.cafe}</h2>
+                  {activeTable.sport && (
+                    <span className="badge sport">
+                      {t(`sports.list.${activeTable.sport}`)} · {t('sports.playersBadge', { count: activeTable.spots })}
+                      {activeTable.skillLevel ? ` · ${t(`sports.levels.${activeTable.skillLevel}`)}` : ""}
+                    </span>
+                  )}
                   <p className="meta"><MapPin size={13} /> {activeTable.area}, {activeTable.city} · <Clock size={13} /> {activeTable.time}</p>
                   {(activeTable.langs || []).length > 0 && (
                     <p className="meta langs"><Globe size={12} /> {formatLangs(activeTable.langs)}</p>
@@ -4161,13 +4303,15 @@ function HajdeApp() {
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
             <div className="sheet-hdr">
               <button className="icon-btn" onClick={() => setShowCreate(false)} aria-label={t('createTable.close')}><X size={18} /></button>
-              <div><h2>{form.mode === "vozitje" ? t('createTable.titleVozitje') : form.mode === "udhetim" ? t('createTable.titleUdhetim') : t('createTable.titleTavoline')}</h2><p className="meta">{form.mode === "vozitje" ? t('createTable.metaVozitje') : form.mode === "udhetim" ? t('createTable.metaUdhetim') : t('createTable.metaTavoline')}</p></div>
+              <div><h2>{form.mode === "sport" ? t('sports.title') : form.mode === "vozitje" ? t('createTable.titleVozitje') : form.mode === "udhetim" ? t('createTable.titleUdhetim') : t('createTable.titleTavoline')}</h2><p className="meta">{form.mode === "sport" ? t('sports.meta') : form.mode === "vozitje" ? t('createTable.metaVozitje') : form.mode === "udhetim" ? t('createTable.metaUdhetim') : t('createTable.metaTavoline')}</p></div>
               <SeatRing total={Number(form.spots) || 4} taken={1} size={48} />
             </div>
 
             <div className="mode-toggle">
               <button className={`mode-btn ${form.mode === "tavoline" ? "on" : ""}`}
                 onClick={() => setForm({ ...form, mode: "tavoline", spots: 4 })}>{t('createTable.modeTavoline')}</button>
+              <button className={`mode-btn ${form.mode === "sport" ? "on" : ""}`}
+                onClick={() => setForm({ ...form, mode: "sport", spots: 10, sport: form.sport || (sportFilter !== "all" ? sportFilter : "") })}>{t('sports.mode')}</button>
               <button className={`mode-btn ${form.mode === "vozitje" ? "on" : ""}`}
                 onClick={() => setForm({ ...form, mode: "vozitje", spots: 3 })}>{t('createTable.modeVozitje')}</button>
               <button className={`mode-btn ${form.mode === "udhetim" ? "on" : ""}`}
@@ -4203,10 +4347,10 @@ function HajdeApp() {
                   onChange={(e) => setForm({ ...form, budget: e.target.value })} />
               </>
             )}
-            {form.mode === "tavoline" && (
+            {(form.mode === "tavoline" || form.mode === "sport") && (
               <>
-                <label className="f-label" htmlFor="f-cafe">{t('createTable.labelVenue')}</label>
-                <input id="f-cafe" className="input" placeholder={t('createTable.venuePlaceholder')} value={form.cafe}
+                <label className="f-label" htmlFor="f-cafe">{form.mode === "sport" ? t('sports.venue') : t('createTable.labelVenue')}</label>
+                <input id="f-cafe" className="input" placeholder={form.mode === "sport" ? t('sports.venuePh') : t('createTable.venuePlaceholder')} value={form.cafe}
                   onChange={(e) => setForm({ ...form, cafe: e.target.value })} />
                 <label className="f-label" htmlFor="f-area">{t('createTable.labelArea')}</label>
                 <input id="f-area" className="input" placeholder={t('createTable.areaPlaceholder')} value={form.area}
@@ -4244,10 +4388,32 @@ function HajdeApp() {
               />
             </div>
 
+            {form.mode === "sport" && (<>
+            <label className="f-label">{t('sports.pickSport')}</label>
+            <div className="cat-row wrap sport-pick" role="radiogroup">
+              {SPORTS.map((sp) => (
+                <button key={sp} type="button" role="radio" aria-checked={form.sport === sp}
+                  className={`chip ${form.sport === sp ? "on" : ""}`}
+                  onClick={() => setForm({ ...form, sport: sp })}>
+                  {t(`sports.list.${sp}`)}
+                </button>
+              ))}
+            </div>
+            <label className="f-label">{t('sports.level')}</label>
+            <div className="cat-row wrap">
+              {SKILL_LEVELS.map((lv) => (
+                <button key={lv} type="button" className={`chip ${form.level === lv ? "on" : ""}`}
+                  onClick={() => setForm({ ...form, level: lv })}>
+                  {t(`sports.levels.${lv}`)}
+                </button>
+              ))}
+            </div>
+            </>)}
+
             {form.mode === "tavoline" && (<>
             <label className="f-label">{t('createTable.labelType')}</label>
             <div className="cat-row wrap">
-              {CATEGORIES.filter((c) => c.id !== "vozitje").map((c) => (
+              {CATEGORIES.filter((c) => c.id !== "vozitje" && c.id !== "sport").map((c) => (
                   <button key={c.id} className={`chip ${form.cat === c.id ? "on" : ""}`}
                     onClick={() => setForm({ ...form, cat: c.id })}>
                     {catLabel(c.id)}
@@ -4257,8 +4423,8 @@ function HajdeApp() {
 
             </>)}
 
-            <label className="f-label">{form.mode === "vozitje" ? t('createTable.labelSeatsRide', { count: form.spots }) : form.mode === "udhetim" ? t('createTable.labelSeatsTrip', { count: form.spots }) : t('createTable.labelSeatsTable', { count: form.spots })}</label>
-            <input type="range" min={form.mode === "vozitje" ? 1 : 2} max={form.mode === "vozitje" ? 4 : 10} value={form.spots} className="range"
+            <label className="f-label">{form.mode === "sport" ? t('sports.players', { count: form.spots }) : form.mode === "vozitje" ? t('createTable.labelSeatsRide', { count: form.spots }) : form.mode === "udhetim" ? t('createTable.labelSeatsTrip', { count: form.spots }) : t('createTable.labelSeatsTable', { count: form.spots })}</label>
+            <input type="range" min={form.mode === "vozitje" ? 1 : 2} max={form.mode === "vozitje" ? 4 : form.mode === "sport" ? 22 : 10} value={form.spots} className="range"
               onChange={(e) => setForm({ ...form, spots: e.target.value })} />
 
             <label className="f-label">{t('createTable.labelLangs')}</label>
@@ -4280,7 +4446,7 @@ function HajdeApp() {
               ))}
             </div>
 
-            {form.mode === "tavoline" && (
+            {(form.mode === "tavoline" || form.mode === "sport") && (
             <div className="gender-restriction-options">
               <label className="toggle-row">
                 <input
@@ -4313,7 +4479,7 @@ function HajdeApp() {
             <textarea id="f-desc" className="input" rows={3} placeholder={t('createTable.descriptionPlaceholder')}
               value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} />
 
-            <button className="btn primary full" onClick={createTable}>{form.mode === "vozitje" ? t('createTable.submitRide') : form.mode === "udhetim" ? t('createTable.submitTrip') : t('createTable.submitTable')}</button>
+            <button className="btn primary full" onClick={createTable}>{form.mode === "sport" ? t('sports.submit') : form.mode === "vozitje" ? t('createTable.submitRide') : form.mode === "udhetim" ? t('createTable.submitTrip') : t('createTable.submitTable')}</button>
             <p className="fee-note"><ShieldCheck size={11} /> {form.mode === "vozitje" ? t('createTable.feeNoteRide') : t('createTable.feeNoteTable', { fee: BOOKING_FEE.toFixed(2) })}</p>
           </div>
         </div>

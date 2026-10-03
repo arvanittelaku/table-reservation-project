@@ -80,6 +80,20 @@ export async function signIn(email, password) {
   return data.session
 }
 
+/**
+ * Google / Apple sign-in. Redirects away; on return the session is picked up from
+ * the URL and the app sends incomplete profiles through onboarding (name, age,
+ * photo, terms). Providers must be enabled in Supabase → Authentication → Providers.
+ */
+export async function signInWithProvider(provider) {
+  if (!['google', 'apple'].includes(provider)) throw new Error('Unsupported provider')
+  const { error } = await sb.auth.signInWithOAuth({
+    provider,
+    options: { redirectTo: window.location.origin },
+  })
+  if (error) throwAuthError(error)
+}
+
 export async function signOut() {
   const { error } = await sb.auth.signOut()
   if (error) throwAuthError(error)

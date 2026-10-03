@@ -1,0 +1,51 @@
+/** Google/Apple sign-in + sports (SQ source) */
+export const social = {
+  or: 'ose',
+  continueGoogle: 'Vazhdo me Google',
+  continueApple: 'Vazhdo me Apple',
+  redirecting: 'Duke të dërguar…',
+  stepTitle: 'Si të thërrasim?',
+  stepSub: 'U kyçe me {{provider}} si {{email}}. Plotëso hapat që profili yt të jetë i besueshëm për të tjerët.',
+  otherAccount: 'Përdor një llogari tjetër',
+  errors: {
+    providerDisabled: 'Kyçja me këtë llogari nuk është aktivizuar ende. Përdor email-in për momentin.',
+    completeProfile: 'Plotëso profilin (emri, mosha, foto) para se të vazhdosh.',
+    nameRequired: 'Shkruaj emrin dhe mbiemrin.',
+  },
+}
+
+export const sports = {
+  mode: 'Sport',
+  title: 'Hap një lojë',
+  meta: 'Gjej lojtarë për futboll, basketboll e më shumë',
+  fab: 'Hap lojë',
+  pickSport: 'Cili sport?',
+  pickSportRequired: 'Zgjidh sportin',
+  level: 'Niveli',
+  venue: 'Fusha / salla',
+  venuePh: 'p.sh. Fusha sintetike Dardania',
+  players: 'Lojtarë gjithsej, përfshirë ty: {{count}}',
+  submit: 'Hap lojën',
+  toastOpened: 'Loja u hap! Lojtarët e këtij sporti do ta shohin.',
+  defaultDesc: 'Na mungojnë lojtarë. Hajde luajmë!',
+  allSports: 'Të gjitha sportet',
+  playersBadge: '{{count}} lojtarë',
+  emptySport: "S'ka ende lojëra {{sport}} në {{city}}. Hape të parën!",
+  list: {
+    football: 'Futboll',
+    basketball: 'Basketboll',
+    volleyball: 'Volejboll',
+    tennis: 'Tenis',
+    padel: 'Padel',
+    table_tennis: 'Pingpong',
+    badminton: 'Badminton',
+    running: 'Vrapim',
+    fitness: 'Fitnes',
+  },
+  levels: {
+    any: 'Çdo nivel',
+    beginner: 'Fillestar',
+    intermediate: 'Mesatar',
+    advanced: 'I avancuar',
+  },
+}

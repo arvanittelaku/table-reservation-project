@@ -2120,3 +2120,26 @@ body { overflow-x: clip; }
   color: #B91C1C;
   border: 1px solid #FCA5A5;
 }
+
+/* ── Google / Apple sign-in ── */
+.social-auth { display: flex; flex-direction: column; gap: 8px; width: 100%; margin: 4px 0 2px; }
+.social-btn {
+  width: 100%; height: 46px; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  transition: opacity .15s, transform .1s;
+}
+.social-btn:disabled { opacity: .6; cursor: wait; }
+.social-btn:active:not(:disabled) { transform: scale(.99); }
+/* Google & Apple brand rules: white/outlined vs. black button. Official logo
+   assets can be added inside these buttons from their brand kits. */
+.social-btn.google { background: #fff; color: #1F1F1F; border: 1px solid #747775; }
+.social-btn.apple { background: #000; color: #fff; border: 1px solid #000; }
+.social-or { display: flex; align-items: center; gap: 10px; color: #8A8478; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin: 4px 0; }
+.social-or::before, .social-or::after { content: ""; flex: 1; height: 1px; background: #E8DFCC; }
+
+/* ── Sports ── */
+.badge.sport { color: #1B6B3A; background: #E4F4EA; margin: 2px 0 4px; }
+.sport-row { margin-top: -4px; }
+.sport-row .chip { background: #F4FBF6; }
+.sport-row .chip.on { background: #1B6B3A; border-color: #1B6B3A; color: #fff; }
+.chip-count { font-size: 11px; font-weight: 800; opacity: .65; margin-left: 4px; font-variant-numeric: tabular-nums; }

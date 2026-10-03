@@ -12,7 +12,7 @@ import {
 } from './ui.jsx'
 
 const STATUSES = ['all', 'upcoming', 'past', 'full', 'cancelled', 'paid', 'reported']
-const KINDS = ['', 'tavoline', 'vozitje', 'udhetim', 'darka_e_merkures']
+const KINDS = ['', 'tavoline', 'sport', 'vozitje', 'udhetim', 'darka_e_merkures']
 const SORTS = ['newest', 'oldest', 'event_asc', 'event_desc', 'most_guests', 'most_revenue', 'most_requests']
 
 export default function Tables({ params }) {

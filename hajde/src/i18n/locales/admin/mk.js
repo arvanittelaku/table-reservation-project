@@ -115,6 +115,7 @@ export const adm = {
     vozitje: 'Превоз',
     udhetim: 'Патување',
     darka_e_merkures: 'Вечера во среда',
+    sport: 'Спорт',
   },
   fields: {
     id: 'ID',

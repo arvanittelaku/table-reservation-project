@@ -46,6 +46,11 @@ const ERROR_KEY_MAP = {
   'Translation failed. Try again.': 'errors.translationFailed',
   'Session mismatch. Restart registration': 'errors.restartRegistrationFromStep1',
   'Photo save failed': 'errors.photoUploadFailed',
+
+  'Unsupported provider: provider is not enabled': 'social.errors.providerDisabled',
+  'Plotëso profilin (emri, mosha, foto) para se të vazhdosh': 'social.errors.completeProfile',
+  'Shkruaj emrin dhe mbiemrin': 'social.errors.nameRequired',
+  'Duhet të kesh të paktën 18 vjeç': 'errors.mustBe18',
 }
 
 function tr(locale, key, vars) {

@@ -1,0 +1,51 @@
+/** Google/Apple sign-in + sports (DE) */
+export const social = {
+  or: 'oder',
+  continueGoogle: 'Weiter mit Google',
+  continueApple: 'Weiter mit Apple',
+  redirecting: 'Weiterleitung…',
+  stepTitle: 'Wie sollen wir dich nennen?',
+  stepSub: 'Du hast dich mit {{provider}} als {{email}} angemeldet. Schließe diese Schritte ab, damit andere deinem Profil vertrauen können.',
+  otherAccount: 'Anderes Konto verwenden',
+  errors: {
+    providerDisabled: 'Die Anmeldung mit diesem Konto ist noch nicht aktiviert. Bitte nutze vorerst deine E-Mail.',
+    completeProfile: 'Vervollständige dein Profil (Name, Alter, Foto), bevor du fortfährst.',
+    nameRequired: 'Gib deinen Vor- und Nachnamen ein.',
+  },
+}
+
+export const sports = {
+  mode: 'Sport',
+  title: 'Spiel eröffnen',
+  meta: 'Finde Mitspieler für Fußball, Basketball und mehr',
+  fab: 'Spiel eröffnen',
+  pickSport: 'Welche Sportart?',
+  pickSportRequired: 'Wähle eine Sportart',
+  level: 'Niveau',
+  venue: 'Platz / Halle',
+  venuePh: 'z. B. Kunstrasen Dardania',
+  players: 'Spieler insgesamt, inklusive dir: {{count}}',
+  submit: 'Spiel eröffnen',
+  toastOpened: 'Spiel eröffnet! Spieler dieser Sportart sehen es.',
+  defaultDesc: 'Uns fehlen Spieler. Komm und spiel mit!',
+  allSports: 'Alle Sportarten',
+  playersBadge: '{{count}} Spieler',
+  emptySport: 'Noch keine {{sport}}-Spiele in {{city}}. Eröffne das erste!',
+  list: {
+    football: 'Fußball',
+    basketball: 'Basketball',
+    volleyball: 'Volleyball',
+    tennis: 'Tennis',
+    padel: 'Padel',
+    table_tennis: 'Tischtennis',
+    badminton: 'Badminton',
+    running: 'Laufen',
+    fitness: 'Fitness',
+  },
+  levels: {
+    any: 'Jedes Niveau',
+    beginner: 'Anfänger',
+    intermediate: 'Fortgeschritten',
+    advanced: 'Profi',
+  },
+}

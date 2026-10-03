@@ -30,6 +30,13 @@ export function clearPendingRegistration() {
 }
 
 export function isOnboardingComplete(profile) {
+  if (profile?.onboarded_at) return true
   const prefs = profile?.user_preferences
-  return prefs && typeof prefs === 'object' && prefs.terms_agreed === true
+  return !!(prefs && typeof prefs === 'object' && prefs.terms_agreed === true)
+}
+
+/** 'google' | 'apple' when the session came from a social provider, else null. */
+export function socialProviderOf(authUser) {
+  const p = authUser?.app_metadata?.provider
+  return p === 'google' || p === 'apple' ? p : null
 }

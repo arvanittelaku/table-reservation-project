@@ -67,6 +67,8 @@ export function toUiTable(row) {
     host_id: row.host_id,
     kind: row.kind,
     cat: row.category,
+    sport: row.sport || null,
+    skillLevel: row.skill_level || null,
     cafe: row.title,
     area: row.area || '',
     city: row.city,
