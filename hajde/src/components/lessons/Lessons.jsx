@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n/I18nContext.jsx'
 import { getAvatarUrl } from '../../api/storage'
-import { sb } from '../../supabaseClient'
+import { sb } from '../../backendClient'
 import { lessonsApi, JITSI_DOMAIN, JITSI_ROOM_PREFIX } from '../../api/lessons'
 import { LESSON_CATEGORIES, ALL_SUBJECTS, DURATIONS } from '../../lib/lessonSubjects'
 import { coordsOf } from '../../lib/kosovoGeo'

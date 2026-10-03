@@ -1,7 +1,7 @@
 import { getSessionUser } from '../../lib/session'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n/I18nContext.jsx'
-import { sb } from '../../supabaseClient'
+import { sb } from '../../backendClient'
 import LanguageSwitcher from '../LanguageSwitcher.jsx'
 import { adminApi, isMissingRpc } from './adminApi'
 import { AdminCtx, useAdmin } from './shared.jsx'

@@ -65,10 +65,13 @@ AS $$
   SELECT home_city FROM public.profiles WHERE id = auth.uid()
 $$;
 
+-- Policies run for anonymous visitors too (e.g. the landing page or a shared
+-- link before signing in), so both roles must be able to call these. For an
+-- anonymous caller auth.uid() is NULL and they return nothing.
 REVOKE ALL ON FUNCTION public._my_table_ids(), public._my_hosted_table_ids(),
-  public._viewer_sees_all_cities(), public._viewer_home_city() FROM PUBLIC, anon;
+  public._viewer_sees_all_cities(), public._viewer_home_city() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public._my_table_ids(), public._my_hosted_table_ids(),
-  public._viewer_sees_all_cities(), public._viewer_home_city() TO authenticated;
+  public._viewer_sees_all_cities(), public._viewer_home_city() TO anon, authenticated;
 
 -- ───────────── tables ─────────────
 DROP POLICY IF EXISTS tables_select ON public.tables;

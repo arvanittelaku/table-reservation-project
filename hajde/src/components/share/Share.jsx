@@ -1,4 +1,4 @@
-import { sb } from '../../supabaseClient'
+import { sb } from '../../backendClient'
 import './share.css'
 import { formatEventTime } from '../../lib/formatEventTime'
 

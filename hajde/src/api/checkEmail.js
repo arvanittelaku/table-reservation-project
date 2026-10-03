@@ -1,4 +1,4 @@
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 import { emailDomainPart, isEmailFormatValid } from '../lib/emailValidation'
 
 const DOH_URL = 'https://cloudflare-dns.com/dns-query'

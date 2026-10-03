@@ -24,7 +24,7 @@ function fmtWhen(iso) {
 }
 
 async function loadConfig(env, request) {
-  if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) return { url: env.SUPABASE_URL, anonKey: env.SUPABASE_ANON_KEY }
+  if (env.API_URL) return { url: env.API_URL }
   try {
     const r = await env.ASSETS.fetch(new URL('/share-config.json', request.url))
     if (r.ok) return await r.json()
@@ -40,14 +40,15 @@ export async function onRequestGet({ request, env, params }) {
   let p = null
   try {
     const cfg = await loadConfig(env, request)
-    if (cfg?.url && cfg?.anonKey) {
-      const r = await fetch(`${cfg.url}/rest/v1/rpc/table_share_preview`, {
+    if (cfg?.url) {
+      // Django backend, as an anonymous visitor: only the public preview is returned
+      const r = await fetch(`${cfg.url.replace(/\/+$/, '')}/rest/v1/rpc/table_share_preview`, {
         method: 'POST',
-        headers: { apikey: cfg.anonKey, Authorization: `Bearer ${cfg.anonKey}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ p_code: code }),
         cf: { cacheTtl: 60, cacheEverything: true },
       })
-      if (r.ok) p = await r.json()
+      if (r.ok) p = (await r.json())?.data ?? null
     }
   } catch { /* preview is best-effort; the app still works */ }
 

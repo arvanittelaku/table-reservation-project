@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { listTables } from '../api/tables'
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 import { matchScore as libMatchScore } from '../lib/matchScore'
 
 /**

@@ -1,5 +1,5 @@
 import { getSessionUser } from '../lib/session'
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 import { formatEventTime, isTableExpired } from '../lib/formatEventTime'
 
 async function currentUserId() {

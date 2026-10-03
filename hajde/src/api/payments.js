@@ -1,5 +1,5 @@
 import { getSessionUser } from '../lib/session'
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 
 function throwAuthError(error) {
   const e = new Error(error?.message || String(error))

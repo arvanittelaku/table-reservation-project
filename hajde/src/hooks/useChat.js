@@ -4,7 +4,7 @@ import {
   sendMessage as apiSendMessage,
   subscribeMessages,
 } from '../api/messages'
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 import { avatarUrl } from '../lib/avatarUrl'
 
 async function withAvatar(message) {

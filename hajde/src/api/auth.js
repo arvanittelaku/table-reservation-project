@@ -1,4 +1,4 @@
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 
 const MIN_AGE = 18
 

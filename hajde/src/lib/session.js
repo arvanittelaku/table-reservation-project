@@ -1,4 +1,4 @@
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 
 /**
  * Same shape as sb.auth.getUser(), but reads the locally stored session

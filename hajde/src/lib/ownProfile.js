@@ -1,4 +1,4 @@
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 
 /**
  * The signed-in user's full profile row, shared by everyone who needs it at

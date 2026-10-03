@@ -1,4 +1,4 @@
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 
 async function rpc(name, args) {
   const { data, error } = await sb.rpc(name, args)

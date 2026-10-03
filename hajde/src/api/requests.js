@@ -1,5 +1,5 @@
 import { getSessionUser } from '../lib/session'
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 
 async function currentUserId() {
   const { data, error } = await getSessionUser()

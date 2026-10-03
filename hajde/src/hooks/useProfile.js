@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 import { fetchOwnProfile } from '../lib/ownProfile'
 
 /**

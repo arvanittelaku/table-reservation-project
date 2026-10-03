@@ -1,6 +1,6 @@
 import { invalidateOwnProfile } from '../lib/ownProfile'
 import { getSessionUser } from '../lib/session'
-import { sb } from '../supabaseClient'
+import { sb } from '../backendClient'
 
 const BUCKET = 'avatars'
 const EXPIRES_IN = 3600 // 1 hour. Never use permanent public URLs
