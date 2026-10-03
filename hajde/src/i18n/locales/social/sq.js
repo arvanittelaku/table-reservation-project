@@ -49,3 +49,23 @@ export const sports = {
     advanced: 'I avancuar',
   },
 }
+
+export const browse = {
+  label: 'Shiko',
+  tables: 'Tavolinat', sport: 'Sport', lessons: 'Mësimet', trips: 'Udhëtimet', rides: 'Vozitjet',
+  live: 'live',
+  count: {
+    tables: '{{count}} tavolina të hapura në {{city}}',
+    sport: '{{count}} lojëra të hapura në {{city}}',
+    trips: '{{count}} udhëtime të hapura nga {{city}}',
+    rides: '{{count}} vozitje të hapura nga {{city}}',
+  },
+}
+
+export const support = {
+  label: 'Ndihmë',
+  aria: 'Na shkruaj në WhatsApp për ndihmë',
+  message: 'Përshëndetje! Kam nevojë për ndihmë me ejaBashkohu.',
+  account: 'Llogaria: {{email}}',
+  page: 'Faqja: {{page}}',
+}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n/I18nContext.jsx'
 import { getAvatarUrl } from '../../api/storage'
+import { sb } from '../../supabaseClient'
 import { lessonsApi, JITSI_DOMAIN, JITSI_ROOM_PREFIX } from '../../api/lessons'
 import { LESSON_CATEGORIES, ALL_SUBJECTS, DURATIONS } from '../../lib/lessonSubjects'
 import { coordsOf } from '../../lib/kosovoGeo'
@@ -63,9 +64,9 @@ function SubjectFilter({ category, subject, onCategory, onSubject }) {
   )
 }
 
-export default function Lessons({ authUser, cities, city, showToast, mapErr, myName }) {
+export default function Lessons({ authUser, cities, city, showToast, mapErr, myName, initialView = 'find' }) {
   const { t } = useI18n()
-  const [view, setView] = useState('find')
+  const [view, setView] = useState(initialView)
   const [category, setCategory] = useState(null)
   const [subject, setSubject] = useState(null)
   const [openTutor, setOpenTutor] = useState(null)
@@ -293,6 +294,16 @@ function GroupLessons({ category, subject, showToast, mapErr, onJoined }) {
   const { data, loading, error, reload } = useAsync(
     () => lessonsApi.listGroupLessons({ subject, category: subject ? null : category }), [subject, category])
   const rows = data || []
+  // Live: newly published lessons and seat changes appear without a refresh.
+  useEffect(() => {
+    let timer
+    const bump = () => { clearTimeout(timer); timer = setTimeout(() => reload(), 400) }
+    const ch = sb.channel('open-lessons')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lessons' }, bump)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_participants' }, bump)
+      .subscribe()
+    return () => { clearTimeout(timer); sb.removeChannel(ch) }
+  }, [reload])
   const join = async (l) => {
     try {
       await lessonsApi.joinGroup(l.id)

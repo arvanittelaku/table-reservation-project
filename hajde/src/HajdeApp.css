@@ -2143,3 +2143,22 @@ body { overflow-x: clip; }
 .sport-row .chip { background: #F4FBF6; }
 .sport-row .chip.on { background: #1B6B3A; border-color: #1B6B3A; color: #fff; }
 .chip-count { font-size: 11px; font-weight: 800; opacity: .65; margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+/* ── Browse switcher (one listing type at a time) ── */
+.browse-modes { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; }
+.browse-modes::-webkit-scrollbar { display: none; }
+.browse-mode { flex-shrink: 0; border: 1.5px solid #E8DFCC; background: #fff; color: #55503F; border-radius: 12px; padding: 9px 14px; font-family: inherit; font-weight: 800; font-size: 13.5px; cursor: pointer; }
+.browse-mode.on { background: #1A1A2E; border-color: #1A1A2E; color: #fff; }
+.live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #16A34A; margin-right: 6px; vertical-align: 1px; box-shadow: 0 0 0 0 rgba(22,163,74,.5); animation: live-pulse 2s infinite; }
+.live-label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #16A34A; margin-left: 4px; }
+@keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgba(22,163,74,.5); } 70% { box-shadow: 0 0 0 7px rgba(22,163,74,0); } 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); } }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+
+/* ── WhatsApp support button ── */
+.wa-btn { position: fixed; right: 16px; bottom: 84px; z-index: 7; display: inline-flex; align-items: center; gap: 8px; height: 50px; padding: 0 16px 0 13px; border-radius: 999px; background: #25D366; color: #fff; text-decoration: none; font-weight: 800; font-size: 14px; box-shadow: 0 6px 18px rgba(37,211,102,.4); transition: transform .12s; }
+.wa-btn:hover { transform: translateY(-1px); }
+.wa-btn:focus-visible { outline: 3px solid #128C7E; outline-offset: 2px; }
+.wa-app .wa-label { display: none; }
+.wa-app { width: 50px; padding: 0; justify-content: center; }
+.wa-landing { bottom: 20px; }
+@media (min-width: 1100px) { .wa-app { bottom: 24px; right: 24px; width: auto; padding: 0 18px 0 14px; } .wa-app .wa-label { display: inline; } }

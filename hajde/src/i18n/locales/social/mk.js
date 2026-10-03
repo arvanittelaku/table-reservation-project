@@ -49,3 +49,23 @@ export const sports = {
     advanced: 'Напредно',
   },
 }
+
+export const browse = {
+  label: 'Прегледај',
+  tables: 'Маси', sport: 'Спорт', lessons: 'Часови', trips: 'Патувања', rides: 'Превози',
+  live: 'во живо',
+  count: {
+    tables: '{{count}} отворени маси во {{city}}',
+    sport: '{{count}} отворени игри во {{city}}',
+    trips: '{{count}} отворени патувања од {{city}}',
+    rides: '{{count}} отворени превози од {{city}}',
+  },
+}
+
+export const support = {
+  label: 'Помош',
+  aria: 'Пиши ни на WhatsApp за помош',
+  message: 'Здраво! Ми треба помош со ejaBashkohu.',
+  account: 'Сметка: {{email}}',
+  page: 'Страница: {{page}}',
+}

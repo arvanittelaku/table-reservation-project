@@ -31,6 +31,7 @@ export function useTables(cityOrOpts, categoryArg, tasteArg, affinityArg) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const fetchGen = useRef(0)
+  const liveTimer = useRef(null)
 
   const refetch = useCallback(async (opts = {}) => {
     const silent = opts?.silent === true
@@ -75,6 +76,16 @@ export function useTables(cityOrOpts, categoryArg, tasteArg, affinityArg) {
         { event: '*', schema: 'public', table: 'requests' },
         () => {
           void refetch({ silent: true })
+        },
+      )
+      // New / changed / cancelled tables appear live (needs `tables` in the
+      // supabase_realtime publication: migration 20261003180000).
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tables' },
+        () => {
+          clearTimeout(liveTimer.current)
+          liveTimer.current = setTimeout(() => { void refetch({ silent: true }) }, 400)
         },
       )
       .subscribe()

@@ -11,7 +11,7 @@ import {
 import { errors, toasts, notifications, payment } from './phase6/mk.js'
 import { admin, termsOfService, privacyPolicy } from './phase7/mk.js'
 import { adm } from './admin/mk.js'
-import { social, sports } from './social/mk.js'
+import { social, sports, browse, support } from './social/mk.js'
 import { lessons } from './lessons/mk.js'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/mk.js'
 
@@ -387,6 +387,8 @@ export default {
   social,
   sports,
   lessons,
+  browse,
+  support,
   termsOfService,
   privacyPolicy,
   badges,

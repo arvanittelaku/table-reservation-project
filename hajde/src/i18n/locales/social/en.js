@@ -49,3 +49,23 @@ export const sports = {
     advanced: 'Advanced',
   },
 }
+
+export const browse = {
+  label: 'Browse',
+  tables: 'Tables', sport: 'Sport', lessons: 'Lessons', trips: 'Trips', rides: 'Rides',
+  live: 'live',
+  count: {
+    tables: '{{count}} open tables in {{city}}',
+    sport: '{{count}} open games in {{city}}',
+    trips: '{{count}} open trips from {{city}}',
+    rides: '{{count}} open rides from {{city}}',
+  },
+}
+
+export const support = {
+  label: 'Help',
+  aria: 'Message us on WhatsApp for help',
+  message: 'Hi! I need help with ejaBashkohu.',
+  account: 'Account: {{email}}',
+  page: 'Page: {{page}}',
+}

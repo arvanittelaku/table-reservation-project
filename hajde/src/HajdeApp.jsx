@@ -48,6 +48,7 @@ import TermsOfService from './components/TermsOfService'
 import LandingPage from './components/LandingPage'
 import AdminPanel from './components/AdminPanel'
 import Lessons from './components/lessons/Lessons.jsx'
+import WhatsAppButton from './components/WhatsAppButton.jsx'
 import { notifText, BADGE_LABEL_KEY } from './lib/notifText'
 import { awardBadgeOnce } from './api/notifications'
 import LanguageSwitcher from './components/LanguageSwitcher'
@@ -785,6 +786,13 @@ function HajdeApp() {
     sport: "", level: "any",
   });
   const [sportFilter, setSportFilterState] = useState(readSportFilter);
+  /* "Shiko" switcher: each type of listing is shown on its own, never mixed. */
+  const [lessonsView, setLessonsView] = useState({ view: 'find', key: 0 });
+  const feedMode = cat === "sport" ? "sport" : cat === "udhetim" ? "trips" : cat === "vozitje" ? "rides" : "tables";
+  const setFeedMode = (m) => {
+    if (m === "lessons") { setLessonsView((v) => ({ view: 'groups', key: v.key + 1 })); setTab("mesime"); return; }
+    setCat(m === "sport" ? "sport" : m === "trips" ? "udhetim" : m === "rides" ? "vozitje" : "all");
+  };
   const setSportFilter = (v) => {
     setSportFilterState(v);
     try { localStorage.setItem(SPORT_FILTER_KEY, v); } catch { /* ignore */ }
@@ -1438,6 +1446,7 @@ function HajdeApp() {
       !blocked.includes(t.host) &&
       t.city === city &&
       (cat === "all" || t.cat === cat) &&
+      (feedMode !== "tables" || !["vozitje", "udhetim", "sport"].includes(t.kind)) &&
       (cat !== "sport" || sportFilter === "all" || t.sport === sportFilter) &&
       (query === "" || (t.cafe + t.desc + (t.tags || []).join(" ")).toLowerCase().includes(query.toLowerCase()))
     )
@@ -2825,6 +2834,7 @@ function HajdeApp() {
                   onSignIn={() => { setStep(0); setShowSignIn(true); setAuthError(null); }}
                 />
               )}
+              {step === 0 && <WhatsAppButton variant="landing" context={showSignIn ? 'sign-in' : 'landing'} />}
 
               {step === 0 && showSignIn && (
                 <div className="hero hero-login">
@@ -3605,16 +3615,26 @@ function HajdeApp() {
               <input placeholder={t('feed.searchPlaceholder')} value={query} onChange={(e) => setQuery(e.target.value)} />
               {query && <button className="clear" onClick={() => setQuery("")} aria-label={t('feed.clear')}><X size={14} /></button>}
             </div>
+            <div className="browse-modes" role="tablist" aria-label={t('browse.label')}>
+              {["tables", "sport", "lessons", "trips", "rides"].map((m) => (
+                <button key={m} type="button" role="tab" aria-selected={feedMode === m}
+                  className={`browse-mode ${feedMode === m ? "on" : ""}`} onClick={() => setFeedMode(m)}>
+                  {t(`browse.${m}`)}
+                </button>
+              ))}
+            </div>
+            {feedMode === "tables" && (
             <div className="cat-row">
               <button className={`chip ${cat === "all" ? "on" : ""}`} onClick={() => setCat("all")}>
                 {t('feed.categoryAll')}
               </button>
-              {CATEGORIES.map((c) => (
+              {CATEGORIES.filter((c) => !["sport", "vozitje", "udhetim"].includes(c.id)).map((c) => (
                   <button key={c.id} className={`chip ${cat === c.id ? "on" : ""}`} onClick={() => setCat(c.id)}>
                     {catLabel(c.id)}
                   </button>
               ))}
             </div>
+            )}
             {cat === "sport" && (() => {
               const inCity = tables.filter((x) => x.cat === "sport" && x.city === city && !blocked.includes(x.host_id));
               const count = (sp) => inCity.filter((x) => x.sport === sp).length;
@@ -3633,7 +3653,7 @@ function HajdeApp() {
             })()}
 
             {!tablesLoading && !tablesError && (
-              <p className="count">{t('feed.openTablesCount', { count: filtered.length, city })}</p>
+              <p className="count"><span className="live-dot" aria-hidden="true" />{t(`browse.count.${feedMode}`, { count: filtered.length, city })} <span className="live-label">{t('browse.live')}</span></p>
             )}
 
             {tablesLoading && (
@@ -3744,7 +3764,7 @@ function HajdeApp() {
         )}
 
         {tab === "mesime" && (
-          <Lessons authUser={authUser} cities={CITIES} city={city} showToast={showToast} mapErr={mapErr} myName={user.name} />
+          <Lessons key={lessonsView.key} initialView={lessonsView.view} authUser={authUser} cities={CITIES} city={city} showToast={showToast} mapErr={mapErr} myName={user.name} />
         )}
 
         {tab === "imet" && (
@@ -3822,6 +3842,8 @@ function HajdeApp() {
         <Plus size={22} /> {createFabLabel()}
       </button>
       )}
+
+      <WhatsAppButton email={authUser?.email} context={tab} />
 
       <nav className="nav">
         <button className={tab === "zbulo" ? "on" : ""} onClick={() => setTab("zbulo")}>
