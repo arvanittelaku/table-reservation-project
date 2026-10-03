@@ -10,6 +10,7 @@ export const adm = {
     bans: 'Pezullimet',
     wednesday: 'Darka e Mërkurës',
     activity: 'Aktiviteti',
+    tutors: 'Mësuesit',
   },
   side: {
     revenue: 'Të ardhura',
@@ -396,6 +397,18 @@ export const adm = {
       active: 'Aktiv',
     },
   },
+  tutors: {
+    subtitle: 'Aplikimet për mësues. Profili shfaqet te studentët vetëm pasi ta aprovosh.',
+    empty: "S'ka aplikime në këtë kategori",
+    status: { pending: 'Në pritje', approved: 'Të aprovuar', rejected: 'Të refuzuar', suspended: 'Të pezulluar', all: 'Të gjithë' },
+    approve: 'Aprovo', reject: 'Refuzo', suspend: 'Pezullo',
+    groups: 'Pranon grupe',
+    applied: 'Aplikoi më {{date}}',
+    approveBody: 'Profili bëhet i dukshëm për studentët dhe mësuesi merr njoftim.',
+    reasonBody: 'Arsyeja i dërgohet mësuesit. Mund ta ndryshojë profilin dhe ta dërgojë përsëri.',
+    confirm: { approved: 'Aprovo {{name}} si mësues?', rejected: 'Refuzo aplikimin e {{name}}?', suspended: 'Pezullo mësuesin {{name}}?' },
+    toast: { approved: 'Mësuesi u aprovua', rejected: 'Aplikimi u refuzua', suspended: 'Mësuesi u pezullua' },
+  },
   audit: {
     subtitle: 'Çdo veprim i adminëve regjistrohet këtu',
     empty: 'Asnjë veprim ende',
@@ -422,6 +435,9 @@ export const adm = {
       restaurant_updated: 'Ndryshoi restorantin',
       restaurant_activated: 'Aktivizoi restorantin',
       restaurant_deactivated: 'Çaktivizoi restorantin',
+      tutor_approved: 'Aprovoi mësuesin',
+      tutor_rejected: 'Refuzoi mësuesin',
+      tutor_suspended: 'Pezulloi mësuesin',
     },
   },
   toast: {

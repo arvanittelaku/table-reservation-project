@@ -12,6 +12,7 @@ import { errors, toasts, notifications, payment } from './phase6/en.js'
 import { admin, termsOfService, privacyPolicy } from './phase7/en.js'
 import { adm } from './admin/en.js'
 import { social, sports } from './social/en.js'
+import { lessons } from './lessons/en.js'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/en.js'
 
 export default {
@@ -385,6 +386,7 @@ export default {
   adm,
   social,
   sports,
+  lessons,
   termsOfService,
   privacyPolicy,
   badges,

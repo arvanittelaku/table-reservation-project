@@ -1,0 +1,67 @@
+/* ── Lessons (Mësime) ── */
+.ls { display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 120px; }
+.ls-head h2 { font-size: 22px; font-weight: 800; color: #1A1A2E; }
+.ls-head p { font-size: 13.5px; margin-top: 2px; }
+.ls-views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #F1EDE4; padding: 4px; border-radius: 14px; }
+.ls-views button { border: 0; background: transparent; border-radius: 10px; padding: 9px 4px; font-family: inherit; font-weight: 800; font-size: 12.5px; color: #55503F; cursor: pointer; }
+.ls-views button.on { background: #fff; color: #1A1A2E; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.ls-cats, .ls-subjects { margin: 0; }
+.ls-subjects .chip { background: #F2F6FD; }
+.ls-subjects .chip.on { background: #2348A8; border-color: #2348A8; color: #fff; }
+.ls-section { display: flex; flex-direction: column; gap: 10px; }
+.ls-filters { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ls-seg { display: inline-flex; background: #F1EDE4; border-radius: 999px; padding: 3px; gap: 2px; }
+.ls-seg button { border: 0; background: transparent; padding: 7px 12px; border-radius: 999px; font: inherit; font-size: 12.5px; font-weight: 800; color: #55503F; cursor: pointer; }
+.ls-seg button.on { background: #1A1A2E; color: #fff; }
+.ls-select { height: 34px; border-radius: 999px; border: 1.5px solid #E8DFCC; background: #fff; padding: 0 10px; font: inherit; font-size: 12.5px; font-weight: 700; color: #1A1A2E; }
+.ls-list { display: flex; flex-direction: column; gap: 10px; }
+.ls-card { display: flex; gap: 12px; text-align: left; width: 100%; background: #fff; border: 1.5px solid #E8DFCC; border-radius: 16px; padding: 12px; font: inherit; color: inherit; cursor: pointer; transition: border-color .15s, transform .1s; }
+.ls-card:hover { border-color: #D6CBB3; }
+.ls-card.static { cursor: default; align-items: flex-start; }
+.ls-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ls-card-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.ls-card-top strong { font-size: 15px; }
+.ls-card-action { align-self: center; }
+.ls-price { font-weight: 800; color: #1B6B3A; white-space: nowrap; font-size: 13.5px; }
+.ls-headline { font-size: 13px; color: #45455A; font-weight: 600; }
+.ls-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.ls-tag { font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: #F2F0EA; color: #55503F; }
+.ls-tag.hit { background: #2348A8; color: #fff; }
+.ls-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; }
+.ls-dist { font-weight: 800; color: #1A1A2E; }
+.badge.ls-online { color: #2348A8; background: #E8EEFC; }
+.badge.ls-inperson { color: #8A4B12; background: #FBEEDD; }
+.ls-avatar { flex-shrink: 0; display: inline-grid; place-items: center; border-radius: 50%; overflow: hidden; background: #EBE7DE; color: #4A4636; font-weight: 800; }
+.ls-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ls-sheet { max-height: 92vh; overflow-y: auto; position: relative; display: flex; flex-direction: column; gap: 10px; }
+.ls-close { position: absolute; top: 10px; right: 12px; border: 0; background: #F1EDE4; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; cursor: pointer; line-height: 1; }
+.ls-sheet-head { display: flex; gap: 14px; align-items: center; padding-right: 36px; }
+.ls-sheet-head h2 { font-size: 19px; font-weight: 800; }
+.ls-bio { white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: #2E2E40; }
+.ls-book { border-top: 1.5px solid #EFE8DA; padding-top: 12px; display: flex; flex-direction: column; gap: 4px; }
+.ls-book h3 { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+.ls-price-box { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; background: #FBF8F1; border: 1.5px solid #EFE8DA; border-radius: 12px; padding: 10px 12px; margin: 8px 0; font-size: 13.5px; }
+.ls-price-box .small { grid-column: 1 / -1; margin-top: -2px; }
+.ls-h3 { font-size: 15px; font-weight: 800; margin-top: 6px; }
+.ls-h3-row { display: flex; justify-content: space-between; align-items: center; }
+.ls-item { background: #fff; border: 1.5px solid #E8DFCC; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.ls-item.dim { opacity: .55; }
+.ls-item-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.ls-item-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ls-status { font-size: 11.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: #F2F0EA; color: #55503F; white-space: nowrap; }
+.ls-status.st-requested { background: #FDF3D7; color: #92400E; }
+.ls-status.st-accepted { background: #E8EEFC; color: #1E40AF; }
+.ls-status.st-confirmed { background: #E6F4EA; color: #166534; }
+.ls-status.st-declined, .ls-status.st-cancelled { background: #FDEAEA; color: #B91C1C; }
+.ls-student { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid #F2EDE2; }
+.ls-student-main { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13px; }
+.ls-banner { border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; background: #F2F0EA; }
+.ls-banner.st-pending { background: #FDF3D7; color: #78350F; }
+.ls-banner.st-approved { background: #E6F4EA; color: #14532D; }
+.ls-banner.st-rejected, .ls-banner.st-suspended { background: #FDEAEA; color: #7F1D1D; }
+.ls-teach .toggle-row { display: flex; gap: 8px; align-items: center; font-size: 14px; padding: 4px 0; }
+.ls-room { position: fixed; inset: 0; z-index: 300; background: #0E0E1A; display: flex; flex-direction: column; }
+.ls-room-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; color: #fff; }
+.ls-room-bar .btn.ghost { color: #fff; border-color: rgba(255,255,255,.4); }
+.ls-room-frame { flex: 1; width: 100%; border: 0; }
+.ls-room-msg { color: #fff; text-align: center; padding: 40px 20px; }

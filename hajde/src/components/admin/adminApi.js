@@ -49,6 +49,8 @@ export const adminApi = {
   listReports: (status) => rpc('admin_list_reports', { p_status: status }),
   listBans: () => rpc('admin_list_bans'),
   listWednesday: () => rpc('admin_list_wednesday'),
+  listTutors: (status) => rpc('admin_list_tutors', { p_status: status }),
+  reviewTutor: (id, status, reason) => rpc('admin_review_tutor', { p_user: id, p_status: status, p_reason: reason || null }),
   listAudit: ({ limit, offset }) => rpc('admin_list_audit', { p_limit: limit, p_offset: offset }),
   search: (q) => rpc('admin_global_search', { p_q: q }),
 

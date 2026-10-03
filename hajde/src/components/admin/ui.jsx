@@ -152,6 +152,7 @@ const PATHS = {
   bans: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8',
   wednesday: 'M4 4h16v16H4zM4 9h16M9 4v5M15 4v5',
   activity: 'M3 12h4l3 8 4-16 3 8h4',
+  tutors: 'M2 8l10-5 10 5-10 5-10-5zM6 10v5c2 2 10 2 12 0v-5',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
   close: 'M6 6l12 12M18 6L6 18',
   chevronL: 'M15 6l-6 6 6 6',

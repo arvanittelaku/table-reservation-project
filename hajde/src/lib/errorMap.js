@@ -51,6 +51,28 @@ const ERROR_KEY_MAP = {
   'Plotëso profilin (emri, mosha, foto) para se të vazhdosh': 'social.errors.completeProfile',
   'Shkruaj emrin dhe mbiemrin': 'social.errors.nameRequired',
   'Duhet të kesh të paktën 18 vjeç': 'errors.mustBe18',
+
+  "Mësuesi nuk është i disponueshëm": 'lessons.errors.tutorUnavailable',
+  "Nuk mund të rezervosh mësim me veten": 'lessons.errors.selfBooking',
+  "Ky mësues nuk e jep këtë lëndë": 'lessons.errors.wrongSubject',
+  "Ky mësues nuk e ofron këtë mënyrë mësimi": 'lessons.errors.wrongFormat',
+  "Zgjidh një orë të paktën 30 minuta nga tani": 'lessons.errors.tooSoon',
+  "Ke tashmë 3 kërkesa në pritje te ky mësues": 'lessons.errors.tooManyPending',
+  "Mësuesi është i zënë në këtë orë": 'lessons.errors.tutorBusy',
+  "Vetëm mësuesi mund të përgjigjet": 'lessons.errors.onlyTutor',
+  "Vetëm mësuesit e aprovuar hapin mësime në grup": 'lessons.errors.notApprovedTutor',
+  "Aktivizo mësimet në grup te profili yt i mësuesit": 'lessons.errors.groupDisabled',
+  "Grupi ka 2 deri 30 studentë": 'lessons.errors.groupSize',
+  "Shkruaj vendin e mësimit": 'lessons.errors.locationRequired',
+  "Mësimi nuk është i disponueshëm": 'lessons.errors.lessonUnavailable',
+  "Nuk mund t'i bashkohesh mësimit tënd": 'lessons.errors.ownLesson',
+  "Grupi është plot": 'lessons.errors.groupFull',
+  "Mësuesi nuk e ka pranuar ende kërkesën": 'lessons.errors.notAcceptedYet',
+  "Mësimi nuk u gjet": 'lessons.errors.lessonNotFound',
+  "Nuk ke qasje në këtë mësim": 'lessons.errors.noAccess',
+  "Dhoma hapet 15 minuta para mësimit": 'lessons.errors.roomNotOpen',
+  "Mësimi ka përfunduar": 'lessons.errors.lessonEnded',
+  "Lëndë e panjohur": 'lessons.errors.unknownSubject',
 }
 
 function tr(locale, key, vars) {

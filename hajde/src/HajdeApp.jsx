@@ -47,6 +47,7 @@ import PrivacyPolicy from './components/PrivacyPolicy'
 import TermsOfService from './components/TermsOfService'
 import LandingPage from './components/LandingPage'
 import AdminPanel from './components/AdminPanel'
+import Lessons from './components/lessons/Lessons.jsx'
 import { notifText, BADGE_LABEL_KEY } from './lib/notifText'
 import { awardBadgeOnce } from './api/notifications'
 import LanguageSwitcher from './components/LanguageSwitcher'
@@ -3441,10 +3442,19 @@ function HajdeApp() {
             {t('feed.myTables')}
             {myTables.length > 0 && <span className="sb-badge">{myTables.length}</span>}
           </button>
+          <button
+            type="button"
+            className={tab === "mesime" ? "sb-btn on" : "sb-btn"}
+            onClick={() => setTab("mesime")}
+          >
+            {t('lessons.title')}
+          </button>
         </nav>
+        {tab !== "mesime" && (
         <button type="button" className="btn primary sidebar-cta" onClick={openCreate}>
           + {createFabLabel()}
         </button>
+        )}
       </div>
       <div className="app-main">
         <div className="app-mobile-frame">
@@ -3563,7 +3573,7 @@ function HajdeApp() {
             {notifs.map((n) => (
               <div key={n.id} className="notif-item">
                 <span className="notif-icon" aria-hidden="true" />
-                <p>{notifText(n, t)}</p>
+                <p>{notifText(n, t, locale)}</p>
                 <em>{n.time}</em>
               </div>
             ))}
@@ -3733,6 +3743,10 @@ function HajdeApp() {
           </>
         )}
 
+        {tab === "mesime" && (
+          <Lessons authUser={authUser} cities={CITIES} city={city} showToast={showToast} mapErr={mapErr} myName={user.name} />
+        )}
+
         {tab === "imet" && (
           <>
             {badges.length > 0 && (
@@ -3803,9 +3817,11 @@ function HajdeApp() {
         )}
       </main>
 
+      {tab !== "mesime" && (
       <button className="fab" onClick={openCreate} aria-label={createFabLabel()}>
         <Plus size={22} /> {createFabLabel()}
       </button>
+      )}
 
       <nav className="nav">
         <button className={tab === "zbulo" ? "on" : ""} onClick={() => setTab("zbulo")}>
@@ -3816,6 +3832,9 @@ function HajdeApp() {
           {(myTables.length > 0 || pendingRequestsForMe > 0) && (
             <em className="nav-count">{pendingRequestsForMe > 0 ? pendingRequestsForMe : myTables.length}</em>
           )}
+        </button>
+        <button className={tab === "mesime" ? "on" : ""} onClick={() => setTab("mesime")}>
+          <BookOpen size={20} /><span>{t('lessons.title')}</span>
         </button>
       </nav>
 

@@ -63,9 +63,11 @@ function playChime() {
  * @param {string|null|undefined} userId
  */
 export function useNotifications(userId) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const tRef = useRef(t)
   tRef.current = t
+  const localeRef = useRef(locale)
+  localeRef.current = locale
   const [notifs, setNotifs] = useState([])
   const [loading, setLoading] = useState(!!userId)
   const [error, setError] = useState(null)
@@ -138,7 +140,7 @@ export function useNotifications(userId) {
           playChime()
           try {
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-              new Notification('ejaBashkohu', { body: notifText(mapNotif(row), tRef.current), icon: undefined })
+              new Notification('ejaBashkohu', { body: notifText(mapNotif(row), tRef.current, localeRef.current), icon: undefined })
             }
           } catch {
             /* ignore */
@@ -188,7 +190,7 @@ export function useNotifications(userId) {
     async (kind, params = {}, icon = '🔔') => {
       if (!userId) return
       try {
-        const body = notifText({ kind, params, body: kind }, tRef.current)
+        const body = notifText({ kind, params, body: kind }, tRef.current, localeRef.current)
         await insertNotification({ body, icon, kind, params })
       } catch (e) {
         setError(e)

@@ -12,6 +12,7 @@ import Payments from './Payments.jsx'
 import { Bans, Reports } from './Moderation.jsx'
 import Wednesday from './Wednesday.jsx'
 import Activity from './Activity.jsx'
+import Tutors from './Tutors.jsx'
 import './admin.css'
 
 const SECTIONS = [
@@ -21,6 +22,7 @@ const SECTIONS = [
   { key: 'payments', icon: 'payments', Comp: Payments },
   { key: 'reports', icon: 'reports', Comp: Reports, badge: 'reports_pending' },
   { key: 'bans', icon: 'bans', Comp: Bans },
+  { key: 'tutors', icon: 'tutors', Comp: Tutors, badge: 'tutors_pending' },
   { key: 'wednesday', icon: 'wednesday', Comp: Wednesday },
   { key: 'activity', icon: 'activity', Comp: Activity },
 ]
@@ -64,7 +66,11 @@ export default function AdminPanel({ isAdmin, onViewAsUser, onSignOut, adminId: 
   useEffect(() => {
     let alive = true
     adminApi.dashboard('day')
-      .then((d) => { if (alive) { setCounts(d?.totals || null); setSetupMissing(false) } })
+      .then(async (d) => {
+        // pending teacher applications (lessons migration; ignore if not applied yet)
+        const pending = await adminApi.listTutors('pending').then((r) => (r || []).length).catch(() => 0)
+        if (alive) { setCounts({ ...(d?.totals || {}), tutors_pending: pending }); setSetupMissing(false) }
+      })
       .catch((err) => { if (alive && isMissingRpc(err)) setSetupMissing(true) })
     return () => { alive = false }
   }, [refreshKey])

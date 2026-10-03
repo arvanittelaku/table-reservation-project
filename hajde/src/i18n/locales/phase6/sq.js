@@ -103,6 +103,14 @@ export const notifications = {
   mutualMatch: 'Përputhje e ndërsjellë! Chat-i privat u hap te "Lidhjet e mia".',
   accountSuspended: 'Llogaria jote u pezullua. Arsyeja: {{reason}}. Pezullim {{count}}/3.',
   tableCancelledByAdmin: 'Tavolina "{{title}}" u anulua nga ekipi i ejaBashkohu. Arsyeja: {{reason}}',
+  lessonRequested: '{{name}} kërkon një mësim {{subject}} me ty më {{at}}.',
+  lessonAccepted: '{{name}} e pranoi mësimin {{subject}} më {{at}}. Konfirmo rezervimin.',
+  lessonDeclined: '{{name}} nuk mund ta mbajë mësimin {{subject}} më {{at}}.',
+  lessonConfirmed: '{{name}} e konfirmoi mësimin {{subject}} më {{at}}.',
+  lessonCancelled: '{{name}} e anuloi mësimin {{subject}} më {{at}}.',
+  tutorApproved: 'Profili yt i mësuesit u aprovua! Studentët tani mund të të gjejnë.',
+  tutorRejected: 'Profili yt i mësuesit nuk u aprovua. Arsyeja: {{reason}}',
+  tutorSuspended: 'Profili yt i mësuesit u pezullua. Arsyeja: {{reason}}',
 }
 
 export const payment = {

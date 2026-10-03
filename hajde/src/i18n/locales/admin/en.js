@@ -10,6 +10,7 @@ export const adm = {
     bans: 'Strikes',
     wednesday: 'Wednesday Dinner',
     activity: 'Activity log',
+    tutors: 'Teachers',
   },
   side: {
     revenue: 'Revenue',
@@ -396,6 +397,18 @@ export const adm = {
       active: 'Active',
     },
   },
+  tutors: {
+    subtitle: 'Teacher applications. A profile is shown to students only after you approve it.',
+    empty: 'No applications in this category',
+    status: { pending: 'Pending', approved: 'Approved', rejected: 'Rejected', suspended: 'Suspended', all: 'All' },
+    approve: 'Approve', reject: 'Reject', suspend: 'Suspend',
+    groups: 'Takes groups',
+    applied: 'Applied {{date}}',
+    approveBody: 'The profile becomes visible to students and the teacher is notified.',
+    reasonBody: 'The reason is sent to the teacher. They can edit their profile and resubmit.',
+    confirm: { approved: 'Approve {{name}} as a teacher?', rejected: 'Reject {{name}}’s application?', suspended: 'Suspend teacher {{name}}?' },
+    toast: { approved: 'Teacher approved', rejected: 'Application rejected', suspended: 'Teacher suspended' },
+  },
   audit: {
     subtitle: 'Every admin action is recorded here',
     empty: 'No actions yet',
@@ -422,6 +435,9 @@ export const adm = {
       restaurant_updated: 'Edited restaurant',
       restaurant_activated: 'Activated restaurant',
       restaurant_deactivated: 'Deactivated restaurant',
+      tutor_approved: 'Approved teacher',
+      tutor_rejected: 'Rejected teacher',
+      tutor_suspended: 'Suspended teacher',
     },
   },
   toast: {

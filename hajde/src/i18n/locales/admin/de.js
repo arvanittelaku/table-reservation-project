@@ -10,6 +10,7 @@ export const adm = {
     bans: 'Verwarnungen',
     wednesday: 'Mittwochsdinner',
     activity: 'Aktivitätsprotokoll',
+    tutors: 'Lehrkräfte',
   },
   side: {
     revenue: 'Umsatz',
@@ -396,6 +397,18 @@ export const adm = {
       active: 'Aktiv',
     },
   },
+  tutors: {
+    subtitle: 'Bewerbungen als Lehrkraft. Ein Profil wird erst nach deiner Freigabe angezeigt.',
+    empty: 'Keine Bewerbungen in dieser Kategorie',
+    status: { pending: 'Ausstehend', approved: 'Freigegeben', rejected: 'Abgelehnt', suspended: 'Gesperrt', all: 'Alle' },
+    approve: 'Freigeben', reject: 'Ablehnen', suspend: 'Sperren',
+    groups: 'Bietet Gruppen an',
+    applied: 'Beworben am {{date}}',
+    approveBody: 'Das Profil wird für Lernende sichtbar und die Lehrkraft wird benachrichtigt.',
+    reasonBody: 'Der Grund wird der Lehrkraft gesendet. Sie kann das Profil bearbeiten und erneut einreichen.',
+    confirm: { approved: '{{name}} als Lehrkraft freigeben?', rejected: 'Bewerbung von {{name}} ablehnen?', suspended: 'Lehrkraft {{name}} sperren?' },
+    toast: { approved: 'Lehrkraft freigegeben', rejected: 'Bewerbung abgelehnt', suspended: 'Lehrkraft gesperrt' },
+  },
   audit: {
     subtitle: 'Jede Admin-Aktion wird hier protokolliert',
     empty: 'Noch keine Aktionen',
@@ -422,6 +435,9 @@ export const adm = {
       restaurant_updated: 'Restaurant bearbeitet',
       restaurant_activated: 'Restaurant aktiviert',
       restaurant_deactivated: 'Restaurant deaktiviert',
+      tutor_approved: 'Lehrkraft freigegeben',
+      tutor_rejected: 'Lehrkraft abgelehnt',
+      tutor_suspended: 'Lehrkraft gesperrt',
     },
   },
   toast: {

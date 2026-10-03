@@ -10,6 +10,7 @@ export const adm = {
     bans: 'Казни',
     wednesday: 'Вечера во среда',
     activity: 'Дневник на активности',
+    tutors: 'Наставници',
   },
   side: {
     revenue: 'Приход',
@@ -396,6 +397,18 @@ export const adm = {
       active: 'Активен',
     },
   },
+  tutors: {
+    subtitle: 'Апликации за наставници. Профилот им се прикажува на учениците дури по твоето одобрување.',
+    empty: 'Нема апликации во оваа категорија',
+    status: { pending: 'На чекање', approved: 'Одобрени', rejected: 'Одбиени', suspended: 'Суспендирани', all: 'Сите' },
+    approve: 'Одобри', reject: 'Одбиј', suspend: 'Суспендирај',
+    groups: 'Прифаќа групи',
+    applied: 'Аплицирал на {{date}}',
+    approveBody: 'Профилот станува видлив за учениците и наставникот е известен.',
+    reasonBody: 'Причината му се испраќа на наставникот. Може да го уреди профилот и да испрати повторно.',
+    confirm: { approved: 'Да се одобри {{name}} како наставник?', rejected: 'Да се одбие апликацијата на {{name}}?', suspended: 'Да се суспендира наставникот {{name}}?' },
+    toast: { approved: 'Наставникот е одобрен', rejected: 'Апликацијата е одбиена', suspended: 'Наставникот е суспендиран' },
+  },
   audit: {
     subtitle: 'Секое админ дејство се запишува тука',
     empty: 'Сè уште нема дејства',
@@ -422,6 +435,9 @@ export const adm = {
       restaurant_updated: 'Уреди ресторан',
       restaurant_activated: 'Активира ресторан',
       restaurant_deactivated: 'Деактивира ресторан',
+      tutor_approved: 'Одобри наставник',
+      tutor_rejected: 'Одби наставник',
+      tutor_suspended: 'Суспендира наставник',
     },
   },
   toast: {

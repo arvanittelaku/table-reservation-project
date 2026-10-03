@@ -103,6 +103,14 @@ export const notifications = {
   mutualMatch: 'Заемно совпаѓање! Отворен е приватен разговор во „Мои врски“.',
   accountSuspended: 'Твојата сметка е суспендирана. Причина: {{reason}}. Казна {{count}}/3.',
   tableCancelledByAdmin: '„{{title}}“ е откажана од тимот на ejaBashkohu. Причина: {{reason}}',
+  lessonRequested: '{{name}} бара час по {{subject}} со тебе на {{at}}.',
+  lessonAccepted: '{{name}} го прифати часот по {{subject}} на {{at}}. Потврди ја резервацијата.',
+  lessonDeclined: '{{name}} не може да го одржи часот по {{subject}} на {{at}}.',
+  lessonConfirmed: '{{name}} го потврди часот по {{subject}} на {{at}}.',
+  lessonCancelled: '{{name}} го откажа часот по {{subject}} на {{at}}.',
+  tutorApproved: 'Твојот профил на наставник е одобрен! Учениците сега можат да те најдат.',
+  tutorRejected: 'Твојот профил на наставник не е одобрен. Причина: {{reason}}',
+  tutorSuspended: 'Твојот профил на наставник е суспендиран. Причина: {{reason}}',
 }
 
 export const payment = {

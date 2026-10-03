@@ -103,6 +103,14 @@ export const notifications = {
   mutualMatch: 'It\'s a mutual match! A private chat opened in "My connections".',
   accountSuspended: 'Your account was suspended. Reason: {{reason}}. Strike {{count}}/3.',
   tableCancelledByAdmin: '"{{title}}" was cancelled by the ejaBashkohu team. Reason: {{reason}}',
+  lessonRequested: '{{name}} requested a {{subject}} lesson with you on {{at}}.',
+  lessonAccepted: '{{name}} accepted your {{subject}} lesson on {{at}}. Confirm your booking.',
+  lessonDeclined: '{{name}} can\'t do the {{subject}} lesson on {{at}}.',
+  lessonConfirmed: '{{name}} confirmed the {{subject}} lesson on {{at}}.',
+  lessonCancelled: '{{name}} cancelled the {{subject}} lesson on {{at}}.',
+  tutorApproved: 'Your teacher profile was approved! Students can now find you.',
+  tutorRejected: 'Your teacher profile was not approved. Reason: {{reason}}',
+  tutorSuspended: 'Your teacher profile was suspended. Reason: {{reason}}',
 }
 
 export const payment = {
