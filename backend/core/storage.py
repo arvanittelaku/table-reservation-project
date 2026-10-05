@@ -13,6 +13,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core import signing
+from django.utils import timezone
 
 SIGN_SALT = 'ejb.storage'
 
@@ -51,7 +52,7 @@ def can_write(claims, bucket, path):
     return bool(claims) and path.split('/')[0] == claims['sub']
 
 
-def upload(cur, claims, bucket, path, data, content_type, upsert):
+def upload(claims, bucket, path, data, content_type, upsert):
     cfg = bucket_config(bucket)
     path = _clean_path(path)
     if not can_write(claims, bucket, path):
@@ -68,15 +69,15 @@ def upload(cur, claims, bucket, path, data, content_type, upsert):
     tmp = target.with_suffix(target.suffix + '.part')
     tmp.write_bytes(data)
     os.replace(tmp, target)
-    cur.execute(
-        'INSERT INTO backend.storage_objects (bucket, path, owner, size, content_type, updated_at)'
-        ' VALUES (%s, %s, %s, %s, %s, now()) ON CONFLICT (bucket, path) DO UPDATE'
-        ' SET owner = excluded.owner, size = excluded.size, content_type = excluded.content_type, updated_at = now()',
-        [bucket, path, claims['sub'], len(data), content_type])
+    from ejb.models import StorageObject
+    StorageObject.objects.update_or_create(
+        bucket=bucket, path=path,
+        defaults={'owner': claims['sub'], 'size': len(data), 'content_type': content_type,
+                  'updated_at': timezone.now()})
     return {'Key': f'{bucket}/{path}', 'path': path, 'id': f'{bucket}/{path}', 'fullPath': f'{bucket}/{path}'}
 
 
-def remove(cur, claims, bucket, paths):
+def remove(claims, bucket, paths):
     bucket_config(bucket)
     removed = []
     for raw in paths or []:
@@ -87,7 +88,8 @@ def remove(cur, claims, bucket, paths):
         if f.exists():
             f.unlink()
             removed.append({'name': path, 'bucket_id': bucket})
-        cur.execute('DELETE FROM backend.storage_objects WHERE bucket = %s AND path = %s', [bucket, path])
+        from ejb.models import StorageObject
+        StorageObject.objects.filter(bucket=bucket, path=path).delete()
     return removed
 
 
@@ -98,10 +100,8 @@ def delete_prefix(bucket, prefix):
         for p in sorted(root.rglob('*'), reverse=True):
             p.unlink() if p.is_file() else p.rmdir()
         root.rmdir()
-    from .db import as_service
-    with as_service() as cur:
-        cur.execute('DELETE FROM backend.storage_objects WHERE bucket = %s AND path LIKE %s',
-                    [bucket, prefix.rstrip('/') + '/%'])
+    from ejb.models import StorageObject
+    StorageObject.objects.filter(bucket=bucket, path__startswith=prefix.rstrip('/') + '/').delete()
 
 
 def sign_urls(claims, bucket, paths, expires_in):

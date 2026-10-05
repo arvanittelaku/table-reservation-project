@@ -1,0 +1,92 @@
+"""Group D: admin moderation actions."""
+R1 = "$sql:select r.id::text from public.reports r join auth.users u on u.id = r.reported_id where u.email = 'mia.fischer@gmail.com' and r.status = 'pending' order by r.created_at limit 1"  # pending report on mia.fischer
+R_BANNED = "$sql:select r.id::text from public.reports r join auth.users u on u.id = r.reported_id where u.email = 'rina.halili@gmail.com' and r.status = 'reviewed_banned' order by r.created_at limit 1"  # rina.halili, 2 bans
+NOPE = '00000000-0000-0000-0000-000000000000'
+USER = 'agon.begolli@gmail.com'
+FUT = ("$sql:select t.id from tables t where t.status='open' and t.event_datetime>now() and "
+       "exists(select 1 from requests q where q.table_id=t.id and q.status in ('pending','approved')) order by t.id limit 1")
+PAST = "$sql:select id from tables where event_datetime<now() order by id limit 1"
+ADD_WAIT = ("insert into public.waitlist(table_id,user_id) select t.id, p.id from tables t, profiles p "
+            "where t.status='open' and t.event_datetime>now() and exists(select 1 from requests q where q.table_id=t.id "
+            "and q.status in ('pending','approved')) and not exists(select 1 from memberships m where m.table_id=t.id and m.user_id=p.id) "
+            "and not exists(select 1 from requests q where q.table_id=t.id and q.user_id=p.id) "
+            "order by t.id, p.id limit 2")
+
+
+CASES = [
+    {'name': 'ban_from_report happy + non-admin + missing report + 3rd ban',
+     'steps': [{'as': USER, 'rpc': 'admin_ban_from_report', 'args': {'p_report_id': R1, 'p_reason': 'x'}},
+               {'as': None, 'rpc': 'admin_ban_from_report', 'args': {'p_report_id': R1, 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_ban_from_report', 'args': {'p_report_id': R1, 'p_reason': 'Spam'}},
+               {'as': 'admin', 'rpc': 'admin_ban_from_report', 'args': {'p_report_id': R_BANNED, 'p_reason': 'Sërish'}}]},
+    {'name': 'ban_from_report missing report (null user)',
+     'steps': [{'as': 'admin', 'rpc': 'admin_ban_from_report', 'args': {'p_report_id': NOPE, 'p_reason': 'x'}}]},
+    {'name': 'ban_from_report null reason',
+     'steps': [{'as': 'admin', 'rpc': 'admin_ban_from_report', 'args': {'p_report_id': R1, 'p_reason': None}}]},
+    {'name': 'admin_ban_user branches',
+     'steps': [{'as': USER, 'rpc': 'admin_ban_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_reason': 'x'}},
+               {'as': None, 'rpc': 'admin_ban_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_ban_user', 'args': {'p_user': '$user:admin', 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_ban_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_reason': '   '}},
+               {'as': 'admin', 'rpc': 'admin_ban_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_reason': None}},
+               {'as': 'admin', 'rpc': 'admin_ban_user', 'args': {'p_user': NOPE, 'p_reason': 'x'}},
+               {'sql': "update public.profiles set is_admin=true where id=(select id from auth.users where email='hana.bytyqi@gmail.com')"},
+               {'as': 'admin', 'rpc': 'admin_ban_user', 'args': {'p_user': '$user:hana.bytyqi@gmail.com', 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_ban_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_reason': '  Ofendime '}},
+               {'as': 'admin', 'rpc': 'admin_ban_user', 'args': {'p_user': '$user:rina.halili@gmail.com', 'p_reason': 'Tre'}}]},
+    {'name': 'admin_cancel_table happy (members, requests, waitlist) then again',
+     'steps': [{'sql': ADD_WAIT},
+               {'as': 'admin', 'rpc': 'admin_cancel_table', 'args': {'p_table': FUT, 'p_reason': ' Mashtrim '}},
+               {'as': 'admin', 'rpc': 'admin_cancel_table', 'args': {'p_table': FUT, 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_restore_table', 'args': {'p_table': FUT}},
+               {'as': 'admin', 'rpc': 'admin_restore_table', 'args': {'p_table': FUT}}]},
+    {'name': 'admin_cancel_table errors',
+     'steps': [{'as': USER, 'rpc': 'admin_cancel_table', 'args': {'p_table': FUT, 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_cancel_table', 'args': {'p_table': FUT, 'p_reason': ''}},
+               {'as': 'admin', 'rpc': 'admin_cancel_table', 'args': {'p_table': NOPE, 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_restore_table', 'args': {'p_table': NOPE}},
+               {'as': USER, 'rpc': 'admin_restore_table', 'args': {'p_table': FUT}},
+               {'as': 'admin', 'rpc': 'admin_cancel_table', 'args': {'p_table': PAST, 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_restore_table', 'args': {'p_table': PAST}}]},
+    {'name': 'admin_delete_immediately',
+     'steps': [{'as': USER, 'rpc': 'admin_delete_immediately', 'args': {'p_report_id': R1, 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_delete_immediately', 'args': {'p_report_id': R1, 'p_reason': 'Rëndë'}},
+               {'as': 'admin', 'rpc': 'admin_delete_immediately', 'args': {'p_report_id': NOPE, 'p_reason': None}}]},
+    {'name': 'admin_delete_user branches',
+     'steps': [{'as': USER, 'rpc': 'admin_delete_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_delete_user', 'args': {'p_user': '$user:admin', 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_delete_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_reason': ' '}},
+               {'as': 'admin', 'rpc': 'admin_delete_user', 'args': {'p_user': NOPE, 'p_reason': 'x'}},
+               {'sql': "update public.profiles set is_admin=true where id=(select id from auth.users where email='hana.bytyqi@gmail.com')"},
+               {'as': 'admin', 'rpc': 'admin_delete_user', 'args': {'p_user': '$user:hana.bytyqi@gmail.com', 'p_reason': 'x'}},
+               {'as': 'admin', 'rpc': 'admin_delete_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_reason': ' Arsye '}}]},
+    {'name': 'admin_dismiss_report',
+     'steps': [{'as': USER, 'rpc': 'admin_dismiss_report', 'args': {'p_report_id': R1}},
+               {'as': 'admin', 'rpc': 'admin_dismiss_report', 'args': {'p_report_id': R1}},
+               {'as': 'admin', 'rpc': 'admin_dismiss_report', 'args': {'p_report_id': NOPE}}]},
+    {'name': 'admin_notify_user',
+     'steps': [{'as': USER, 'rpc': 'admin_notify_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_message': 'hi'}},
+               {'as': 'admin', 'rpc': 'admin_notify_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_message': '  '}},
+               {'as': 'admin', 'rpc': 'admin_notify_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_message': 'a' * 501}},
+               {'as': 'admin', 'rpc': 'admin_notify_user', 'args': {'p_user': NOPE, 'p_message': 'hi'}},
+               {'as': 'admin', 'rpc': 'admin_notify_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_message': ' Përshëndetje '}},
+               {'as': 'admin', 'rpc': 'admin_notify_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_message': 'ë' * 500}}]},
+    {'name': 'admin_reactivate_account',
+     'steps': [{'as': USER, 'rpc': 'admin_reactivate_account', 'args': {'p_user_id': '$user:stefan.jovanov@gmail.com'}},
+               {'as': 'admin', 'rpc': 'admin_reactivate_account', 'args': {'p_user_id': '$user:stefan.jovanov@gmail.com'}},
+               {'as': 'admin', 'rpc': 'admin_reactivate_account', 'args': {'p_user_id': NOPE}}]},
+    {'name': 'admin_set_user_admin',
+     'steps': [{'as': USER, 'rpc': 'admin_set_user_admin', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_is_admin': True}},
+               {'as': 'admin', 'rpc': 'admin_set_user_admin', 'args': {'p_user': '$user:admin', 'p_is_admin': False}},
+               {'as': 'admin', 'rpc': 'admin_set_user_admin', 'args': {'p_user': '$user:admin', 'p_is_admin': True}},
+               {'as': 'admin', 'rpc': 'admin_set_user_admin', 'args': {'p_user': NOPE, 'p_is_admin': True}},
+               {'as': 'admin', 'rpc': 'admin_set_user_admin', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_is_admin': True}},
+               {'as': 'admin', 'rpc': 'admin_set_user_admin', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_is_admin': False}}]},
+    {'name': 'admin_set_user_deactivated',
+     'steps': [{'as': USER, 'rpc': 'admin_set_user_deactivated', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_deactivated': True}},
+               {'as': 'admin', 'rpc': 'admin_set_user_deactivated', 'args': {'p_user': '$user:admin', 'p_deactivated': True}},
+               {'as': 'admin', 'rpc': 'admin_set_user_deactivated', 'args': {'p_user': NOPE, 'p_deactivated': True}},
+               {'as': 'admin', 'rpc': 'admin_set_user_deactivated', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_deactivated': True, 'p_reason': ' Spam '}},
+               {'as': 'admin', 'rpc': 'admin_set_user_deactivated', 'args': {'p_user': '$user:stefan.jovanov@gmail.com', 'p_deactivated': True}},
+               {'as': 'admin', 'rpc': 'admin_set_user_deactivated', 'args': {'p_user': '$user:stefan.jovanov@gmail.com', 'p_deactivated': False, 'p_reason': '  '}}]},
+]

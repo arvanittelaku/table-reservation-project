@@ -1,3 +1,4 @@
+"""LEGACY (dev only, for dev/difftest.py)."""
 """What the API may touch: tables, columns, relationships and functions of the
 `public` schema, read from Postgres' catalog (cached briefly)."""
 import threading

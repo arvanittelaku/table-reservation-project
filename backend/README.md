@@ -11,30 +11,27 @@ app (`../hajde`) talks only to this backend; Postgres stays the database.
 | Live updates | `ws /realtime/v1/websocket` | Supabase Realtime |
 | Server functions, emails, account deletion | `/functions/v1/*` + job worker | Edge Functions, pg_net |
 
-## How it keeps behaviour identical
+## How it is built
 
-- **Every request runs as the signed-in user.** Django sets the same request
-  settings Supabase's API set (`request.jwt.claims`) and switches to the
-  `authenticated` / `anon` role inside a transaction. `auth.uid()`, every
-  row-level policy, the Basic/Premium rules, Wednesday matching and all
-  admin functions in the database work exactly as before (`core/db.py`).
-- **Accounts stay in `auth.users`** with the same ids, emails and bcrypt
-  hashes. Passwords are checked and hashed inside Postgres with `pgcrypto`
-  (same `$2a$` format), so existing users sign in unchanged and the profile
-  trigger keeps firing (`core/accounts.py`).
-- **Email links and Google/Apple** return to the app with the session in the
-  URL fragment (`#access_token=…&type=signup|recovery`) or `#error_code=otp_expired`,
-  the format the app already handles (`core/views_auth.py`).
-- **Live updates:** a trigger on every table in the `supabase_realtime`
-  publication sends `NOTIFY realtime`; one backend process (Redis lock)
-  forwards it to Channels groups; each subscriber's row is re-read as that
-  user before sending, so people only receive rows they may see (`core/realtime.py`).
-- **Jobs:** the database queues work in `backend.jobs` (the old
-  `net.http_post` calls to Edge Functions are rewritten to do this); the
-  worker sends emails and deletes accounts (`core/jobs.py`).
+Everything the database used to do in SQL now runs in Python (`ejb/`); Postgres
+only stores data. `MIGRATION_CHECKLIST.md` maps every old SQL function, trigger
+and policy to its Python replacement.
 
-Database pieces for all of this: migration
-`../hajde/supabase/migrations/20261004000000_django_backend.sql`.
+- **Schema:** Django models and migrations (`ejb/models.py`, `ejb/migrations/`).
+  `0001` is production's current schema, `0002` adds everything since (tables,
+  columns, reference rows, backfills), `0003` removes the old SQL functions,
+  triggers and policies.
+- **Server functions** (`/rest/v1/rpc/<name>`): `ejb/services/*.py`, same
+  names, arguments, results and error messages as the SQL functions.
+- **Access rules** (who reads/writes which rows): `ejb/policies.py`, applied by
+  the query engine `ejb/query.py` (ORM, no SQL generation).
+- **Triggers:** model hooks in `ejb/hooks.py` (run on every `save()`/`delete()`).
+- **Accounts** stay in `auth.users` with the same ids and bcrypt hashes
+  (`core/accounts.py`, `core/passwords.py`); existing users sign in unchanged.
+- **Live updates:** each change is sent to Channels groups after commit; every
+  subscriber's row is re-checked with their own access rules (`core/realtime.py`).
+- **Jobs and schedule:** emails, account deletion and the hourly Wednesday
+  grouping run in the server's background tasks (`core/jobs.py`, `core/realtime.py`).
 
 ## Run locally
 
@@ -44,7 +41,7 @@ Needs Python 3.12+, PostgreSQL, Redis.
 cd backend
 pip install -r requirements.txt
 cp .env.example .env               # adjust DB_* if needed
-dev/rebuild_db.sh                  # local DB: Supabase-like bootstrap + schema + all migrations + seed
+dev/rebuild_db.sh                  # local DB: manage.py migrate + manage.py seed_dev
 python manage.py serve             # http://localhost:8000  (HTTP + websockets + jobs)
 ```
 
@@ -55,31 +52,41 @@ Web app: in `../hajde/.env` set `VITE_API_URL=http://localhost:8000`, then `npm 
 
 ## Tests
 
-`dev/run_all_tests.sh` rebuilds the dev database and runs everything against
-the real stack (needs the web app served on :5173):
+- `dev/difftest.py`: runs every server function and direct table rule twice on
+  the same data, once through the old SQL implementation and once through
+  Python, and compares results and every row changed (130 cases). Needs the
+  legacy reference DB: `dev/rebuild_legacy_db.sh` (builds `ejb_legacy`).
+- `dev/run_all_tests.sh`: rebuilds the dev DB with Django and runs the
+  end-to-end suites against the real stack (browser suites need the web app
+  served on :5173):
 
 | Suite | Checks |
 |---|---|
 | `dev/e2e_backend.py` | sign-up + confirmation email, login, refresh rotation, logout, password reset, existing bcrypt accounts, row rules, admin guards, storage rules + signed URLs, strike emails + 3rd-strike deletion, email-domain check, Google sign-in (fake Google) |
 | `dev/e2e_realtime.mjs` | live delivery, filters, per-user row permission, token changes |
-| `dev/e2e_app/s1_accounts.mjs` | browser: sign-up, confirmation link, onboarding, photo upload (compressed), password field, Google onboarding, reset |
-| `dev/e2e_app/s2_tables.mjs` | browser: Basic city lock, browse modes, create table, live arrival, join → approve → €2 seat, notifications language, share links (signed out / other city), monthly limit, sports filters, WhatsApp, startup requests |
-| `dev/e2e_app/s3_lessons_plans_admin.mjs` | browser: teacher applies → admin approves → book → accept → confirm → video room, Premium order → paid → all cities, admin grant/revoke, Wednesday Premium-first groups, admin console + CSV |
+| `dev/e2e_app/s1_accounts.mjs` | browser: sign-up, confirmation link, onboarding, photo upload, Google onboarding, reset |
+| `dev/e2e_app/s2_tables.mjs` | browser: Basic city lock, browse, create table, live arrival, join → approve → seat, notifications, share links, limits, sports |
+| `dev/e2e_app/s3_lessons_plans_admin.mjs` | browser: lessons, Premium orders, admin grant/revoke, Wednesday groups, admin console |
 
 ## Switching production from Supabase to this backend
 
-1. Apply the database migrations that are not live yet (check with
-   `../hajde/supabase/check-migrations.sql`), including
-   `20261004000000_django_backend.sql`. Apply that last one **at the switch**:
-   from then on bans and join-request emails are queued for this backend's worker.
-2. Deploy this backend (any host that runs a long-lived Python process, plus
-   Redis and a persistent volume for `STORAGE_ROOT`). Environment: see
-   `.env.example`; `DB_*` from Supabase → Database → connection string (user
-   `postgres`, direct or session pooler).
-3. Copy profile photos once:
+Production's database is at the schema of migration `0001` (the SQL migrations
+from 2026-10-03 on were never applied there; they are superseded by `0002`).
+
+1. Back up the database.
+2. Deploy this backend (a long-lived Python process, Redis, a persistent volume
+   for `STORAGE_ROOT`, `pip install -r requirements.txt` incl. `bcrypt`).
+   Environment: see `.env.example`; `DB_*` from Supabase → Database → connection
+   string (user `postgres`).
+3. At the switch:
+   ```bash
+   python manage.py migrate ejb 0001 --fake   # production already has this schema
+   python manage.py migrate                   # 0002: new tables/columns + data; 0003: drop old SQL logic
+   ```
+   After `0003` Supabase's API can no longer read or write app data (RLS stays
+   on with no policies); only this backend can.
+4. Copy profile photos once:
    `SUPABASE_URL=… SUPABASE_SERVICE_KEY=… python manage.py import_supabase_avatars`
-4. Google/Apple: set the redirect URI to `<API_URL>/auth/v1/callback` in the
-   provider consoles and fill `GOOGLE_*` / `APPLE_*`.
-5. Build the web app with `VITE_API_URL=<API_URL>` and deploy it
-   (`--branch production`). Users stay signed out once (sessions are new) and
-   sign in with their existing passwords.
+5. Google/Apple: set the redirect URI to `<API_URL>/auth/v1/callback` and fill `GOOGLE_*` / `APPLE_*`.
+6. Build the web app with `VITE_API_URL=<API_URL>` and deploy it
+   (`--branch production`). Users sign in once more with their existing passwords.

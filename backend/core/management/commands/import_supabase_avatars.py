@@ -12,8 +12,8 @@ import os
 import requests
 from django.core.management.base import BaseCommand, CommandError
 
-from core.db import as_service
 from core.storage import _clean_path, _file
+from ejb.models import StorageObject
 
 BUCKET = 'avatars'
 
@@ -68,11 +68,9 @@ class Command(BaseCommand):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(r.content)
             owner = path.split('/')[0]
-            with as_service() as cur:
-                cur.execute(
-                    'INSERT INTO backend.storage_objects (bucket, path, owner, size, content_type)'
-                    ' VALUES (%s, %s, %s::uuid, %s, %s) ON CONFLICT (bucket, path) DO NOTHING',
-                    [BUCKET, path, owner if len(owner) == 36 else None, len(r.content),
-                     r.headers.get('Content-Type', 'image/jpeg').split(';')[0]])
+            StorageObject.objects.get_or_create(
+                bucket=BUCKET, path=path,
+                defaults={'owner': owner if len(owner) == 36 else None, 'size': len(r.content),
+                          'content_type': r.headers.get('Content-Type', 'image/jpeg').split(';')[0]})
             copied += 1
         self.stdout.write(self.style.SUCCESS(f'{len(paths)} found, {copied} copied, {skipped} already present'))

@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS auth.identities (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   email text,
-  UNIQUE (provider_id, provider)
+  CONSTRAINT identities_provider_id_provider_unique UNIQUE (provider_id, provider)
 );
 
 -- Exactly how Supabase defines these (read the request settings the API sets).

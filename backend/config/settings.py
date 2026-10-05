@@ -48,8 +48,10 @@ if not SECRET_KEY:
 ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
 INSTALLED_APPS = [
+    'django.contrib.postgres',
     'channels',
     'core',
+    'ejb',
 ]
 
 MIDDLEWARE = [
@@ -93,6 +95,9 @@ CACHES = {
 USE_TZ = True
 TIME_ZONE = 'UTC'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Existing index names (e.g. idx_lesson_participants_student) exceed Django's
+# portable 30-char limit; Postgres allows 63, and we keep the live names.
+SILENCED_SYSTEM_CHECKS = ['models.E034']
 
 # ───────────── public URLs ─────────────
 # Where the web app lives (email links and OAuth return here) and where this

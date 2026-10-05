@@ -1,29 +1,28 @@
 """Background jobs (what the Supabase Edge Functions did).
 
-The database queues work in backend.jobs (e.g. ban_user() queueing
-'notify-ban' or 'delete-banned-user'); auth queues its emails the same way.
-`run_pending()` claims jobs with FOR UPDATE SKIP LOCKED, so several workers can
-run safely. Kinds keep the Edge Function names they replace.
+Services queue work in backend.jobs with ejb.jobs.enqueue() (e.g. ban_user
+queueing 'notify-ban' or 'delete-banned-user'); auth queues its emails the same
+way. `run_pending()` claims jobs with SELECT ... FOR UPDATE SKIP LOCKED, so
+several workers can run safely. Kinds keep the Edge Function names they replace.
 """
 import html
-import json
 import logging
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.db import transaction
+from django.utils import timezone
+
+from ejb import context
+from ejb.models import AuthUser, Job, Profile
 
 from . import storage
-from .db import as_service, fetch_dict
 
 log = logging.getLogger('ejb.jobs')
 MAX_ATTEMPTS = 5
 
 FOOTER = '<p style="font-family:sans-serif;font-size:12px;color:#888">ejaBashkohu, table sharing in Kosovo</p>'
-
-
-def enqueue(cur, kind, payload):
-    cur.execute('INSERT INTO backend.jobs (kind, payload) VALUES (%s, %s::jsonb) RETURNING id', [kind, json.dumps(payload)])
-    return cur.fetchone()[0]
 
 
 def send_email(to, subject, text, html_body=None):
@@ -37,7 +36,7 @@ def send_email(to, subject, text, html_body=None):
 
 # ───────────── handlers ─────────────
 
-def _auth_email(cur, payload):
+def _auth_email(payload):
     """Confirmation / password-reset emails (Supabase Auth sent these)."""
     kind, to, link = payload['kind'], payload['email'], payload['link']
     if kind == 'signup':
@@ -59,28 +58,37 @@ def _auth_email(cur, payload):
     send_email(to, subject, text, body_html)
 
 
-def _notify_ban(cur, payload):
-    user = fetch_dict(cur, 'SELECT email FROM auth.users WHERE id = %s', [payload.get('user_id')])
-    if not user or not user['email']:
+def _email_of(user_id):
+    if not user_id:
+        return None
+    try:
+        return AuthUser.objects.filter(pk=user_id).values_list('email', flat=True).first()
+    except (ValueError, TypeError):
+        return None
+
+
+def _notify_ban(payload):
+    email = _email_of(payload.get('user_id'))
+    if not email:
         return 'no email'
     count = int(payload.get('ban_count') or 1)
     text = (f"Llogaria juaj në ejaBashkohu u pezullua.\n\nArsyeja: {payload.get('reason', '')}\n"
             f"Pezullim {count}/3.\n\n"
             + ('Ky ishte pezullimi i tretë. Llogaria juaj u fshi përgjithmonë.' if count >= 3
                else 'Pezullimi i tretë do të rezultojë në fshirje të përhershme të llogarisë.'))
-    send_email(user['email'], 'ejaBashkohu: Njoftim pezullimi', text)
+    send_email(email, 'ejaBashkohu: Njoftim pezullimi', text)
 
 
-def _notify_email(cur, payload):
+def _notify_email(payload):
     email = payload.get('email')
     title = payload.get('title') or 'ejaBashkohu'
     body = payload.get('body') or payload.get('message') or ''
     pref_user = payload.get('user_id')
     if not email and payload.get('host_id'):
-        host = fetch_dict(cur, 'SELECT email FROM auth.users WHERE id = %s', [payload['host_id']])
-        if not host or not host['email']:
+        host_email = _email_of(payload['host_id'])
+        if not host_email:
             return 'no email'
-        email, pref_user = host['email'], payload['host_id']
+        email, pref_user = host_email, payload['host_id']
         requester = payload.get('requester_name') or 'Dikush'
         table_title = payload.get('table_title') or 'tavolinë'
         title = f'{requester} kërkon t\'i bashkohet "{table_title}"'
@@ -89,19 +97,26 @@ def _notify_email(cur, payload):
     if not email:
         return 'no email'
     if pref_user:
-        prefs = fetch_dict(cur, 'SELECT user_preferences FROM public.profiles WHERE id = %s', [pref_user])
-        p = (prefs or {}).get('user_preferences') or {}
+        try:
+            p = Profile.objects.filter(pk=pref_user).values_list('user_preferences', flat=True).first() or {}
+        except (ValueError, TypeError):
+            p = {}
         if isinstance(p, dict) and p.get('email_notifications') is False:
             return 'email_notifications off'
     send_email(email, title, body)
 
 
-def _delete_banned_user(cur, payload):
+def _delete_banned_user(payload):
     user_id = payload.get('user_id')
     if not user_id:
         return 'no user_id'
     storage.delete_prefix('avatars', f'{user_id}/')
-    cur.execute('DELETE FROM auth.users WHERE id = %s', [user_id])  # profile + data cascade as before
+    try:
+        user = AuthUser.objects.filter(pk=user_id).first()
+    except (ValueError, TypeError):
+        return 'bad user_id'
+    if user is not None:
+        user.delete()   # profile and all their data cascade (with hooks), as before
 
 
 HANDLERS = {
@@ -116,27 +131,27 @@ def run_pending(limit=20):
     """Run due jobs; returns how many were processed."""
     done = 0
     for _ in range(limit):
-        with as_service() as cur:
-            job = fetch_dict(
-                cur,
-                "SELECT id, kind, payload, attempts FROM backend.jobs"
-                " WHERE status = 'pending' AND run_after <= now()"
-                " ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED")
-            if not job:
+        with context.acting(context.Actor.service()):
+            job = (Job.objects.select_for_update(skip_locked=True)
+                   .filter(status='pending', run_after__lte=timezone.now()).order_by('id').first())
+            if job is None:
                 return done
-            handler = HANDLERS.get(job['kind'])
+            handler = HANDLERS.get(job.kind)
+            sid = transaction.savepoint()
             try:
                 if handler is None:
-                    raise RuntimeError(f"unknown job kind {job['kind']}")
-                note = handler(cur, job['payload'] or {})
-                cur.execute("UPDATE backend.jobs SET status = 'done', done_at = now(), attempts = attempts + 1,"
-                            " last_error = %s WHERE id = %s", [note, job['id']])
+                    raise RuntimeError(f'unknown job kind {job.kind}')
+                note = handler(job.payload or {})
+                transaction.savepoint_commit(sid)
+                job.status, job.done_at, job.last_error = 'done', timezone.now(), note
+                job.attempts += 1
             except Exception as exc:  # retry with backoff, then give up
-                log.exception('job %s (%s) failed', job['id'], job['kind'])
-                attempts = job['attempts'] + 1
-                status = 'failed' if attempts >= MAX_ATTEMPTS else 'pending'
-                cur.execute("UPDATE backend.jobs SET status = %s, attempts = %s, last_error = %s,"
-                            " run_after = now() + make_interval(secs => %s) WHERE id = %s",
-                            [status, attempts, str(exc)[:500], 30 * attempts * attempts, job['id']])
+                transaction.savepoint_rollback(sid)
+                log.exception('job %s (%s) failed', job.id, job.kind)
+                job.attempts += 1
+                job.status = 'failed' if job.attempts >= MAX_ATTEMPTS else 'pending'
+                job.last_error = str(exc)[:500]
+                job.run_after = timezone.now() + timedelta(seconds=30 * job.attempts * job.attempts)
+            job.save()
         done += 1
     return done

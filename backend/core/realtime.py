@@ -1,8 +1,8 @@
 """Live updates over websockets (what Supabase Realtime did), with Django Channels.
 
-  Postgres trigger -> NOTIFY 'realtime' -> one listener (Redis lock picks one
-  process) -> Channels group "rt.<table>" -> each connected client's
-  subscriptions -> filter match + row permission check -> pushed to the browser.
+  model save/delete (ejb/realtime.py, sent after commit) -> Channels group
+  "rt.<table>" (Redis) -> each connected client's subscriptions -> filter
+  match + row permission check -> pushed to the browser.
 
 Permission check: before sending an INSERT/UPDATE, the row is re-read as that
 user, so row-level security decides who receives what (Supabase did the same).
@@ -17,17 +17,18 @@ Server messages:   {"type": "subscribed", "id": "s1"}
 import asyncio
 import json
 import logging
-import os
-import socket
-import uuid
 
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
-from channels.layers import get_channel_layer
 from django.conf import settings
+from django.db import close_old_connections
 
-from .catalog import get_catalog
-from .db import as_user
+from ejb import context
+from ejb.context import Actor
+from ejb.policies import rules_for
+from ejb.realtime import LIVE_TABLES
+from ejb.registry import model_for, pk_columns, row_json
+
 from .tokens import TokenError, decode_access_token
 
 log = logging.getLogger('ejb.realtime')
@@ -63,25 +64,29 @@ def match_filter(flt, row):
 
 def _visible_row(claims, table, record):
     """The row as this user may see it right now, or None."""
-    cat = get_catalog()
-    t = cat.tables.get(table)
-    if not t or not t.pk or not record or any(k not in record for k in t.pk):
+    model = model_for(table)
+    if model is None or not record:
         return None
-    cond = ' AND '.join(f'r."{c}" = %s::{t.columns[c]}' for c in t.pk)
+    pks = pk_columns(model)
+    if any(k not in record for k in pks):
+        return None
+    close_old_connections()
     try:
-        with as_user(claims) as cur:
-            cur.execute(f'SELECT to_jsonb(r) FROM public."{table}" r WHERE {cond}', [record[c] for c in t.pk])
-            row = cur.fetchone()
-            return row[0] if row else None
+        with context.acting(Actor.from_claims(claims), direct=True) as a:
+            lookup = {f.attname: record[f.column]
+                      for f in model._meta.concrete_fields if f.column in pks}
+            obj = model.objects.filter(rules_for(table).select(a)).filter(**lookup).first()
+            return row_json(obj) if obj is not None else None
     except Exception:
+        log.exception('realtime visibility check failed')
         return None
 
 
 def _pk_only(table, record):
-    t = get_catalog().tables.get(table)
-    if not t or not record:
+    model = model_for(table)
+    if model is None or not record:
         return record or {}
-    return {c: record.get(c) for c in t.pk} if t.pk else record
+    return {c: record.get(c) for c in pk_columns(model)}
 
 
 class RealtimeConsumer(AsyncJsonWebsocketConsumer):
@@ -113,8 +118,7 @@ class RealtimeConsumer(AsyncJsonWebsocketConsumer):
             await self._auth(msg.get('token') or '')
         elif kind == 'subscribe':
             table = str(msg.get('table') or '')
-            cat = await sync_to_async(get_catalog)()
-            if table not in cat.tables or len(self.subs) >= MAX_SUBSCRIPTIONS:
+            if table not in LIVE_TABLES or len(self.subs) >= MAX_SUBSCRIPTIONS:
                 await self.send_json({'type': 'error', 'id': msg.get('id'), 'message': 'cannot subscribe'})
                 return
             self.subs[str(msg.get('id'))] = {'table': table, 'event': (msg.get('event') or '*').upper(),
@@ -153,84 +157,57 @@ class RealtimeConsumer(AsyncJsonWebsocketConsumer):
                 'new': new_row or {}, 'old': old_out, 'commit_timestamp': p.get('commit_timestamp'), 'errors': None}})
 
 
-# ───────────── background: NOTIFY listener + job runner ─────────────
-
-def _conninfo():
-    db = settings.DATABASES['default']
-    parts = {'dbname': db['NAME'], 'user': db['USER'], 'password': db['PASSWORD'], 'host': db['HOST'],
-             'port': db['PORT'], 'sslmode': db.get('OPTIONS', {}).get('sslmode', 'prefer')}
-    return ' '.join(f"{k}='{v}'" for k, v in parts.items() if v)
-
-
-async def _leader_lock(name, ttl=6):
-    """Only one process forwards NOTIFY events (Redis lock, renewed)."""
-    import redis.asyncio as aioredis
-    r = aioredis.from_url(settings.REDIS_URL)
-    me = f'{socket.gethostname()}:{os.getpid()}:{uuid.uuid4().hex[:6]}'
-    key = f'ejb:leader:{name}'
-    while True:
-        if await r.set(key, me, nx=True, ex=ttl) or (await r.get(key) or b'').decode() == me:
-            await r.expire(key, ttl)
-            return r, key, me
-        await asyncio.sleep(ttl / 3)
-
-
-async def realtime_listener():
-    import psycopg
-    layer = get_channel_layer()
-    while True:
-        try:
-            r, key, me = await _leader_lock('realtime')
-            async with await psycopg.AsyncConnection.connect(_conninfo(), autocommit=True) as conn:
-                await conn.execute('LISTEN realtime')
-                log.info('realtime listener active')
-
-                async def renew():
-                    while True:
-                        await asyncio.sleep(2)
-                        if (await r.get(key) or b'').decode() != me:
-                            raise RuntimeError('lost leadership')
-                        await r.expire(key, 6)
-                renewer = asyncio.create_task(renew())
-                try:
-                    async for note in conn.notifies():
-                        try:
-                            payload = json.loads(note.payload)
-                        except ValueError:
-                            continue
-                        await layer.group_send(f"rt.{payload.get('table')}", {'type': 'rt.change', 'payload': payload})
-                finally:
-                    renewer.cancel()
-                    # hand over at once on shutdown/redeploy instead of waiting for the TTL
-                    try:
-                        if (await r.get(key) or b'').decode() == me:
-                            await r.delete(key)
-                    except Exception:
-                        pass
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            log.exception('realtime listener crashed; restarting')
-            await asyncio.sleep(2)
-
+# ───────────── background: job runner + scheduled work ─────────────
 
 async def job_runner():
-    import psycopg
+    """Runs queued jobs when woken through Redis (ejb.jobs.wake) and every 30 s."""
+    import redis.asyncio as aioredis
+    from ejb.jobs import WAKE_CHANNEL
     from .jobs import run_pending
     run = sync_to_async(run_pending, thread_sensitive=False)
     while True:
         try:
-            async with await psycopg.AsyncConnection.connect(_conninfo(), autocommit=True) as conn:
-                await conn.execute('LISTEN backend_jobs')
-                await run()
-                gen = conn.notifies(timeout=30)
-                while True:
-                    async for _ in gen:
-                        await run()
-                    await run()  # periodic sweep (retries with backoff)
-                    gen = conn.notifies(timeout=30)
+            r = aioredis.from_url(settings.REDIS_URL)
+            pubsub = r.pubsub()
+            await pubsub.subscribe(WAKE_CHANNEL)
+            await run()
+            while True:
+                msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=30)
+                await run()   # on a wake-up, or the periodic sweep (retries with backoff)
+                if msg is None:
+                    continue
         except asyncio.CancelledError:
             raise
         except Exception:
             log.exception('job runner crashed; restarting')
             await asyncio.sleep(2)
+
+
+async def _leader(name, ttl=120):
+    """True if this process may run a once-per-cluster task now (Redis lock)."""
+    import os
+    import socket
+    import redis.asyncio as aioredis
+    r = aioredis.from_url(settings.REDIS_URL)
+    me = f'{socket.gethostname()}:{os.getpid()}'
+    return bool(await r.set(f'ejb:leader:{name}', me, nx=True, ex=ttl))
+
+
+async def scheduler():
+    """Hourly at minute 5 (was pg_cron '5 * * * *'): form due Wednesday groups."""
+    import datetime
+    from django.core.management import call_command
+    while True:
+        try:
+            now = datetime.datetime.now(datetime.timezone.utc)
+            nxt = now.replace(minute=5, second=0, microsecond=0)
+            if nxt <= now:
+                nxt += datetime.timedelta(hours=1)
+            await asyncio.sleep((nxt - now).total_seconds())
+            if await _leader('wednesday-groups'):
+                await sync_to_async(call_command, thread_sensitive=False)('form_wednesday_groups')
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception('scheduled task failed')
+            await asyncio.sleep(60)

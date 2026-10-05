@@ -27,14 +27,14 @@ def new_random_token(nbytes=32):
 def issue_access_token(user):
     now = int(time.time())
     claims = {
-        'sub': str(user['id']),
-        'email': user.get('email') or '',
+        'sub': str(user.id),
+        'email': user.email or '',
         'role': 'authenticated',
         'aud': AUDIENCE,
         'iat': now,
         'exp': now + settings.JWT_ACCESS_TTL,
-        'app_metadata': user.get('raw_app_meta_data') or {},
-        'user_metadata': user.get('raw_user_meta_data') or {},
+        'app_metadata': user.raw_app_meta_data or {},
+        'user_metadata': user.raw_user_meta_data or {},
     }
     return jwt.encode(claims, settings.JWT_SECRET, algorithm=ALGORITHM), claims['exp']
 

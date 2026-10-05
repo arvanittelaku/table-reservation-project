@@ -1,3 +1,4 @@
+"""LEGACY (dev only, for dev/difftest.py): the old SQL-generating engine."""
 """Table queries for the app (what PostgREST did), run as the signed-in user.
 
 A request describes one operation on one `public` table:
@@ -18,7 +19,7 @@ import re
 from psycopg.types.json import Jsonb
 
 from .catalog import get_catalog
-from .db import DbError
+from core.db import DbError
 
 OPS = {'eq': '=', 'neq': '<>', 'gt': '>', 'gte': '>=', 'lt': '<', 'lte': '<=',
        'like': 'LIKE', 'ilike': 'ILIKE', 'cs': '@>', 'cd': '<@', 'ov': '&&'}

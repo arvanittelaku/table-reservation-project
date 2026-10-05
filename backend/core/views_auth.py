@@ -19,11 +19,19 @@ from django.http import HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from django.db import transaction
+from django.utils import timezone
+
+from ejb import jobs
+from ejb.models import Identity
+
 from . import accounts as acc
-from .db import as_service, fetch_dict
 from .http import BadRequest, bearer_claims, error_response, json_body, ok, rate_limit
-from .jobs import enqueue
 from .tokens import TokenError, read_state, sign_state
+
+
+def enqueue(kind, payload):
+    jobs.enqueue(kind, payload)
 
 
 def _handle(fn):
@@ -57,18 +65,18 @@ def signup(request):
     if not _valid_email(email):
         raise BadRequest('Unable to validate email address: invalid format', 400, 'validation_failed')
     _check_password_rules(password)
-    with as_service() as cur:
-        existing = acc.get_user_by_email(cur, email)
+    with transaction.atomic():
+        existing = acc.get_user_by_email(email)
         if existing:
             raise BadRequest('User already registered', 422, 'user_already_exists')
         confirmed = not settings.AUTH_EMAIL_CONFIRM
-        user = acc.create_user(cur, email, password, options.get('data') or {}, confirmed=confirmed)
+        user = acc.create_user(email, password, options.get('data') or {}, confirmed=confirmed)
         if confirmed:
-            session = acc.start_session(cur, user)
+            session = acc.start_session(user)
             return ok({'user': session['user'], 'session': session})
-        link = acc.create_email_link(cur, user['id'], 'signup', options.get('emailRedirectTo'))
-        enqueue(cur, 'auth-email', {'kind': 'signup', 'email': email, 'link': link})
-        return ok({'user': acc.user_json(cur, user), 'session': None})
+        link = acc.create_email_link(user, 'signup', options.get('emailRedirectTo'))
+        enqueue('auth-email', {'kind': 'signup', 'email': email, 'link': link})
+        return ok({'user': acc.user_json(user), 'session': None})
 
 
 @_handle
@@ -80,18 +88,18 @@ def token(request):
         rate_limit(request, 'login')
         email = acc.normalize_email(body.get('email'))
         password = body.get('password') or ''
-        with as_service() as cur:
-            user = acc.get_user_by_email(cur, email)
-            if not user or not acc.check_password(cur, user['id'], password):
+        with transaction.atomic():
+            user = acc.get_user_by_email(email)
+            if not user or not acc.check_password(user, password):
                 raise BadRequest('Invalid login credentials', 400, 'invalid_credentials')
             if acc.is_banned(user):
                 raise BadRequest('User is banned', 400, 'user_banned')
-            if settings.AUTH_EMAIL_CONFIRM and not user.get('email_confirmed_at'):
+            if settings.AUTH_EMAIL_CONFIRM and not user.email_confirmed_at:
                 raise BadRequest('Email not confirmed', 400, 'email_not_confirmed')
-            return ok(acc.start_session(cur, user))
+            return ok(acc.start_session(user))
     if grant == 'refresh_token':
-        with as_service() as cur:
-            session = acc.rotate_refresh_token(cur, body.get('refresh_token'))
+        with transaction.atomic():
+            session = acc.rotate_refresh_token(body.get('refresh_token'))
             if not session:
                 raise BadRequest('Invalid Refresh Token: Refresh Token Not Found', 400, 'refresh_token_not_found')
             return ok(session)
@@ -102,8 +110,7 @@ def token(request):
 @require_http_methods(['POST'])
 def logout(request):
     claims = bearer_claims(request, required=True)
-    with as_service() as cur:
-        acc.revoke_all_sessions(cur, claims['sub'])
+    acc.revoke_all_sessions(claims['sub'])
     return ok({})
 
 
@@ -111,8 +118,8 @@ def logout(request):
 @require_http_methods(['GET', 'PUT'])
 def user(request):
     claims = bearer_claims(request, required=True)
-    with as_service() as cur:
-        u = acc.get_user_by_id(cur, claims['sub'])
+    with transaction.atomic():
+        u = acc.get_user_by_id(claims['sub'])
         if not u:
             raise BadRequest('User from sub claim in JWT does not exist', 403, 'user_not_found')
         if acc.is_banned(u):
@@ -121,12 +128,13 @@ def user(request):
             body = json_body(request)
             if 'password' in body:
                 _check_password_rules(body['password'])
-                acc.set_password(cur, u['id'], body['password'])
+                acc.set_password(u, body['password'])
             if isinstance(body.get('data'), dict):
-                cur.execute("UPDATE auth.users SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || %s::jsonb,"
-                            " updated_at = now() WHERE id = %s", [json.dumps(body['data']), u['id']])
-            u = acc.get_user_by_id(cur, u['id'])
-        return ok(acc.user_json(cur, u))
+                u.raw_user_meta_data = {**(u.raw_user_meta_data or {}), **body['data']}
+                u.updated_at = timezone.now()
+                u.save(update_fields=['raw_user_meta_data', 'updated_at'])
+            u = acc.get_user_by_id(u.id)
+        return ok(acc.user_json(u))
 
 
 @_handle
@@ -135,11 +143,11 @@ def recover(request):
     rate_limit(request, 'recover', limit=5)
     body = json_body(request)
     email = acc.normalize_email(body.get('email'))
-    with as_service() as cur:
-        u = acc.get_user_by_email(cur, email) if _valid_email(email) else None
+    with transaction.atomic():
+        u = acc.get_user_by_email(email) if _valid_email(email) else None
         if u and not acc.is_banned(u):
-            link = acc.create_email_link(cur, u['id'], 'recovery', body.get('redirect_to') or request.GET.get('redirect_to'))
-            enqueue(cur, 'auth-email', {'kind': 'recovery', 'email': u['email'], 'link': link})
+            link = acc.create_email_link(u, 'recovery', body.get('redirect_to') or request.GET.get('redirect_to'))
+            enqueue('auth-email', {'kind': 'recovery', 'email': u.email, 'link': link})
     return ok({})  # same answer whether or not the email exists
 
 
@@ -151,12 +159,12 @@ def resend(request):
     if body.get('type') != 'signup':
         raise BadRequest('Unsupported resend type', 400, 'validation_failed')
     email = acc.normalize_email(body.get('email'))
-    with as_service() as cur:
-        u = acc.get_user_by_email(cur, email)
-        if u and not u.get('email_confirmed_at'):
+    with transaction.atomic():
+        u = acc.get_user_by_email(email)
+        if u and not u.email_confirmed_at:
             redirect = (body.get('options') or {}).get('emailRedirectTo')
-            link = acc.create_email_link(cur, u['id'], 'signup', redirect)
-            enqueue(cur, 'auth-email', {'kind': 'signup', 'email': u['email'], 'link': link})
+            link = acc.create_email_link(u, 'signup', redirect)
+            enqueue('auth-email', {'kind': 'signup', 'email': u.email, 'link': link})
     return ok({})
 
 
@@ -168,12 +176,12 @@ def verify(request):
     raw = request.GET.get('token', '')
     if kind not in ('signup', 'recovery'):
         return HttpResponseRedirect(f'{settings.SITE_URL}/#{acc.error_fragment("validation_failed", "Invalid link")}')
-    with as_service() as cur:
-        user, redirect_to = acc.consume_email_link(cur, raw, kind)
+    with transaction.atomic():
+        user, redirect_to = acc.consume_email_link(raw, kind)
         target = acc.safe_redirect(redirect_to)
         if not user or acc.is_banned(user):
             return HttpResponseRedirect(f'{target.split("#")[0]}#{acc.error_fragment()}')
-        session = acc.start_session(cur, user)
+        session = acc.start_session(user)
     return HttpResponseRedirect(f'{target.split("#")[0]}#{acc.session_fragment(session, kind)}')
 
 
@@ -299,33 +307,36 @@ def callback(request):
         frag = urlencode({'error': 'server_error', 'error_code': 'unexpected_failure',
                           'error_description': 'Sign-in with this provider failed'})
         return HttpResponseRedirect(f'{base}#{frag}')
-    with as_service() as cur:
-        session = _oauth_sign_in(cur, provider, provider_id, email, verified, data)
+    with transaction.atomic():
+        session = _oauth_sign_in(provider, provider_id, email, verified, data)
     if session is None:
         return HttpResponseRedirect(f'{base}#{acc.error_fragment("user_banned", "User is banned")}')
     return HttpResponseRedirect(f'{base}#{acc.session_fragment(session, "signup")}')
 
 
-def _oauth_sign_in(cur, provider, provider_id, email, verified, data):
-    row = fetch_dict(cur, 'SELECT user_id FROM auth.identities WHERE provider = %s AND provider_id = %s',
-                     [provider, provider_id])
-    if row:
-        user = acc.get_user_by_id(cur, row['user_id'])
-        cur.execute('UPDATE auth.identities SET identity_data = %s::jsonb, last_sign_in_at = now(), updated_at = now()'
-                    ' WHERE provider = %s AND provider_id = %s', [json.dumps(data), provider, provider_id])
+def _oauth_sign_in(provider, provider_id, email, verified, data):
+    now = timezone.now()
+    ident = Identity.objects.filter(provider=provider, provider_id=provider_id).first()
+    if ident is not None:
+        user = acc.get_user_by_id(ident.user_id)
+        ident.identity_data = data
+        ident.last_sign_in_at = now
+        ident.updated_at = now
+        ident.save(update_fields=['identity_data', 'last_sign_in_at', 'updated_at'])
     else:
-        user = acc.get_user_by_email(cur, email) if (email and verified) else None
+        user = acc.get_user_by_email(email) if (email and verified) else None
         if user:  # same verified email: link the provider to the existing account
-            cur.execute('INSERT INTO auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, email)'
-                        ' VALUES (%s, %s, %s::jsonb, %s, now(), %s)', [provider_id, user['id'], json.dumps(data), provider, email])
-            cur.execute("UPDATE auth.users SET raw_app_meta_data = jsonb_set(COALESCE(raw_app_meta_data, '{}'::jsonb),"
-                        " '{providers}', (SELECT to_jsonb(array_agg(DISTINCT provider)) FROM auth.identities WHERE user_id = %s)),"
-                        " email_confirmed_at = COALESCE(email_confirmed_at, now()) WHERE id = %s", [user['id'], user['id']])
-            user = acc.get_user_by_id(cur, user['id'])
+            Identity(provider_id=provider_id, user=user, identity_data=data, provider=provider,
+                     last_sign_in_at=now, email=email).save(force_insert=True)
+            providers = sorted(set(Identity.objects.filter(user_id=user.id).values_list('provider', flat=True)))
+            user.raw_app_meta_data = {**(user.raw_app_meta_data or {}), 'providers': providers}
+            if user.email_confirmed_at is None:
+                user.email_confirmed_at = now
+            user.save(update_fields=['raw_app_meta_data', 'email_confirmed_at'])
         else:
             meta = {k: v for k, v in data.items() if v is not None}
-            user = acc.create_user(cur, email or f'{provider_id}@{provider}.invalid', None, meta, provider=provider,
+            user = acc.create_user(email or f'{provider_id}@{provider}.invalid', None, meta, provider=provider,
                                    confirmed=True, identity_data=data, provider_id=provider_id)
     if not user or acc.is_banned(user):
         return None
-    return acc.start_session(cur, user)
+    return acc.start_session(user)

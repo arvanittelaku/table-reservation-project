@@ -5,7 +5,7 @@
 cd "$(dirname "$0")"
 set -o pipefail
 FAIL=0
-./rebuild_db.sh >/dev/null || exit 1
+./rebuild_db.sh >/dev/null || exit 1   # Django: migrate + seed_dev
 rm -rf ../var/mail ../var/storage
 ./serve.sh
 for p in $(pgrep -f "^python3 fake_google.py"); do kill "$p"; done

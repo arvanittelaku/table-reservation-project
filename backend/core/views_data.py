@@ -6,8 +6,13 @@ from django.http import FileResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from . import query, rpc, storage
-from .db import DbError, as_service, as_user
+from django.db import transaction
+
+from ejb import context, query, rpc
+from ejb.context import Actor
+
+from . import storage
+from .db import DbError
 from .http import BadRequest, bearer_claims, error_response, json_body, ok, rate_limit
 
 log = logging.getLogger('ejb.api')
@@ -32,8 +37,8 @@ def _db_errors(fn):
 def table_query(request):
     claims = bearer_claims(request)
     req = json_body(request)
-    with as_user(claims) as cur:
-        data, count = query.run(cur, req)
+    with context.acting(Actor.from_claims(claims), direct=True):
+        data, count = query.run(req)
     return ok({'data': data, 'count': count})
 
 
@@ -42,8 +47,8 @@ def table_query(request):
 def rpc_call(request, name):
     claims = bearer_claims(request)
     args = json_body(request)
-    with as_user(claims) as cur:
-        data = rpc.call(cur, name, args)
+    with context.acting(Actor.from_claims(claims)):
+        data = rpc.call(name, args)
     return ok({'data': data})
 
 
@@ -55,12 +60,12 @@ def storage_object(request, bucket, path=''):
     claims = bearer_claims(request)
     if request.method == 'DELETE':
         body = json_body(request)
-        with as_service() as cur:  # folder rules are enforced in storage.py
-            removed = storage.remove(cur, claims, bucket, body.get('prefixes') or [])
+        with transaction.atomic():  # folder rules are enforced in storage.py
+            removed = storage.remove(claims, bucket, body.get('prefixes') or [])
         return ok(removed)
     upsert = request.method == 'PUT' or request.headers.get('x-upsert', '').lower() == 'true'
-    with as_service() as cur:
-        result = storage.upload(cur, claims, bucket, path, request.body, request.headers.get('Content-Type'), upsert)
+    with transaction.atomic():
+        result = storage.upload(claims, bucket, path, request.body, request.headers.get('Content-Type'), upsert)
     return ok(result)
 
 

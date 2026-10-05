@@ -1,3 +1,4 @@
+"""LEGACY (dev only, for dev/difftest.py): the old SQL-generating engine."""
 """Calling the database's functions (what PostgREST's /rpc did).
 
 Arguments are passed by name and cast to the declared types; the call runs as
@@ -7,7 +8,7 @@ shapes: a scalar/json value, an object for a single composite, a list for
 set-returning / RETURNS TABLE functions, null for void.
 """
 from .catalog import get_catalog
-from .db import DbError
+from core.db import DbError
 from .query import Ctx, qi
 
 

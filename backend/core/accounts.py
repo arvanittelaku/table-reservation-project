@@ -1,11 +1,9 @@
-"""Accounts live in auth.users, exactly where Supabase Auth kept them.
+"""Accounts, sessions and one-time email links (what Supabase Auth did).
 
-Same ids, emails, metadata and bcrypt password hashes, so existing users sign
-in unchanged and the database trigger that creates profiles keeps firing.
-Passwords are hashed and checked inside Postgres (pgcrypto's crypt(), the same
-$2a$ bcrypt format Supabase uses); they are never logged or returned.
+Accounts stay in auth.users (model ejb.AuthUser) with the same ids, emails,
+metadata and bcrypt hashes, so existing users sign in unchanged. Creating an
+account creates its profile through the model hook (formerly a trigger).
 """
-import json
 import uuid
 from datetime import timedelta
 from urllib.parse import urlencode
@@ -13,149 +11,133 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.utils import timezone
 
-from .db import fetch_dict, fetch_one
-from .tokens import hash_token, issue_access_token, new_random_token, refresh_expiry
+from ejb.models import AuthToken, AuthUser, Identity, RefreshToken
 
-USER_COLUMNS = (
-    'id, aud, role, email, email_confirmed_at, confirmed_at, last_sign_in_at, '
-    'raw_app_meta_data, raw_user_meta_data, created_at, updated_at, banned_until, phone, is_anonymous'
-)
+from . import passwords
+from .tokens import hash_token, issue_access_token, new_random_token, refresh_expiry
 
 
 def normalize_email(email):
     return (email or '').strip().lower()
 
 
-def get_user_by_id(cur, user_id):
-    return fetch_dict(cur, f'SELECT {USER_COLUMNS} FROM auth.users WHERE id = %s AND deleted_at IS NULL', [user_id])
+def get_user_by_id(user_id):
+    try:
+        return AuthUser.objects.filter(pk=user_id, deleted_at__isnull=True).first()
+    except (ValueError, TypeError):
+        return None
 
 
-def get_user_by_email(cur, email):
-    return fetch_dict(cur, f'SELECT {USER_COLUMNS} FROM auth.users WHERE lower(email) = %s AND deleted_at IS NULL',
-                      [normalize_email(email)])
-
-
-def identities_of(cur, user_id):
-    cur.execute(
-        'SELECT id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at, email '
-        'FROM auth.identities WHERE user_id = %s ORDER BY created_at', [user_id])
-    cols = [c.name for c in cur.description]
-    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
-    for r in rows:
-        r['identity_id'] = str(r['id'])
-        r['id'] = r['provider_id']
-        r['user_id'] = str(r['user_id'])
-        for k in ('last_sign_in_at', 'created_at', 'updated_at'):
-            r[k] = _iso(r[k])
-    return rows
+def get_user_by_email(email):
+    email = normalize_email(email)
+    if not email:
+        return None
+    return AuthUser.objects.filter(email__iexact=email, deleted_at__isnull=True).first()
 
 
 def _iso(v):
     return v.isoformat() if v else None
 
 
-def user_json(cur, user):
+def identities_json(user):
+    out = []
+    for i in Identity.objects.filter(user_id=user.id).order_by('created_at'):
+        out.append({
+            'identity_id': str(i.id), 'id': i.provider_id, 'user_id': str(i.user_id),
+            'identity_data': i.identity_data, 'provider': i.provider, 'provider_id': i.provider_id,
+            'last_sign_in_at': _iso(i.last_sign_in_at), 'created_at': _iso(i.created_at),
+            'updated_at': _iso(i.updated_at), 'email': i.email,
+        })
+    return out
+
+
+def user_json(user):
     """The user object the app expects (Supabase Auth's shape)."""
     return {
-        'id': str(user['id']),
-        'aud': user.get('aud') or 'authenticated',
-        'role': user.get('role') or 'authenticated',
-        'email': user.get('email'),
-        'email_confirmed_at': _iso(user.get('email_confirmed_at')),
-        'confirmed_at': _iso(user.get('confirmed_at') or user.get('email_confirmed_at')),
-        'last_sign_in_at': _iso(user.get('last_sign_in_at')),
-        'phone': user.get('phone') or '',
-        'app_metadata': user.get('raw_app_meta_data') or {},
-        'user_metadata': user.get('raw_user_meta_data') or {},
-        'identities': identities_of(cur, user['id']),
-        'created_at': _iso(user.get('created_at')),
-        'updated_at': _iso(user.get('updated_at')),
-        'is_anonymous': bool(user.get('is_anonymous')),
+        'id': str(user.id),
+        'aud': user.aud or 'authenticated',
+        'role': user.role or 'authenticated',
+        'email': user.email,
+        'email_confirmed_at': _iso(user.email_confirmed_at),
+        'confirmed_at': _iso(user.email_confirmed_at),
+        'last_sign_in_at': _iso(user.last_sign_in_at),
+        'phone': user.phone or '',
+        'app_metadata': user.raw_app_meta_data or {},
+        'user_metadata': user.raw_user_meta_data or {},
+        'identities': identities_json(user),
+        'created_at': _iso(user.created_at),
+        'updated_at': _iso(user.updated_at),
+        'is_anonymous': bool(user.is_anonymous),
     }
 
 
-def create_user(cur, email, password, user_metadata, provider='email', confirmed=False, identity_data=None, provider_id=None):
-    user_id = str(uuid.uuid4())
+def create_user(email, password, user_metadata, provider='email', confirmed=False, identity_data=None,
+                provider_id=None):
+    now = timezone.now()
     email = normalize_email(email)
-    app_meta = {'provider': provider, 'providers': [provider]}
-    pw_sql = "extensions.crypt(%s, extensions.gen_salt('bf', 10))" if password else "''"
-    params = [user_id, email]
-    if password:
-        params.append(password)
-    params += [json.dumps(app_meta), json.dumps(user_metadata or {}), confirmed]
-    cur.execute(
-        f"INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, raw_app_meta_data,"
-        f" raw_user_meta_data, email_confirmed_at, created_at, updated_at)"
-        f" VALUES ('00000000-0000-0000-0000-000000000000', %s, 'authenticated', 'authenticated', %s, {pw_sql},"
-        f" %s::jsonb, %s::jsonb, CASE WHEN %s THEN now() END, now(), now())",
-        params,
-    )
-    data = identity_data or {'sub': user_id, 'email': email, 'email_verified': confirmed, 'phone_verified': False}
-    cur.execute(
-        'INSERT INTO auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, email)'
-        ' VALUES (%s, %s, %s::jsonb, %s, now(), %s)',
-        [provider_id or user_id, user_id, json.dumps(data), provider, email],
-    )
-    return get_user_by_id(cur, user_id)
+    user = AuthUser(
+        id=uuid.uuid4(), instance_id=uuid.UUID(int=0), aud='authenticated', role='authenticated',
+        email=email, encrypted_password=passwords.hash_password(password) if password else '',
+        raw_app_meta_data={'provider': provider, 'providers': [provider]},
+        raw_user_meta_data=user_metadata or {}, email_confirmed_at=now if confirmed else None,
+        created_at=now, updated_at=now)
+    user.save(force_insert=True)          # hook: creates the profile
+    data = identity_data or {'sub': str(user.id), 'email': email, 'email_verified': confirmed,
+                             'phone_verified': False}
+    Identity(provider_id=provider_id or str(user.id), user=user, identity_data=data, provider=provider,
+             last_sign_in_at=now, email=email).save(force_insert=True)
+    return user
 
 
-def check_password(cur, user_id, password):
-    return bool(fetch_one(
-        cur,
-        "SELECT encrypted_password IS NOT NULL AND encrypted_password <> ''"
-        " AND encrypted_password = extensions.crypt(%s, encrypted_password) FROM auth.users WHERE id = %s",
-        [password or '', user_id],
-    ))
+def check_password(user, password):
+    return passwords.check_password(password or '', user.encrypted_password)
 
 
-def set_password(cur, user_id, password):
-    cur.execute(
-        "UPDATE auth.users SET encrypted_password = extensions.crypt(%s, extensions.gen_salt('bf', 10)),"
-        " updated_at = now() WHERE id = %s", [password, user_id])
+def set_password(user, password):
+    user.encrypted_password = passwords.hash_password(password)
+    user.updated_at = timezone.now()
+    user.save(update_fields=['encrypted_password', 'updated_at'])
 
 
 def is_banned(user):
-    until = user.get('banned_until')
-    return bool(until and until > timezone.now())
+    return bool(user.banned_until and user.banned_until > timezone.now())
 
 
 # ───────────── sessions ─────────────
 
-def start_session(cur, user, touch_sign_in=True):
+def start_session(user, touch_sign_in=True):
     if touch_sign_in:
-        cur.execute('UPDATE auth.users SET last_sign_in_at = now() WHERE id = %s', [user['id']])
-        user = get_user_by_id(cur, user['id'])
+        user.last_sign_in_at = timezone.now()
+        user.save(update_fields=['last_sign_in_at'])
     access, exp = issue_access_token(user)
     refresh = new_random_token(32)
-    cur.execute('INSERT INTO backend.refresh_tokens (token_hash, user_id, expires_at) VALUES (%s, %s, %s)',
-                [hash_token(refresh), user['id'], refresh_expiry()])
+    RefreshToken(token_hash=hash_token(refresh), user=user, expires_at=refresh_expiry()).save(force_insert=True)
     return {
         'access_token': access,
         'token_type': 'bearer',
         'expires_in': settings.JWT_ACCESS_TTL,
         'expires_at': exp,
         'refresh_token': refresh,
-        'user': user_json(cur, user),
+        'user': user_json(user),
     }
 
 
-def rotate_refresh_token(cur, raw):
-    row = fetch_dict(
-        cur,
-        'UPDATE backend.refresh_tokens SET revoked_at = now()'
-        ' WHERE token_hash = %s AND revoked_at IS NULL AND expires_at > now() RETURNING user_id',
-        [hash_token(raw or '')])
-    if not row:
+def rotate_refresh_token(raw):
+    now = timezone.now()
+    rt = (RefreshToken.objects.select_for_update()
+          .filter(token_hash=hash_token(raw or ''), revoked_at__isnull=True, expires_at__gt=now).first())
+    if rt is None:
         return None
-    user = get_user_by_id(cur, row['user_id'])
+    rt.revoked_at = now
+    rt.save(update_fields=['revoked_at'])
+    user = get_user_by_id(rt.user_id)
     if not user or is_banned(user):
         return None
-    return start_session(cur, user, touch_sign_in=False)
+    return start_session(user, touch_sign_in=False)
 
 
-def revoke_all_sessions(cur, user_id):
-    cur.execute('UPDATE backend.refresh_tokens SET revoked_at = now() WHERE user_id = %s AND revoked_at IS NULL',
-                [user_id])
+def revoke_all_sessions(user_id):
+    RefreshToken.objects.filter(user_id=user_id, revoked_at__isnull=True).update(revoked_at=timezone.now())
 
 
 # ───────────── one-time email links ─────────────
@@ -164,38 +146,46 @@ def safe_redirect(url):
     """Only redirect to the app itself (or explicitly allowed origins)."""
     if url:
         for allowed in settings.AUTH_REDIRECT_ALLOWLIST:
-            if url == allowed or url.startswith(allowed.rstrip('/') + '/') or url.startswith(allowed.rstrip('/') + '#') \
-                    or url.startswith(allowed.rstrip('/') + '?'):
+            base = allowed.rstrip('/')
+            if url == allowed or url.startswith(base + '/') or url.startswith(base + '#') or url.startswith(base + '?'):
                 return url
     return settings.SITE_URL
 
 
-def create_email_link(cur, user_id, kind, redirect_to):
+def create_email_link(user, kind, redirect_to):
     raw = new_random_token(32)
-    cur.execute(
-        'INSERT INTO backend.auth_tokens (token_hash, user_id, kind, redirect_to, expires_at) VALUES (%s, %s, %s, %s, %s)',
-        [hash_token(raw), user_id, kind, safe_redirect(redirect_to),
-         timezone.now() + timedelta(seconds=settings.AUTH_LINK_TTL)])
-    column = 'confirmation_sent_at' if kind == 'signup' else 'recovery_sent_at'
-    cur.execute(f'UPDATE auth.users SET {column} = now() WHERE id = %s', [user_id])
+    now = timezone.now()
+    AuthToken(token_hash=hash_token(raw), user=user, kind=kind, redirect_to=safe_redirect(redirect_to),
+              expires_at=now + timedelta(seconds=settings.AUTH_LINK_TTL)).save(force_insert=True)
+    if kind == 'signup':
+        user.confirmation_sent_at = now
+        user.save(update_fields=['confirmation_sent_at'])
+    else:
+        user.recovery_sent_at = now
+        user.save(update_fields=['recovery_sent_at'])
     return f"{settings.API_URL}/auth/v1/verify?{urlencode({'token': raw, 'type': kind})}"
 
 
-def consume_email_link(cur, raw, kind):
+def consume_email_link(raw, kind):
     """Returns (user, redirect_to) or (None, redirect_to_or_None)."""
-    row = fetch_dict(cur, 'SELECT user_id, redirect_to, expires_at, used_at FROM backend.auth_tokens'
-                          ' WHERE token_hash = %s AND kind = %s', [hash_token(raw or ''), kind])
-    if not row:
+    tok = AuthToken.objects.select_for_update().filter(token_hash=hash_token(raw or ''), kind=kind).first()
+    if tok is None:
         return None, None
-    if row['used_at'] or row['expires_at'] < timezone.now():
-        return None, row['redirect_to']
-    cur.execute('UPDATE backend.auth_tokens SET used_at = now() WHERE token_hash = %s', [hash_token(raw)])
-    if kind == 'signup':
-        cur.execute('UPDATE auth.users SET email_confirmed_at = COALESCE(email_confirmed_at, now()),'
-                    ' updated_at = now() WHERE id = %s', [row['user_id']])
-        cur.execute("UPDATE auth.identities SET identity_data = identity_data || '{\"email_verified\": true}'::jsonb"
-                    " WHERE user_id = %s AND provider = 'email'", [row['user_id']])
-    return get_user_by_id(cur, row['user_id']), row['redirect_to']
+    now = timezone.now()
+    if tok.used_at or tok.expires_at < now:
+        return None, tok.redirect_to
+    tok.used_at = now
+    tok.save(update_fields=['used_at'])
+    user = get_user_by_id(tok.user_id)
+    if user and kind == 'signup':
+        if user.email_confirmed_at is None:
+            user.email_confirmed_at = now
+        user.updated_at = now
+        user.save(update_fields=['email_confirmed_at', 'updated_at'])
+        for ident in Identity.objects.filter(user_id=user.id, provider='email'):
+            ident.identity_data = {**(ident.identity_data or {}), 'email_verified': True}
+            ident.save(update_fields=['identity_data'])
+    return user, tok.redirect_to
 
 
 def session_fragment(session, kind):
