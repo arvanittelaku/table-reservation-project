@@ -11,6 +11,10 @@ class Command(BaseCommand):
         parser.add_argument('--reload', action='store_true')
 
     def handle(self, *args, **opts):
+        import os
+
         import uvicorn
+        # behind a reverse proxy (Caddy in deploy/), trust its X-Forwarded-* headers
         uvicorn.run('config.asgi:application', host=opts['host'], port=opts['port'],
-                    reload=opts['reload'], lifespan='on', ws='auto', proxy_headers=True)
+                    reload=opts['reload'], lifespan='on', ws='auto', proxy_headers=True,
+                    forwarded_allow_ips=os.environ.get('FORWARDED_ALLOW_IPS', '127.0.0.1'))

@@ -1,0 +1,35 @@
+# Production on your own server: backend + Redis + Caddy (HTTPS, automatic certificates).
+# Usage: see deploy/README.md
+services:
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      FORWARDED_ALLOW_IPS: "*"          # only Caddy can reach it (no published port)
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_ROOT: /data/storage
+      EMAIL_FILE_PATH: /data/mail
+    volumes:
+      - storage:/data
+    depends_on: [redis]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [backend]
+
+volumes:
+  storage:       # uploaded profile photos — back this up
+  caddy_data:    # TLS certificates

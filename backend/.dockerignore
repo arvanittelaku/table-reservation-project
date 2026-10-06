@@ -1,0 +1,5 @@
+.env
+var/
+dev/
+**/__pycache__
+*.pyc
