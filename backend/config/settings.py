@@ -58,6 +58,7 @@ MIDDLEWARE = [
     'core.http.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -97,7 +98,9 @@ TIME_ZONE = 'UTC'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Existing index names (e.g. idx_lesson_participants_student) exceed Django's
 # portable 30-char limit; Postgres allows 63, and we keep the live names.
-SILENCED_SYSTEM_CHECKS = ['models.E034']
+# CSRF middleware (W003) is not used: the API authenticates with bearer tokens
+# in the Authorization header, never with cookies, so cross-site forms cannot act.
+SILENCED_SYSTEM_CHECKS = ['models.E034', 'security.W003']
 
 # ───────────── public URLs ─────────────
 # Where the web app lives (email links and OAuth return here) and where this
@@ -165,6 +168,11 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SESSION_COOKIE_SECURE = not DEBUG
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', True)
+    SECURE_REDIRECT_EXEMPT = [r'^health$']          # platform health checks over plain HTTP
+    SECURE_HSTS_SECONDS = int(env('SECURE_HSTS_SECONDS', str(30 * 24 * 3600)))
+    if not env('JWT_SECRET'):
+        raise RuntimeError('JWT_SECRET must be set when DEBUG is off')
 
 LOGGING = {
     'version': 1,
