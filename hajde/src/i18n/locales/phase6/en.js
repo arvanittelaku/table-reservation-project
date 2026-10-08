@@ -102,6 +102,7 @@ export const notifications = {
   waitlistSpot: 'A seat opened up at "{{title}}" and you were first in line! Confirm it.',
   mutualMatch: 'It\'s a mutual match! A private chat opened in "My connections".',
   accountSuspended: 'Your account was suspended. Reason: {{reason}}. Strike {{count}}/3.',
+  adminMessage: 'Message from the ejaBashkohu team: {{message}}',
   tableCancelledByAdmin: '"{{title}}" was cancelled by the ejaBashkohu team. Reason: {{reason}}',
   lessonRequested: '{{name}} requested a {{subject}} lesson with you on {{at}}.',
   lessonAccepted: '{{name}} accepted your {{subject}} lesson on {{at}}. Confirm your booking.',

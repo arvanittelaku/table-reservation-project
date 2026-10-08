@@ -137,24 +137,32 @@ class RealtimeConsumer(AsyncJsonWebsocketConsumer):
         p = event['payload']
         table, op = p['table'], p['type']
         matching = [(sid, s) for sid, s in self.subs.items()
-                    if s['table'] == table and s['event'] in ('*', op)]
+                    if s['table'] == table and (s['event'] in ('*', op) or (op == 'UPDATE' and s['event'] == 'DELETE'))]
         if not matching:
             return
-        new_row, old_row = p.get('record'), p.get('old_record')
+        server_row, old_row = p.get('record'), p.get('old_record')
+        new_row = None
         if op in ('INSERT', 'UPDATE'):
-            new_row = await sync_to_async(_visible_row)(self.claims, table, new_row)
-            if new_row is None:
-                return  # this user may not see the row
-            old_out = _pk_only(table, old_row) if old_row else {}
-        else:
-            old_out = _pk_only(table, old_row)
+            new_row = await sync_to_async(_visible_row)(self.claims, table, server_row)
+        old_out = _pk_only(table, old_row) if old_row else {}
         for sid, s in matching:
-            probe = new_row if op != 'DELETE' else old_row
-            if not match_filter(s['filter'], probe):
+            if op == 'DELETE':
+                if not match_filter(s['filter'], old_row):
+                    continue
+                out_type, out_new = 'DELETE', {}
+            elif new_row is not None:
+                if s['event'] not in ('*', op) or not match_filter(s['filter'], new_row):
+                    continue
+                out_type, out_new = op, new_row
+            elif op == 'UPDATE' and s['event'] in ('*', 'DELETE') and match_filter(s['filter'], server_row):
+                # the row became invisible to this user (e.g. a listing was closed):
+                # tell them it is gone, with its primary key only
+                out_type, out_new = 'DELETE', {}
+            else:
                 continue
             await self.send_json({'type': 'change', 'id': sid, 'payload': {
-                'schema': p.get('schema', 'public'), 'table': table, 'eventType': op,
-                'new': new_row or {}, 'old': old_out, 'commit_timestamp': p.get('commit_timestamp'), 'errors': None}})
+                'schema': p.get('schema', 'public'), 'table': table, 'eventType': out_type,
+                'new': out_new, 'old': old_out, 'commit_timestamp': p.get('commit_timestamp'), 'errors': None}})
 
 
 # ───────────── background: job runner + scheduled work ─────────────

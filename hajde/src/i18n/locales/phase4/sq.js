@@ -1,7 +1,7 @@
 export const feed = {
   discover: 'Zbulo',
   myTables: 'Tavolinat e mia',
-  tagline: 'Uluni te tavolina e dikujt.',
+  tagline: 'Ulu te tavolina e dikujt.',
   notifications: 'Njoftimet',
   profileTitle: 'Profili im',
   close: 'Mbyll',

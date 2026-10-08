@@ -72,6 +72,14 @@ def _lesson_notify(p_user, p_kind, p_params, p_body):
     common.notify(p_user, 'info', p_body, p_kind, p_params)
 
 
+def _seats_changed(lesson):
+    """Other students cannot see lesson_participants rows, so a seat change is also
+    announced as a change of the (public) group lesson: open lists update live."""
+    if lesson.kind == 'group':
+        from .. import realtime
+        realtime.record(lesson, 'UPDATE')
+
+
 def _lesson_params(name, subject, at):
     return {'name': name, 'subject': subject, 'at': pg_timestamp(at)}
 
@@ -381,6 +389,7 @@ def cancel_lesson(p_lesson: UUID) -> None:
         if l.kind == 'individual':
             l.status = 'cancelled'
             l.save()
+        _seats_changed(l)
         _lesson_notify(l.tutor_id, 'lessonCancelled', params, body)
 
 
@@ -434,6 +443,7 @@ def join_group_lesson(p_lesson: UUID) -> None:
     elif lp.status in ('cancelled', 'declined'):
         lp.status = 'accepted'
         lp.save()
+    _seats_changed(l)
 
 
 @rpc('get_lesson_room')

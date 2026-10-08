@@ -1,4 +1,16 @@
-import { sb } from '../backendClient'
+import { sb, API_BASE_URL } from '../backendClient'
+
+let providersPromise = null
+/** Which social sign-ins the backend has configured ({ google, apple }); cached per page load. */
+export function fetchAuthProviders() {
+  if (!providersPromise) {
+    providersPromise = fetch(`${API_BASE_URL}/auth/v1/settings`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => ({ google: !!d?.external?.google, apple: !!d?.external?.apple }))
+      .catch(() => { providersPromise = null; return { google: true, apple: false } })
+  }
+  return providersPromise
+}
 
 const MIN_AGE = 18
 

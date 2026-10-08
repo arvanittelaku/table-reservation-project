@@ -12,6 +12,7 @@ import { errors, toasts, notifications, payment } from './phase6/sq.js'
 import { admin, termsOfService, privacyPolicy } from './phase7/sq.js'
 import { adm } from './admin/sq.js'
 import { social, sports, browse, support } from './social/sq.js'
+import { editProfile, rating } from './profile/sq.js'
 import { lessons } from './lessons/sq.js'
 import { plans } from './plans/sq.js'
 import { share } from './share/sq.js'
@@ -387,6 +388,8 @@ export default {
   admin,
   adm,
   social,
+  editProfile,
+  rating,
   sports,
   lessons,
   plans,

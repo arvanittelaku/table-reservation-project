@@ -102,6 +102,7 @@ export const notifications = {
   waitlistSpot: 'Bei „{{title}}“ ist ein Platz frei geworden und du warst als Erste:r dran! Bestätige ihn.',
   mutualMatch: 'Gegenseitiges Match! Ein privater Chat wurde unter „Meine Verbindungen“ geöffnet.',
   accountSuspended: 'Dein Konto wurde gesperrt. Grund: {{reason}}. Verwarnung {{count}}/3.',
+  adminMessage: 'Nachricht vom ejaBashkohu-Team: {{message}}',
   tableCancelledByAdmin: '„{{title}}“ wurde vom ejaBashkohu-Team abgesagt. Grund: {{reason}}',
   lessonRequested: '{{name}} möchte am {{at}} eine {{subject}}-Stunde bei dir.',
   lessonAccepted: '{{name}} hat deine {{subject}}-Stunde am {{at}} angenommen. Bestätige die Buchung.',

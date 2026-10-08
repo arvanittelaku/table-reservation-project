@@ -102,6 +102,7 @@ export const notifications = {
   waitlistSpot: 'Се ослободи место на „{{title}}“ и ти беше прв на ред! Потврди го.',
   mutualMatch: 'Заемно совпаѓање! Отворен е приватен разговор во „Мои врски“.',
   accountSuspended: 'Твојата сметка е суспендирана. Причина: {{reason}}. Казна {{count}}/3.',
+  adminMessage: 'Порака од тимот на ejaBashkohu: {{message}}',
   tableCancelledByAdmin: '„{{title}}“ е откажана од тимот на ejaBashkohu. Причина: {{reason}}',
   lessonRequested: '{{name}} бара час по {{subject}} со тебе на {{at}}.',
   lessonAccepted: '{{name}} го прифати часот по {{subject}} на {{at}}. Потврди ја резервацијата.',

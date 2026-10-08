@@ -37,6 +37,9 @@ def _before_save(sender, instance, raw=False, update_fields=None, **kw):
         else:
             instance._old_status = (m.Request.objects.filter(pk=instance.pk)
                                     .values_list('status', flat=True).first())
+    elif sender is m.Membership:
+        if adding:
+            hooks.membership_before_insert(instance)
     elif sender is m.Waitlist:
         if adding:
             hooks.join_before_insert(instance, 'waitlist')
@@ -66,6 +69,7 @@ def _after_save(sender, instance, created, raw=False, **kw):
         hooks.request_after_save(instance, created, getattr(instance, '_old_status', None))
     elif sender is m.Membership and created:
         hooks.touch_table(instance.table_id)
+        hooks.membership_after_insert(instance)
     elif sender is m.Rating and created:
         hooks.rating_after_insert(instance)
     elif sender is m.ConnectionPick and created:

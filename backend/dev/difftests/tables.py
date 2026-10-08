@@ -94,7 +94,8 @@ CASES = [
                rpc(BLERIM, 'request_join', p_table='$3.data.id'),
                rpc(BLERIM, 'request_join', p_table='$2.data.id'),            # full (not blocked by NORA)
                ]},
-    {'name': 'confirm_free_seat (ride)', 'ignore_tables': JOBS,
+    # intentional: the host is now told when a guest confirms a seat (new notification)
+    {'name': 'confirm_free_seat (ride)', 'ignore_tables': JOBS + ('notifications',),
      'steps': [new_table('TA ride', kind='vozitje', category='ride', to_city='Prizren', spots=2),
                rpc(BLERIM, 'request_join', p_table='$0.data.id'),
                rpc(ARTA, 'request_join', p_table='$0.data.id'),

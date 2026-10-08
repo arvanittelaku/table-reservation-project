@@ -16,13 +16,18 @@ def q(table, action='select', **kw):
 NEW_TABLE = {'kind': 'tavoline', 'category': 'food', 'title': 'Test darka', 'city': 'Prishtinë',
              'time_label': '20:00', 'spots': 4, 'event_datetime': '$now+3d'}
 
+# Intentional change: people with a seat keep seeing their table after the event
+# (to rate it). Steps that list tables for a seated user therefore differ.
+PAST_SEATS = 'members now also see their past tables (intentional)'
+
 CASES = [
     {'name': 'listTables with embeds (basic user, own city)', 'unordered': True,
-     'steps': [{'as': ANA, 'query': q('tables', select=TABLE_SELECT,
+     'steps': [{'expect_diff': PAST_SEATS, 'as': ANA, 'query': q('tables', select=TABLE_SELECT,
                                       filters=[{'col': 'status', 'op': 'eq', 'value': 'open'}],
                                       order=[{'col': 'event_datetime', 'ascending': True}])}]},
     {'name': 'tables visible per user', 'unordered': True,
-     'steps': [{'as': w, 'query': q('tables', select='id,title,city')} for w in (ANA, AGON, RINA, 'admin')]
+     'steps': [{'as': w, 'query': q('tables', select='id,title,city'), **({'expect_diff': PAST_SEATS} if w != 'admin' else {})}
+               for w in (ANA, AGON, RINA, 'admin')]
      + [{'as': None, 'query': q('tables', select='id')}]},
     {'name': 'count + head + range + filters',
      'steps': [{'as': 'admin', 'query': q('tables', select='id', count='exact', head=True)},
@@ -83,7 +88,9 @@ ALL_TABLES = ['admin_audit_log', 'affinity', 'badges', 'bans', 'blocks', 'connec
 
 CASES += [
     {'name': f'read rules: {t}', 'unordered': True,
-     'steps': [{'as': who, 'query': q(t, select='*', count='exact')} for who in ('admin', NORA, ARTA, None)]}
+     'steps': [{'as': who, 'query': q(t, select='*', count='exact'),
+                **({'expect_diff': PAST_SEATS} if t == 'tables' and who in (NORA, ARTA) else {})}
+               for who in ('admin', NORA, ARTA, None)]}
     for t in ALL_TABLES
 ] + [
     {'name': 'profiles: own updates, others, reactivation, onboarded_at kept',

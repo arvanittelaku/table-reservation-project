@@ -46,6 +46,9 @@ export function PlansSheet({ plan, onClose, onChanged, onChangeCity, showToast, 
               <li>{t('plans.basicCity', { city: plan?.home_city || '—' })}</li>
               <li>{plan?.table_limit != null ? t('plans.basicLimit', { count: plan.table_limit }) : t('plans.unlimitedTables')}</li>
               <li>{t('plans.basicWed')}</li>
+              {!isPremium && plan?.table_limit != null && (
+                <li className="pl-usage">{t('plans.usage', { used: plan.tables_this_month ?? 0, limit: plan.table_limit })}</li>
+              )}
             </ul>
             {!isPremium && <span className="pl-badge">{t('plans.current')}</span>}
             {!isPremium && onChangeCity && <button type="button" className="link-btn" onClick={onChangeCity}>{t('plans.changeCity')}</button>}

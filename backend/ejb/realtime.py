@@ -38,5 +38,7 @@ def record(obj, op):
     ev = {'schema': 'public', 'table': table, 'type': op,
           'commit_timestamp': to_json(context.now()),
           'record': None if op == 'DELETE' else row,
-          'old_record': None if op == 'INSERT' else {c: row.get(c) for c in pk_columns(type(obj))}}
+          # full row, used only by the server to match subscription filters; clients
+          # receive just the primary key of old rows (core/realtime.py)
+          'old_record': None if op == 'INSERT' else row}
     transaction.on_commit(lambda: _send([ev]))

@@ -195,6 +195,23 @@ def table_before_insert(t):
 
 def table_before_update(t, old):
     t.share_code = old.share_code      # tables_keep_share_code()
+    # the host closing from the app; admin cancellation sends its own message
+    if old.status == 'open' and t.status in ('cancelled', 'closed') and context.is_direct():
+        _notify_table_closed(t)
+
+
+def _notify_table_closed(t):
+    """The host closed the listing: everyone with a seat, a request or a waitlist
+    spot hears about it (clients cannot write notifications for other users)."""
+    from .models import Membership, Request, Waitlist
+    users = set(Membership.objects.filter(table_id=t.id).values_list('user_id', flat=True))
+    users |= set(Request.objects.filter(table_id=t.id, status__in=('pending', 'approved'))
+                 .values_list('user_id', flat=True))
+    users |= set(Waitlist.objects.filter(table_id=t.id).values_list('user_id', flat=True))
+    users.discard(t.host_id)
+    for u in users:
+        notify(u, 'info', f'Tavolina "{t.title}" u mbyll nga nikoqiri.',
+               'tableClosedByHostNotif', {'table': t.title or ''})
 
 
 def table_after_insert(t):
@@ -262,6 +279,30 @@ def request_after_save(r, created, old_status):
         if t.get('title') is not None:
             notify(r.user_id, '✅', f'U aprovove për "{t["title"]}". Konfirmo vendin.')
     touch_table(r.table_id)
+
+
+def membership_before_insert(m):
+    """No seat beyond the table's capacity, whichever path adds it (free seat,
+    paid seat from the app, payment webhook)."""
+    from .models import Membership, Table
+    if m.role == 'host':
+        return
+    spots = Table.objects.filter(pk=m.table_id).values_list('spots', flat=True).first()
+    if spots is not None and Membership.objects.filter(table_id=m.table_id).count() >= spots:
+        fail('Ulëset u mbushën')
+
+
+def membership_after_insert(m):
+    """A guest took a seat (paid or free): tell the host."""
+    from .models import Table
+    if m.role == 'host':
+        return
+    t = Table.objects.filter(pk=m.table_id).values('host_id', 'title', 'kind').first()
+    if not t or t['host_id'] in (None, m.user_id) or t['kind'] == 'darka_e_merkures':
+        return
+    p = (_name(m.user_id) or '').split(' ')[0]
+    notify(t['host_id'], 'check', f'{p} konfirmoi vendin te "{t["title"]}".',
+           'hostSeatConfirmedNotif', {'guest': p, 'table': t['title'] or ''})
 
 
 def membership_after_delete(m):

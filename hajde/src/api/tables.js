@@ -168,6 +168,32 @@ export async function listTables(city, category) {
   })
 }
 
+/**
+ * Past tables where I had a seat (the live feed only holds upcoming open ones),
+ * so "My tables" can still offer rating, connections and the chat afterwards.
+ */
+export async function listMyPastTables() {
+  const userId = await currentUserId()
+  if (!userId) return []
+  const { data: mine, error: e1 } = await sb.from('memberships').select('table_id').eq('user_id', userId)
+  if (e1) throwDb(e1)
+  const ids = (mine ?? []).map((m) => m.table_id)
+  if (ids.length === 0) return []
+  const { data, error } = await sb
+    .from('tables')
+    .select(`
+      *,
+      host:profiles!tables_host_id_fkey (${HOST_SELECT}),
+      memberships ( user_id, role, profile:profiles!memberships_user_id_fkey ( id, first_name, last_name, age, photo_path ) )
+    `)
+    .in('id', ids)
+    .lt('event_datetime', new Date().toISOString())
+    .order('event_datetime', { ascending: false })
+    .limit(30)
+  if (error) throwDb(error)
+  return (data ?? []).map((row) => toUiTable({ ...row, requests: [], waitlist: [] }))
+}
+
 export async function createTable(formData) {
   const userId = await currentUserId()
   if (!userId) throw new Error('You must be signed in to open a table')

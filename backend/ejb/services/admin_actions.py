@@ -187,7 +187,8 @@ def admin_notify_user(p_user: UUID, p_message: str) -> None:
         fail('Mesazhi duhet të ketë 1 deri 500 karaktere')
     if not Profile.objects.filter(pk=p_user).exists():
         fail('Përdoruesi nuk u gjet')
-    Notification(user_id=p_user, icon='info', body=msg).save()
+    # kind + params: the app frames the message in the viewer's language
+    Notification(user_id=p_user, icon='info', body=msg, kind='adminMessage', params={'message': msg}).save()
     common.admin_log('user_notified', 'user', p_user, common.user_label(p_user), {'message': msg})
 
 

@@ -102,6 +102,7 @@ export const notifications = {
   waitlistSpot: 'U lirua një vend te "{{title}}". Ishe i pari në radhë! Konfirmoje.',
   mutualMatch: 'Përputhje e ndërsjellë! Chat-i privat u hap te "Lidhjet e mia".',
   accountSuspended: 'Llogaria jote u pezullua. Arsyeja: {{reason}}. Pezullim {{count}}/3.',
+  adminMessage: 'Mesazh nga ekipi i ejaBashkohu: {{message}}',
   tableCancelledByAdmin: 'Tavolina "{{title}}" u anulua nga ekipi i ejaBashkohu. Arsyeja: {{reason}}',
   lessonRequested: '{{name}} kërkon një mësim {{subject}} me ty më {{at}}.',
   lessonAccepted: '{{name}} e pranoi mësimin {{subject}} më {{at}}. Konfirmo rezervimin.',

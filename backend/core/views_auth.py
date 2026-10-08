@@ -335,6 +335,8 @@ def _oauth_sign_in(provider, provider_id, email, verified, data):
             user.save(update_fields=['raw_app_meta_data', 'email_confirmed_at'])
         else:
             meta = {k: v for k, v in data.items() if v is not None}
+            if email and acc.get_user_by_email(email):  # unverified email owned by another account: never duplicate it
+                email = None
             user = acc.create_user(email or f'{provider_id}@{provider}.invalid', None, meta, provider=provider,
                                    confirmed=True, identity_data=data, provider_id=provider_id)
     if not user or acc.is_banned(user):

@@ -12,6 +12,7 @@ import { errors, toasts, notifications, payment } from './phase6/de.js'
 import { admin, termsOfService, privacyPolicy } from './phase7/de.js'
 import { adm } from './admin/de.js'
 import { social, sports, browse, support } from './social/de.js'
+import { editProfile, rating } from './profile/de.js'
 import { lessons } from './lessons/de.js'
 import { plans } from './plans/de.js'
 import { share } from './share/de.js'
@@ -387,6 +388,8 @@ export default {
   admin,
   adm,
   social,
+  editProfile,
+  rating,
   sports,
   lessons,
   plans,

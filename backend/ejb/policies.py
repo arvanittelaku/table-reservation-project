@@ -137,6 +137,11 @@ def _tables_select(a):
     permissive = (Q(event_datetime__gt=now, status='open')
                   & ~Q(host_id__in=blocked_ids)
                   & ~Q(host__deactivated_at__isnull=False)) | Q(host_id=a.uid)
+    # people with a seat keep seeing their table after the event (to rate it,
+    # pick connections, read the chat); the old policy hid it once it was past
+    seated = list(Membership.objects.filter(user_id=a.uid).values_list('table_id', flat=True))
+    if seated:
+        permissive |= Q(id__in=seated)
     if viewer_sees_all_cities(a) or a.is_admin:
         return permissive
     restrictive = Q(host_id=a.uid) | Q(id__in=my_table_ids(a))
@@ -206,7 +211,10 @@ RULES = {
                          table_id=o.table_id, user_id=a.uid, status='approved').exists()),
     'messages': R(select=lambda a: Q(Exists(Membership.objects.filter(table_id=OuterRef('table_id'), user_id=a.uid))),
                   insert=lambda a, o: o.sender_id == a.uid and is_member(a.uid, o.table_id)),
-    'notifications': R(select=own(), update=own(), update_check=lambda a, o: o.user_id == a.uid),
+    # self-notifications only (in-app events such as "ticket confirmed"); notifications
+    # for other users are written by the server
+    'notifications': R(select=own(), insert=lambda a, o: o.user_id == a.uid,
+                       update=own(), update_check=lambda a, o: o.user_id == a.uid),
     'payments': R(select=own(), insert=lambda a, o: o.user_id == a.uid and o.provider == 'stub'),
     'plans': R(select=everyone),
     'profiles': R(select=everyone, update=own('user_id'),

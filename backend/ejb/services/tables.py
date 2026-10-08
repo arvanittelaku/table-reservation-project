@@ -164,7 +164,7 @@ def confirm_paid_seat(p_user, p_table, p_amount_cents, p_provider, p_provider_re
     """confirm_paid_seat(): internal (called by the payment webhook), returns the ticket code."""
     if not Request.objects.filter(table_id=p_table, user_id=p_user, status='approved').exists():
         fail('Pagesë pa aprovim — refuzohet')
-    v_ticket = 'EBK-' + str(1000 + secrets.randbelow(9000)).rjust(4, '0')
+    v_ticket = 'EBK-' + ''.join(secrets.choice('ABCDEFGHJKLMNPQRSTUVWXYZ23456789') for _ in range(6))
     Payment(user_id=p_user, table_id=p_table, amount_cents=p_amount_cents, provider=p_provider,
             provider_ref=p_provider_ref, ticket_code=v_ticket).save(force_insert=True)
     Membership(table_id=p_table, user_id=p_user).save(force_insert=True)

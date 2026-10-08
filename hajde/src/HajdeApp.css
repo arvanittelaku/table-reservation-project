@@ -626,6 +626,7 @@ body { overflow-x: clip; }
 
 /* ── Responsive shell ── */
 .app-shell {
+  font-family: 'Manrope', system-ui, sans-serif; /* the desktop sidebar sits outside .app */
   display: flex;
   min-height: 100vh;
   min-height: 100dvh;
@@ -2170,3 +2171,23 @@ body { overflow-x: clip; }
   border: 3px solid rgba(0, 0, 0, 0.12); border-top-color: #FF6B35; animation: lazy-spin 0.8s linear infinite;
 }
 @keyframes lazy-spin { to { transform: rotate(360deg) } }
+
+/* ── Edit profile sheet ── */
+.edit-profile .label { margin-top: 12px; }
+.edit-profile .input.modern { width: 100%; box-sizing: border-box; }
+.ep-photo { display: flex; align-items: center; gap: 14px; margin: 6px 0 4px; }
+.ep-avatar { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+.ep-avatar.initial { display: flex; align-items: center; justify-content: center; background: #fdeee6; color: #b5652f; font-size: 30px; font-weight: 700; }
+.ep-photo-actions { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.ep-remove { color: #b3261e; }
+.ep-langs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ep-langs .choice { width: auto; flex: 0 0 auto; }
+.ep-from { margin-top: 8px; }
+.ep-save { margin-top: 16px; }
+.ep-list { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(0,0,0,.08); }
+.ep-list a.btn { text-align: center; text-decoration: none; box-sizing: border-box; }
+.ep-social { display: flex; gap: 8px; flex-wrap: wrap; }
+.ep-soc { flex: 1 1 0; min-width: 90px; text-align: center; padding: 10px 8px; border-radius: 12px; border: 1px solid rgba(0,0,0,.12); text-decoration: none; color: inherit; font-weight: 600; font-size: 14px; }
+.ep-follow-title { margin-top: 6px; }
+.edit-profile .ob-choice.ep-langs { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+.edit-profile .ep-langs .choice { width: auto; padding: 8px 12px; font-size: 14px; }

@@ -5,7 +5,7 @@ import { useTables } from './hooks/useTables'
 import { useNotifications } from './hooks/useNotifications'
 import { useRequests } from './hooks/useRequests'
 import { useChat } from './hooks/useChat'
-import { createTable as apiCreateTable, saveTasteProfile, getTable as apiGetTable } from './api/tables'
+import { createTable as apiCreateTable, saveTasteProfile, getTable as apiGetTable, listMyPastTables } from './api/tables'
 import { SharePreviewCard, ShareIcon, clearPendingShare, fetchSharePreview, parseShareCode, readPendingShare, shareTableLink } from './components/share/Share.jsx'
 import {
   requestJoin as apiRequestJoin,
@@ -16,7 +16,7 @@ import {
 } from './api/requests'
 import { uploadAvatar, saveAvatarToProfile, getAvatarUrl, clearAvatarCache } from './api/storage'
 import { checkEmailDomain } from './api/checkEmail'
-import { resendSignupConfirmation, signInWithProvider } from './api/auth'
+import { resendSignupConfirmation, signInWithProvider, fetchAuthProviders } from './api/auth'
 import { isEmailFormatValid } from './lib/emailValidation'
 import {
   savePendingRegistration,
@@ -59,6 +59,7 @@ import { notifText, BADGE_LABEL_KEY } from './lib/notifText'
 import { awardBadgeOnce } from './api/notifications'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import PasswordInput from './components/PasswordInput'
+import EditProfile from './components/profile/EditProfile'
 import { useI18n } from './i18n/I18nContext.jsx'
 
 const { useState, useRef, useEffect, useCallback, useMemo } = React;
@@ -490,6 +491,9 @@ function HajdeApp() {
   /** 'google' | 'apple' while a social sign-up is finishing onboarding (step 1 = name only). */
   const [socialOnboarding, setSocialOnboarding] = useState(null);
   const [oauthBusy, setOauthBusy] = useState(null);
+  // only offer the providers the backend has configured (Apple needs its keys)
+  const [oauthProviders, setOauthProviders] = useState({ google: true, apple: false });
+  useEffect(() => { let off = false; fetchAuthProviders().then((p) => { if (!off) setOauthProviders(p); }); return () => { off = true; }; }, []);
   const [memberPhotos, setMemberPhotos] = useState({});
   const [password, setPassword] = useState("");
   const [showSignIn, setShowSignIn] = useState(false);
@@ -531,6 +535,8 @@ function HajdeApp() {
   const [cat, setCat] = useState("all");
   const { profile: dbProfile, tasteProfile, affinity, badges: dbBadges, reload: reloadProfile, loading: profileLoading } = useProfile(authUser?.id);
   const { tables: rawTables, loading: tablesLoading, error: tablesError, refetch: refetchTables } = useTables(city, cat, tasteProfile || dbProfile, affinity, loading ? undefined : (authUser?.id || null));
+  // past tables I sat at (rating, connections, chat after the event); loaded when "My tables" opens
+  const [pastMine, setPastMine] = useState([]);
   const tables = useMemo(
     () => rawTables.map((tbl) => ({
       ...tbl,
@@ -683,6 +689,12 @@ function HajdeApp() {
   } = useChat(chatUnlocked ? active : null);
   const [showCreate, setShowCreate] = useState(false);
   const [tab, setTab] = useState("zbulo");
+  useEffect(() => {
+    if (tab !== "imet" || !authUser?.id) return;
+    let alive = true;
+    listMyPastTables().then((rows) => { if (alive) setPastMine(rows); }).catch(() => {});
+    return () => { alive = false; };
+  }, [tab, authUser?.id]);
   const [toast, setToast] = useState(null);
   const [msg, setMsg] = useState("");
   const chatEndRef = useRef(null);
@@ -1152,6 +1164,11 @@ function HajdeApp() {
     setWedDone(false); // taste done → allow Wednesday Dinner banner
   }, [tasteProfile]);
 
+  // Languages the user speaks live on profiles.langs (edited in the profile sheet)
+  useEffect(() => {
+    if (Array.isArray(dbProfile?.langs) && dbProfile.langs.length) setProfile((p) => ({ ...p, langs: dbProfile.langs }));
+  }, [dbProfile?.langs]);
+
   // Hydrate avatar from profiles.photo_path (signed URL)
   useEffect(() => {
     if (!authUser?.id) return;
@@ -1267,6 +1284,7 @@ function HajdeApp() {
 
   /* ── Dritarja e detyrueshme e profilit ── */
   const [profileView, setProfileView] = useState(null);
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const [photoError, setPhotoError] = useState(null);
   const hostProf = (t) => ({
     id: t.host_id,
@@ -1385,7 +1403,7 @@ function HajdeApp() {
     setTimeout(() => setToast(null), 2800);
   }, []);
 
-  const activeTable = tables.find((t) => t.id === active) || (extraTable?.id === active ? extraTable : undefined);
+  const activeTable = tables.find((t) => t.id === active) || pastMine.find((t) => t.id === active) || (extraTable?.id === active ? extraTable : undefined);
 
   /* ── Share links: /t/<code> ───────────────────────────────────────────── */
   // 1. Resolve the code to a safe preview (works signed out too).
@@ -1540,10 +1558,13 @@ function HajdeApp() {
       if (ta !== tb) return ta - tb;
       return (b._match ?? 0) - (a._match ?? 0);
     });
-  const myTables = tables.filter((t) =>
-    (t.joinedIds || []).includes(authUser?.id) || t.joined.includes(user.name) ||
-    (t.requests || []).some((r) => r.user_id === authUser?.id || r.name === user.name)
-  );
+  const myTables = [
+    ...tables.filter((t) =>
+      (t.joinedIds || []).includes(authUser?.id) || t.joined.includes(user.name) ||
+      (t.requests || []).some((r) => r.user_id === authUser?.id || r.name === user.name)
+    ),
+    ...pastMine.filter((p) => !tables.some((t) => t.id === p.id)),
+  ];
   const pendingRequestsForMe = tables
     .filter((t) => t.host_id === authUser?.id || t.host === user.name)
     .reduce((n, t) => n + (t.requests || []).filter((r) => r.status === "pending").length, 0);
@@ -1585,8 +1606,14 @@ function HajdeApp() {
     }
   };
 
-  const cancelRequest = async () => {
-    showToast(t('toasts.cancelRequestSoon'));
+  const cancelRequest = async (id) => {
+    try {
+      await apiLeaveTable(id); // also withdraws a pending request
+      await refetchTables();
+      showToast(t('tableDetail.cancelRequest') + ' ✓');
+    } catch (err) {
+      showToast(mapErr(err));
+    }
   };
 
   /* ── HAPI 2: Pas aprovimit → pagesa (tavolinat) ose konfirmimi falas (vozitjet) ── */
@@ -1618,8 +1645,6 @@ function HajdeApp() {
     const userId = authUser.id;
     const tableSnap = tables.find((t) => t.id === tableId);
     const amountCents = Math.round((tableFee(tableSnap) || BOOKING_FEE) * 100);
-    const hostId = tableSnap?.host_id;
-    const tableTitle = tableSnap?.cafe || tableSnap?.title || "";
 
     setTimeout(async () => {
       /*
@@ -1631,7 +1656,8 @@ function HajdeApp() {
       try {
         if (!tableId || !userId) throw new Error(t('errors.sessionMissing'));
 
-        const code = "EBK-" + String(1000 + Math.floor(Math.random() * 9000));
+        // 6 random characters: 4 digits collided with the unique ticket_code after ~100 payments
+        const code = "EBK-" + Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b % 32]).join("");
 
         // 1) Membership FIRST — RLS requires request status still = 'approved'
         const { error: memErr } = await sb
@@ -1679,21 +1705,7 @@ function HajdeApp() {
           // Don't throw — seat is already confirmed
         }
 
-        // 4) Notify host (policy: stub_notify_table_host — requires membership first)
-        if (hostId && hostId !== userId) {
-          const { error: notifErr } = await sb.from("notifications").insert({
-            user_id: hostId,
-            icon: "check",
-            // kind + params: the host reads this in THEIR language, not the guest's
-            kind: 'hostSeatConfirmedNotif',
-            params: { guest: user.firstName || t('feed.profileMe'), table: tableTitle },
-            body: t('notifications.hostSeatConfirmedNotif', {
-              guest: user.firstName || t('feed.profileMe'),
-              table: tableTitle,
-            }),
-          });
-          if (notifErr) console.error("Host notify failed:", notifErr);
-        }
+        // 4) The host is notified by the server when the membership is created
 
         awardBadge("first-join", "", t('badges.firstJoin'));
         setTickets((prev) => ({ ...prev, [tableId]: code }));
@@ -2096,7 +2108,7 @@ function HajdeApp() {
   /* ── Vlerësimi pas takimit ── */
   const submitRating = async () => {
     const picks = [...rateSelect];
-    const rT = tables.find((t) => t.id === rateFor);
+    const rT = [...tables, ...pastMine].find((t) => t.id === rateFor);
     if (!authUser?.id || !rateFor || rateStars < 1 || rateAgain === null) {
       showToast(t('toasts.ratingIncomplete'));
       return;
@@ -2126,19 +2138,10 @@ function HajdeApp() {
         }
       }
 
-      if (rT && profile.done) {
+      // the server applies the rating to the host's stars and to my affinity
+      if (rT) {
         const delta = (rateStars - 3) * 4;
-        const nextScore = Math.max(-40, Math.min(40, (aff[rT.cat] || 0) + delta));
-        const { error: affError } = await sb.from("affinity").upsert(
-          {
-            user_id: authUser.id,
-            category: rT.category || rT.cat,
-            score: nextScore,
-          },
-          { onConflict: "user_id,category" },
-        );
-        if (affError) console.error("Affinity upsert failed:", affError);
-        else setAff((a) => ({ ...a, [rT.cat]: nextScore }));
+        setAff((a) => ({ ...a, [rT.cat]: Math.max(-40, Math.min(40, (a[rT.cat] || 0) + delta)) }));
       }
 
       setRated((p) => ({ ...p, [rateFor]: rateStars }));
@@ -2647,7 +2650,7 @@ function HajdeApp() {
       invalidateOwnProfile();
       if (socialOnboarding) {
         // keep auth metadata in sync so the header shows the chosen name
-        void sb.auth.updateUser({ data: { first_name: nextUser.firstName.trim(), last_name: nextUser.lastName.trim() } });
+        void sb.auth.updateUser({ data: { first_name: nextUser.firstName.trim(), last_name: nextUser.lastName.trim(), age: parseInt(nextUser.age, 10) || 18 } });
       }
 
       setSocialOnboarding(null);
@@ -2712,12 +2715,12 @@ function HajdeApp() {
 
   const socialButtons = (
     <div className="social-auth">
-      <button type="button" className="social-btn google" disabled={!!oauthBusy} onClick={() => void handleSocialSignIn('google')}>
+      {oauthProviders.google && <button type="button" className="social-btn google" disabled={!!oauthBusy} onClick={() => void handleSocialSignIn('google')}>
         {oauthBusy === 'google' ? t('social.redirecting') : t('social.continueGoogle')}
-      </button>
-      <button type="button" className="social-btn apple" disabled={!!oauthBusy} onClick={() => void handleSocialSignIn('apple')}>
+      </button>}
+      {oauthProviders.apple && <button type="button" className="social-btn apple" disabled={!!oauthBusy} onClick={() => void handleSocialSignIn('apple')}>
         {oauthBusy === 'apple' ? t('social.redirecting') : t('social.continueApple')}
-      </button>
+      </button>}
       <div className="social-or"><span>{t('social.or')}</span></div>
     </div>
   );
@@ -3635,9 +3638,9 @@ function HajdeApp() {
                 id: authUser?.id,
                 name: user.name,
                 age: user.age,
-                from: user.isTourist ? (user.from || t('feed.tourist')) : t('feed.kosovo'),
+                from: (dbProfile?.is_tourist ?? user.isTourist) ? (dbProfile?.from_place || user.from || t('feed.tourist')) : t('feed.kosovo'),
                 photo: user.photo,
-                langs: profile.langs?.length ? profile.langs : ["Shqip"],
+                langs: dbProfile?.langs?.length ? dbProfile.langs : (profile.langs?.length ? profile.langs : ["Shqip"]),
                 isMe: true,
               })}
               onKeyDown={(e) => {
@@ -3647,9 +3650,9 @@ function HajdeApp() {
                     id: authUser?.id,
                     name: user.name,
                     age: user.age,
-                    from: user.isTourist ? (user.from || t('feed.tourist')) : t('feed.kosovo'),
+                    from: (dbProfile?.is_tourist ?? user.isTourist) ? (dbProfile?.from_place || user.from || t('feed.tourist')) : t('feed.kosovo'),
                     photo: user.photo,
-                    langs: profile.langs?.length ? profile.langs : ["Shqip"],
+                    langs: dbProfile?.langs?.length ? dbProfile.langs : (profile.langs?.length ? profile.langs : ["Shqip"]),
                     isMe: true,
                   });
                 }
@@ -4312,23 +4315,11 @@ function HajdeApp() {
                   onClick={async () => {
                     if (!window.confirm(t('tableDetail.closeTableConfirm'))) return;
                     try {
-                      const members = activeTable?.members || [];
-                      for (const m of members) {
-                        if (m.user_id !== authUser?.id) {
-                          await sb.from('notifications').insert({
-                            user_id: m.user_id,
-                            icon: 'info',
-                            kind: 'tableClosedByHostNotif',
-                            params: { table: activeTable?.cafe || activeTable?.title || '' },
-                            body: t('notifications.tableClosedByHostNotif', {
-                              table: activeTable?.cafe || activeTable?.title || '',
-                            }),
-                          });
-                        }
-                      }
-                      await sb.from('tables')
+                      // members, requesters and the waitlist are notified by the server
+                      const { error: closeErr } = await sb.from('tables')
                         .update({ status: 'cancelled' })
                         .eq('id', active).eq('host_id', authUser?.id);
+                      if (closeErr) throw closeErr;
 
                       showToast(t('tableDetail.toastTableClosed'));
                       setActive(null);
@@ -4827,25 +4818,25 @@ function HajdeApp() {
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
             <div className="sheet-hdr">
               <button className="icon-btn" onClick={() => setRateFor(null)} aria-label={t('payment.close')}><X size={18} /></button>
-              <div><h2>Si ishte përvoja?</h2><p className="meta">{tables.find((t) => t.id === rateFor)?.cafe}</p></div>
+              <div><h2>{t('rating.title')}</h2><p className="meta">{[...tables, ...pastMine].find((t) => t.id === rateFor)?.cafe}</p></div>
             </div>
             <div className="rate-stars">
               {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} className={`star-btn ${n <= rateStars ? "on" : ""}`} onClick={() => setRateStars(n)} aria-label={`${n} yje`}>
+                <button key={n} className={`star-btn ${n <= rateStars ? "on" : ""}`} onClick={() => setRateStars(n)} aria-label={t('rating.starLabel', { n })}>
                   <span style={{ fontSize: 32, lineHeight: 1, color: n <= rateStars ? "#FF6B35" : "#C4B694" }}>{n <= rateStars ? "★" : "☆"}</span>
                 </button>
               ))}
             </div>
-            <p className="label center-label">A do të takoheshe sërish me këtë grup?</p>
+            <p className="label center-label">{t('rating.again')}</p>
             <div className="pay-methods">
-              <button className={`method ${rateAgain === true ? "on" : ""}`} onClick={() => setRateAgain(true)}>Po, patjetër</button>
-              <button className={`method ${rateAgain === false ? "on" : ""}`} onClick={() => setRateAgain(false)}>Ndoshta jo</button>
+              <button className={`method ${rateAgain === true ? "on" : ""}`} onClick={() => setRateAgain(true)}>{t('rating.yes')}</button>
+              <button className={`method ${rateAgain === false ? "on" : ""}`} onClick={() => setRateAgain(false)}>{t('rating.no')}</button>
             </div>
-            <p className="label center-label">Me kë do të mbaje kontakt? (opsionale)</p>
-            <p className="muted small center" style={{ marginBottom: 8 }}>Ata nuk e marrin vesh nëse nuk të zgjedhin edhe ty. Vetëm përputhjet e ndërsjella hapin chat privat.</p>
+            <p className="label center-label">{t('rating.keepContact')}</p>
+            <p className="muted small center" style={{ marginBottom: 8 }}>{t('rating.keepContactNote')}</p>
             <div className="connect-row">
               {(() => {
-                const rT = tables.find((t) => t.id === rateFor);
+                const rT = [...tables, ...pastMine].find((t) => t.id === rateFor);
                 const members = (rT?.joined || [])
                   .map((n, i) => ({ name: n, id: rT.joinedIds?.[i] }))
                   .filter((m) => m.id && m.id !== authUser?.id && m.name !== user.name);
@@ -4864,9 +4855,9 @@ function HajdeApp() {
               })()}
             </div>
             <button className="btn primary full" disabled={rateStars === 0 || rateAgain === null} onClick={submitRating}>
-              Dërgo vlerësimin
+              {t('rating.submit')}
             </button>
-            <p className="fee-note"><Sparkles size={11} /> Vlerësimet përdoren për përputhje më të mira dhe për yjet e nikoqirëve</p>
+            <p className="fee-note"><Sparkles size={11} /> {t('rating.footer')}</p>
           </div>
         </div>
       )}
@@ -4921,6 +4912,13 @@ function HajdeApp() {
             {profileView?.isMe && (
               <>
                 <button
+                  className="btn primary full edit-profile-btn"
+                  type="button"
+                  onClick={() => { setProfileView(null); setShowEditProfile(true); }}
+                >
+                  {t('editProfile.open')}
+                </button>
+                <button
                   className="btn ghost full"
                   type="button"
                   onClick={() => {
@@ -4967,6 +4965,37 @@ function HajdeApp() {
             )}
           </div>
         </div>
+      )}
+
+      {showEditProfile && dbProfile && (
+        <EditProfile
+          profile={dbProfile}
+          photo={user.photo}
+          languages={LANGUAGES}
+          validatePhoto={validatePhoto}
+          compressPhoto={compressPhoto}
+          showToast={showToast}
+          homeCity={homeCity}
+          showChangeCity={!isPremium}
+          onClose={() => setShowEditProfile(false)}
+          onSaved={async () => {
+            invalidateOwnProfile();
+            await reloadProfile();
+            const fresh = await fetchOwnProfile(authUser.id, { fresh: true }).then((r) => r.data).catch(() => null);
+            if (fresh) {
+              setUser((u) => ({
+                ...u,
+                firstName: fresh.first_name, lastName: fresh.last_name, age: String(fresh.age),
+                name: `${fresh.first_name} ${fresh.last_name}`.trim(),
+                isTourist: fresh.is_tourist, from: fresh.from_place || '',
+                ...(fresh.photo_path ? {} : { photo: null, photoPath: null }),
+              }));
+              setProfile((p) => ({ ...p, langs: fresh.langs?.length ? fresh.langs : p.langs }));
+            }
+          }}
+          onEditTaste={() => { setShowEditProfile(false); openMatchQuiz(0); }}
+          onChangeCity={() => { setShowEditProfile(false); setShowCityPicker(true); }}
+        />
       )}
 
       {/* ══════════ RAPORTO / BLLOKO ══════════ */}

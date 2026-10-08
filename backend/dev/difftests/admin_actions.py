@@ -64,7 +64,8 @@ CASES = [
      'steps': [{'as': USER, 'rpc': 'admin_dismiss_report', 'args': {'p_report_id': R1}},
                {'as': 'admin', 'rpc': 'admin_dismiss_report', 'args': {'p_report_id': R1}},
                {'as': 'admin', 'rpc': 'admin_dismiss_report', 'args': {'p_report_id': NOPE}}]},
-    {'name': 'admin_notify_user',
+    # intentional: admin messages now carry kind/params so each viewer sees them in their language
+    {'name': 'admin_notify_user', 'ignore_tables': ('notifications',),
      'steps': [{'as': USER, 'rpc': 'admin_notify_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_message': 'hi'}},
                {'as': 'admin', 'rpc': 'admin_notify_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_message': '  '}},
                {'as': 'admin', 'rpc': 'admin_notify_user', 'args': {'p_user': '$user:mia.fischer@gmail.com', 'p_message': 'a' * 501}},

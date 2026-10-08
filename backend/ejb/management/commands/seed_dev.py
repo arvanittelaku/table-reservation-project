@@ -86,7 +86,7 @@ class Command(BaseCommand):
         people = []
         for fn, ln in zip(FIRST, LAST):
             created = now - timedelta(days=(rnd.random() ** 2) * 75)
-            p = user(uuid.uuid4(), f"{fn.lower()}.{ln.lower().replace('ç', 'c')}@gmail.com",
+            p = user(uuid.uuid4(), f"{fn.lower()}.{ln.lower().replace('ç', 'c').replace('ü', 'u')}@gmail.com",
                      {'first_name': fn, 'last_name': ln, 'age': 18 + int(rnd.random() * 30)}, created,
                      now if rnd.random() < 0.9 else None,
                      now - timedelta(days=rnd.random() * 20) if rnd.random() < 0.85 else None)

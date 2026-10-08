@@ -12,6 +12,7 @@ import { errors, toasts, notifications, payment } from './phase6/mk.js'
 import { admin, termsOfService, privacyPolicy } from './phase7/mk.js'
 import { adm } from './admin/mk.js'
 import { social, sports, browse, support } from './social/mk.js'
+import { editProfile, rating } from './profile/mk.js'
 import { lessons } from './lessons/mk.js'
 import { plans } from './plans/mk.js'
 import { share } from './share/mk.js'
@@ -387,6 +388,8 @@ export default {
   admin,
   adm,
   social,
+  editProfile,
+  rating,
   sports,
   lessons,
   plans,

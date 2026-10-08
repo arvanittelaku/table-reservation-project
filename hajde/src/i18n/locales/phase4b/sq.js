@@ -23,7 +23,7 @@ export const profile = {
   myReports: 'Raportimet e mia',
   blockedUsers: 'Përdoruesit e bllokuar',
   signOut: 'Dil nga llogaria',
-  deactivateAccount: 'Çaktivizo llogarinë përkohësisht',
+  deactivateAccount: 'Çaktivizo llogarinë përgjithmonë',
   faceVerificationNotice:
     'Fotoja e çdo profili kalon kontrollin e fytyrës gjatë regjistrimit. Foto të zeza, të njëtrajtshme apo pa fytyrë reale nuk pranohen.',
   confirmSignOut: 'A dëshiron të dalësh?',
