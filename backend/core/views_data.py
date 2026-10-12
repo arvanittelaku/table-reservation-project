@@ -2,7 +2,7 @@
 import logging
 import socket
 
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse, HttpResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
@@ -81,8 +81,15 @@ def storage_sign(request, bucket, path=''):
 @_db_errors
 @require_http_methods(['GET'])
 def storage_signed_get(request, bucket, path):
-    f, ctype = storage.open_signed(bucket, path, request.GET.get('token'))
-    resp = FileResponse(open(f, 'rb'), content_type=ctype)
+    kind, obj, extra = storage.open_signed(bucket, path, request.GET.get('token'))
+    if kind == 'redirect':   # S3: short-lived presigned URL of the object store
+        resp = HttpResponseRedirect(obj)
+        resp['Cache-Control'] = f'private, max-age={extra}'
+        return resp
+    if kind == 'bytes':      # S3 proxied through this backend
+        resp = HttpResponse(obj, content_type=extra)
+    else:
+        resp = FileResponse(open(obj, 'rb'), content_type=extra)
     resp['Cache-Control'] = 'private, max-age=3600'
     return resp
 
@@ -104,7 +111,16 @@ def _has_mail_records(domain):
         socket.getaddrinfo(domain, 25)
         return True, 'a_fallback'
     except OSError:
-        return False, 'no_mx'
+        pass
+    # If even well-known domains cannot be looked up, DNS itself is down:
+    # say "unknown" so sign-ups are not blocked by our own network problem.
+    for probe in ('gmail.com', 'google.com'):
+        try:
+            socket.getaddrinfo(probe, 443)
+            return False, 'no_mx'
+        except OSError:
+            continue
+    return None, 'dns_unavailable'
 
 
 @_db_errors

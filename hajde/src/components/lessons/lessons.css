@@ -65,3 +65,12 @@
 .ls-room-bar .btn.ghost { color: #fff; border-color: rgba(255,255,255,.4); }
 .ls-room-frame { flex: 1; width: 100%; border: 0; }
 .ls-room-msg { color: #fff; text-align: center; padding: 40px 20px; }
+.ls-room-holder { flex: 1; display: flex; min-height: 0; }
+.ls-room-holder[hidden] { display: none; }
+.ls-room-holder .ls-room-frame { flex: 1; height: 100%; }
+.ls-room-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+.ls-room-actions .btn.ghost { color: #fff; border-color: rgba(255,255,255,.4); text-decoration: none; }
+.ls-room-note { margin: 0; padding: 8px 14px; background: #3a2f12; color: #ffe7a8; font-size: 14px; line-height: 1.4; }
+.ls-room-link { background: none; border: 0; padding: 0; color: #fff; text-decoration: underline; font: inherit; cursor: pointer; }
+.ls-room-timer { margin-left: auto; margin-right: 12px; font-variant-numeric: tabular-nums; font-size: 14px; opacity: .9; }
+.ls-room-timer.over { color: #ffcf6e; }

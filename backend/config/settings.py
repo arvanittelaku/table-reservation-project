@@ -49,6 +49,13 @@ ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
 INSTALLED_APPS = [
     'django.contrib.postgres',
+    # Django admin at /django-admin/ (core/admin_site.py, ejb/admin.py)
+    'django.contrib.admin.apps.SimpleAdminConfig',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
     'channels',
     'core',
     'ejb',
@@ -57,13 +64,44 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'core.http.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
 ASGI_APPLICATION = 'config.asgi.application'
-TEMPLATES = []
+TEMPLATES = [{
+    'BACKEND': 'django.template.backends.django.DjangoTemplates',
+    'DIRS': [BASE_DIR / 'core' / 'templates'],
+    'APP_DIRS': True,
+    'OPTIONS': {'context_processors': [
+        'django.template.context_processors.request',
+        'django.contrib.auth.context_processors.auth',
+        'django.contrib.messages.context_processors.messages',
+    ]},
+}]
+
+# ───────────── Django admin ─────────────
+# Sign-in with Django's own staff users (public.auth_user, `manage.py
+# createsuperuser`), never with the app accounts in auth.users. Actions that run
+# app server functions act as the app admin with the same email (core/admin_auth.py).
+AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
+ADMIN_URL = 'django-admin/'
+STATIC_URL = '/django-admin/static/'           # admin CSS/JS
+# production: `collectstatic` fills this folder (a volume Caddy serves, deploy/);
+# the backend's own /django-admin/static/ view stays as a fallback for dev
+STATIC_ROOT = Path(env('STATIC_ROOT', str(BASE_DIR / 'var' / 'static')))
+SESSION_COOKIE_PATH = '/django-admin/'         # admin cookies never reach the API paths
+CSRF_COOKIE_PATH = '/django-admin/'
+SESSION_COOKIE_NAME = 'ejb_admin_session'
+CSRF_COOKIE_NAME = 'ejb_admin_csrf'
+SESSION_COOKIE_AGE = int(env('ADMIN_SESSION_AGE', str(8 * 3600)))
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 # The existing Postgres (Supabase's database or the local dev copy).
 DATABASES = {
@@ -142,7 +180,28 @@ OAUTH = {
 }
 
 # ───────────── storage ─────────────
+# local: files under STORAGE_ROOT (a persistent volume). s3: an S3-compatible bucket
+# (Cloudflare R2, Hetzner Object Storage, AWS S3, MinIO), see core/storage.py.
+STORAGE_BACKEND = env('STORAGE_BACKEND', 'local').strip().lower()
 STORAGE_ROOT = Path(env('STORAGE_ROOT', str(BASE_DIR / 'var' / 'storage')))
+# R2: https://<account-id>.r2.cloudflarestorage.com, Hetzner: https://<location>.your-objectstorage.com
+S3_ENDPOINT_URL = env('S3_ENDPOINT', '') or env('S3_ENDPOINT_URL', '')
+S3_BUCKET = env('S3_BUCKET', '')
+S3_ACCESS_KEY_ID = env('S3_ACCESS_KEY_ID', '')
+S3_SECRET_ACCESS_KEY = env('S3_SECRET_ACCESS_KEY', '')
+S3_REGION = env('S3_REGION', 'auto')               # R2: auto; Hetzner: fsn1 / nbg1 / hel1
+S3_KEY_PREFIX = env('S3_KEY_PREFIX', '')           # e.g. "prod/" to share a bucket
+# presigned: createSignedUrl(s) return presigned GET URLs of the bucket (default);
+# redirect: backend /storage/v1/object/sign/... URL that 302s to a fresh presigned URL;
+# proxy: backend URL that streams the object (bucket never reachable by clients)
+S3_SIGNED_URL_MODE = env('S3_SIGNED_URL_MODE', 'presigned').strip().lower()
+S3_PRESIGN_TTL = int(env('S3_PRESIGN_TTL', '3600'))
+if S3_SIGNED_URL_MODE not in ('presigned', 'redirect', 'proxy'):
+    raise RuntimeError('S3_SIGNED_URL_MODE must be presigned, redirect or proxy')
+if STORAGE_BACKEND not in ('local', 's3'):
+    raise RuntimeError('STORAGE_BACKEND must be local or s3')
+if STORAGE_BACKEND == 's3' and not all([S3_ENDPOINT_URL, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY]):
+    raise RuntimeError('STORAGE_BACKEND=s3 needs S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY')
 STORAGE_BUCKETS = {
     'avatars': {
         'public': False,
@@ -150,6 +209,29 @@ STORAGE_BUCKETS = {
         'mime_types': ['image/jpeg', 'image/png', 'image/webp'],
     },
 }
+
+# ───────────── video lessons (Jitsi) ─────────────
+# Production: 8x8 Jitsi as a Service (JaaS), rooms protected by a JWT per
+# participant. JaaS console -> API keys: app id ("vpaas-magic-cookie-..."), the
+# key id (kid, "<appId>/<hex>") and the private key (PEM; "\n" escapes allowed).
+# VIDEO_PROVIDER: 'jaas' (8x8 JaaS), 'jitsi' (own Jitsi with JWT auth), 'public'
+# (open rooms on JITSI_DOMAIN, no tokens: local dev only). Empty = auto: 'jitsi'
+# when JITSI_APP_SECRET is set, else 'jaas' when the JAAS_* keys are set, else 'public'.
+VIDEO_PROVIDER = env('VIDEO_PROVIDER', '').strip().lower()
+JAAS_APP_ID = env('JAAS_APP_ID', '')
+JAAS_API_KEY_ID = env('JAAS_API_KEY_ID', '') or env('JAAS_KEY_ID', '')   # JAAS_KEY_ID: old name
+JAAS_KEY_ID = JAAS_API_KEY_ID
+JAAS_PRIVATE_KEY = env('JAAS_PRIVATE_KEY', '').replace('\\n', '\n')
+if not JAAS_PRIVATE_KEY and env('JAAS_PRIVATE_KEY_FILE'):     # or mount the .pk file
+    JAAS_PRIVATE_KEY = Path(env('JAAS_PRIVATE_KEY_FILE')).read_text()
+JAAS_DOMAIN = env('JAAS_DOMAIN', '8x8.vc')
+# Self-hosted Jitsi (deploy/docker-compose.jitsi.yml) with JWT auth: rooms only
+# open with an HS256 token signed by JITSI_APP_SECRET (= the server's
+# JWT_APP_SECRET). Takes precedence over JaaS. With JITSI_APP_SECRET empty and
+# no JaaS: plain open rooms on JITSI_DOMAIN (meet.jit.si for local dev), as before.
+JITSI_DOMAIN = env('JITSI_DOMAIN', 'meet.jit.si')
+JITSI_APP_ID = env('JITSI_APP_ID', 'ejabashkohu')
+JITSI_APP_SECRET = env('JITSI_APP_SECRET', '')
 
 # ───────────── email ─────────────
 EMAIL_BACKEND = env('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
@@ -166,6 +248,9 @@ DEFAULT_FROM_EMAIL = env('SMTP_FROM', 'ejaBashkohu <support@ejabashkohu.com>')
 DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+# behind Caddy/HTTPS: the admin forms post from API_URL (Origin check)
+CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS', API_URL)
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', True)

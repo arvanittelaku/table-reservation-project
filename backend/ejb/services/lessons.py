@@ -463,5 +463,24 @@ def get_lesson_room(p_lesson: UUID) -> dict:
     if now > l.starts_at + l.duration_min * MIN + 30 * MIN:
         fail('Mësimi ka përfunduar')
     key = LessonRoom.objects.filter(lesson_id=p_lesson).values_list('room_key', flat=True).first()
-    return {'room': None if key is None else 'ejaBashkohu-' + key, 'starts_at': l.starts_at,
-            'duration_min': l.duration_min}
+    room = None if key is None else 'ejaBashkohu-' + key
+    closes_at = l.starts_at + l.duration_min * MIN + 30 * MIN
+    prof = Profile.objects.filter(pk=me).values('first_name', 'last_name', 'photo_path').first() or {}
+    name = f"{prof.get('first_name') or ''} {prof.get('last_name') or ''}".strip()
+    avatar = None
+    if prof.get('photo_path'):
+        from core import storage
+        avatar = storage.signed_url('avatars', prof['photo_path'],
+                                    max(600, int((closes_at - now).total_seconds())))
+    from core import jitsi
+    out = {'room': room, 'starts_at': l.starts_at, 'duration_min': l.duration_min}
+    try:
+        out.update(jitsi.room_access(room, me, name, moderator=l.tutor_id == me, avatar=avatar,
+                                     closes_at=closes_at))
+    except ValueError as exc:     # VIDEO_PROVIDER set but incomplete: never hand out open rooms
+        import logging
+        logging.getLogger(__name__).error('video provider misconfigured: %s', exc)
+        fail('Dhoma video nuk është konfiguruar', status=503)
+    out['closes_at'] = closes_at
+    out['display_name'] = name
+    return out

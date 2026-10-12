@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-RUN useradd --uid 1000 app && mkdir -p /data/storage && chown -R app /data /app
+RUN useradd --uid 1000 app && mkdir -p /data/storage /static && chown -R app /data /static /app
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"

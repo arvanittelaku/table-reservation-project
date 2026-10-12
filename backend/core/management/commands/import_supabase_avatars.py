@@ -3,8 +3,9 @@
     SUPABASE_URL=https://<ref>.supabase.co SUPABASE_SERVICE_KEY=... \
         python manage.py import_supabase_avatars [--dry-run]
 
-Copies every object of the private `avatars` bucket to STORAGE_ROOT/avatars/
-(same paths, so profiles.photo_path stays valid) and records it in
+Copies every object of the private `avatars` bucket into this backend's
+storage (STORAGE_BACKEND: local STORAGE_ROOT/avatars/ or the S3 bucket), same
+paths so profiles.photo_path stays valid, and records it in
 backend.storage_objects. Safe to run again: files already copied are skipped.
 """
 import os
@@ -12,14 +13,14 @@ import os
 import requests
 from django.core.management.base import BaseCommand, CommandError
 
-from core.storage import _clean_path, _file
-from ejb.models import StorageObject
+from core import storage
+from core.storage import _clean_path
 
 BUCKET = 'avatars'
 
 
 class Command(BaseCommand):
-    help = 'Copy avatars from Supabase Storage into the Django backend storage'
+    help = 'Copy avatars from Supabase Storage into the backend storage (local or S3)'
 
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', action='store_true')
@@ -56,8 +57,7 @@ class Command(BaseCommand):
         copied = skipped = 0
         for path in paths:
             path = _clean_path(path)
-            target = _file(BUCKET, path)
-            if target.exists():
+            if storage.exists(BUCKET, path):
                 skipped += 1
                 continue
             if opts['dry_run']:
@@ -65,12 +65,9 @@ class Command(BaseCommand):
                 continue
             r = requests.get(f'{base}/storage/v1/object/{BUCKET}/{path}', headers=headers, timeout=60)
             r.raise_for_status()
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(r.content)
             owner = path.split('/')[0]
-            StorageObject.objects.get_or_create(
-                bucket=BUCKET, path=path,
-                defaults={'owner': owner if len(owner) == 36 else None, 'size': len(r.content),
-                          'content_type': r.headers.get('Content-Type', 'image/jpeg').split(';')[0]})
+            storage.store_object(BUCKET, path, r.content,
+                                 r.headers.get('Content-Type', 'image/jpeg').split(';')[0],
+                                 owner=owner if len(owner) == 36 else None)
             copied += 1
         self.stdout.write(self.style.SUCCESS(f'{len(paths)} found, {copied} copied, {skipped} already present'))

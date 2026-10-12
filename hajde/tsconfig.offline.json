@@ -1,0 +1,11 @@
+{
+  "//": "Offline-only: typechecks against src/types/*-shim.d.ts because node_modules is not installed. Delete this file and the shims after npm install (TYPESCRIPT.md).",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": []
+}

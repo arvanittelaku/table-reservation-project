@@ -1,5 +1,7 @@
 # Production on your own server: backend + Redis + Caddy (HTTPS, automatic certificates).
 # Usage: see deploy/README.md
+# Optional self-hosted Jitsi for video lessons: separate stack in jitsi/ (see README).
+
 services:
   backend:
     build: ../backend
@@ -10,8 +12,12 @@ services:
       REDIS_URL: redis://redis:6379/0
       STORAGE_ROOT: /data/storage
       EMAIL_FILE_PATH: /data/mail
+      STATIC_ROOT: /static
+    # admin CSS/JS copied into the shared volume at every start, served by Caddy
+    command: ["sh", "-c", "python manage.py collectstatic --noinput --clear -v0 && exec python manage.py serve --host 0.0.0.0 --port 8000"]
     volumes:
       - storage:/data
+      - static:/static
     depends_on: [redis]
 
   redis:
@@ -28,8 +34,10 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
+      - static:/srv/django-admin/static:ro
     depends_on: [backend]
 
 volumes:
   storage:       # uploaded profile photos — back this up
   caddy_data:    # TLS certificates
+  static:        # Django admin CSS/JS (collectstatic), rebuilt at each start

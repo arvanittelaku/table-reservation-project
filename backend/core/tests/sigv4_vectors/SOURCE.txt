@@ -1,0 +1,4 @@
+AWS SigV4 test suite, copied from https://github.com/awslabs/aws-c-auth
+(tests/aws-signing-test-suite/v4, commit 84a26ea184d9ccd322c8164759510b3604ab13fd).
+Copyright Amazon.com, Inc. or its affiliates. Licensed under the Apache License 2.0.
+Used by core/tests/test_sigv4.py.

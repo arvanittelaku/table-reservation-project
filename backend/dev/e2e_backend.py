@@ -193,8 +193,9 @@ def main():
     check('batch signed URLs (existing + missing)', r.ok and signed[0]['signedUrl'] and signed[1]['error'])
     got = requests.get(signed[0]['signedUrl'])
     check('signed URL serves the file', got.ok and got.content == jpg and got.headers['Content-Type'] == 'image/jpeg')
-    bad = signed[0]['signedUrl'].replace('token=', 'token=x')
-    check('tampered signed URL refused', requests.get(bad).status_code == 400)
+    url0 = signed[0]['signedUrl']   # backend URL (?token=) or presigned S3 URL (X-Amz-Signature=)
+    bad = url0.replace('token=', 'token=x') if 'token=' in url0 else url0.replace('X-Amz-Signature=', 'X-Amz-Signature=0')
+    check('tampered signed URL refused', bad != url0 and requests.get(bad).status_code in (400, 403))
     r = post('/storage/v1/object/sign/avatars', {'paths': [f'{uid}/avatar.jpg']})
     check('signing requires sign-in', r.status_code == 401)
 
@@ -216,7 +217,9 @@ def main():
 
     # ── server function ──
     r = post('/functions/v1/check-email-domain', {'email': 'someone@nonexistent-domain-zz12.invalid'})
-    check('check-email-domain rejects a domain without mail records', r.ok and r.json()['valid'] is False)
+    dns_down = r.ok and r.json().get('checked') == 'unavailable'
+    check('check-email-domain rejects a domain without mail records (or lets sign-ups through when DNS itself is down)',
+          r.ok and (r.json()['valid'] is False or (dns_down and r.json()['valid'] is True)), r.text[:200])
 
     # ── Google sign-in against a fake Google ──
     google_test()

@@ -2,7 +2,7 @@
 // lesson categories/subjects + group lessons, teacher profile CRUD + review, Premium packages
 // (order / cancel / one pending / stacking / plan screen), Wednesday dinner (user side, Premium
 // priority, restaurant reveal) and the WhatsApp support button.
-import { LESSON_CATEGORIES, ALL_SUBJECTS } from '../../../hajde/src/lib/lessonSubjects.js'
+import { LESSON_CATEGORIES, ALL_SUBJECTS } from '../../../hajde/src/lib/lessonSubjects.ts'
 import { SHOTS, api, bodyText, check, close, launch, newPage, signIn, sleep, sql, summary, token } from './lib.mjs'
 
 const ADMIN = 'support@ejabashkohu.com'
@@ -231,16 +231,34 @@ await section('A5: student finds English teachers near Prishtinë, books, room o
   check('API: room closed until 15 min before', tooEarly.status >= 400 && /15 minuta/.test(errOf(tooEarly)))
 
   sql(`update lessons set starts_at = now() + interval '5 minutes' where id='${lessonId}'`)
+  // The app loads Jitsi's IFrame API (external_api.js) from the domain get_lesson_room names. Outbound
+  // to meet.jit.si is blocked in the sandbox, so the script is answered by a stub that records the
+  // options (room, jwt, name, camera/mic) the app passes and creates the frame like the real API.
+  const JITSI_STUB = `window.JitsiMeetExternalAPI = function (domain, o) {
+    const f = document.createElement('iframe'); f.className = 'jitsi-stub'
+    f.src = 'about:blank'; o.parentNode.appendChild(f)
+    window.__jitsi = { domain, o }
+    this.addListener = () => {}; this.getIFrame = () => f; this.executeCommand = () => {}; this.dispose = () => f.remove()
+  }`
   const roomFor = async (p) => {
+    const scripts = []
+    const isApi = (u) => u.pathname.endsWith('/external_api.js')
+    await p.route(isApi, (route) => { scripts.push(route.request().url()); route.fulfill({ contentType: 'application/javascript', body: JITSI_STUB }) })
     await p.reload(); await sleep(2500); await openLessons(p, 'Mësimet e mia')
     await p.locator('.ls-item', { hasText: /Anglisht/ }).filter({ has: p.locator('button', { hasText: 'Hyr në mësim' }) }).first().locator('button', { hasText: 'Hyr në mësim' }).click(); await sleep(2000)
-    const f = p.locator('.ls-room-frame')
-    return { src: await f.getAttribute('src').catch(() => ''), allow: await f.getAttribute('allow').catch(() => '') }
+    const j = await p.evaluate(() => window.__jitsi && { domain: window.__jitsi.domain, room: window.__jitsi.o.roomName, jwt: window.__jitsi.o.jwt ?? null,
+      name: window.__jitsi.o.userInfo?.displayName, audioMuted: window.__jitsi.o.configOverwrite?.startWithAudioMuted, videoMuted: window.__jitsi.o.configOverwrite?.startWithVideoMuted })
+    const allow = await p.locator('.ls-room-holder iframe').getAttribute('allow').catch(() => '')
+    const timer = await p.locator('[data-testid="room-timer"]').innerText().catch(() => '')
+    await p.unroute(isApi)
+    return { scripts, j: j || {}, allow, timer }
   }
   const rs = await roomFor(s), rt = await roomFor(t)
-  const roomName = (x) => (x.src.match(/\/(ejaBashkohu-[\w-]+)/) || [])[1]
-  check('student enters the Jitsi room (camera + microphone allowed)', /meet\.jit\.si|8x8\.vc/.test(rs.src) && /camera/.test(rs.allow) && /microphone/.test(rs.allow), rs.src)
-  check('teacher enters the same room', roomName(rs) && roomName(rs) === roomName(rt), `${roomName(rs)} vs ${roomName(rt)}`)
+  check('student: IFrame API script requested from meet.jit.si (no provider configured)', rs.scripts.includes('https://meet.jit.si/external_api.js'), rs.scripts.join(','))
+  check('student: room + no jwt + own name passed to the IFrame API', rs.j.domain === 'meet.jit.si' && /^ejaBashkohu-[\w-]+$/.test(rs.j.room || '') && !rs.j.jwt && !!rs.j.name, JSON.stringify(rs.j))
+  check('starts with camera + microphone on, frame allows them', rs.j.audioMuted === false && rs.j.videoMuted === false && /camera/.test(rs.allow) && /microphone/.test(rs.allow), rs.allow)
+  check('room screen shows a countdown to the lesson end', /Përfundon pas \d+:\d\d/.test(rs.timer), rs.timer)
+  check('teacher enters the same room', rs.j.room && rs.j.room === rt.j.room, `${rs.j.room} vs ${rt.j.room}`)
   await shot(s, 'room')
   const stranger = await rpc('get_lesson_room', { p_lesson: lessonId }, (await tk(S2)))
   check('another user cannot get the room', stranger.status >= 400 && /qasje/.test(errOf(stranger)))
@@ -476,6 +494,8 @@ await section('A10: Wednesday sign-up through the UI, status, cancel', async () 
 
 await section('A10: Premium priority when groups form, restaurant reveal only to participants', async () => {
   const CITY = 'Gjakovë'
+  // re-runnable: groups formed by an earlier run use up the city's restaurants for that dinner
+  sql(`delete from wednesday_groups where city='${CITY}' and dinner_date > now()`)
   sql(`update profiles set home_city='${CITY}' where id in (${ids(W)})`)
   sql(`insert into taste_profiles (user_id, interests, done, updated_at) values ('${U[P1]}', '{}', true, now()) on conflict (user_id) do update set done=true`)
   // six Basic users sign up first, the Premium member (P1, home Prishtinë) last

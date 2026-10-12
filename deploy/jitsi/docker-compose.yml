@@ -1,0 +1,112 @@
+# Optional self-hosted Jitsi Meet for online lessons (VIDEO_PROVIDER=jitsi).
+# Separate stack, best on its own VPS (4 GB+ RAM, 2+ vCPU): Jitsi needs ports 80/443
+# for its own HTTPS (Let's Encrypt) and UDP 10000 for media.
+#   cd deploy/jitsi && cp .env.example .env && nano .env && docker compose up -d
+# Official images from jitsi/docker-jitsi-meet, all pinned to one release; bump together
+# (https://github.com/jitsi/docker-jitsi-meet/releases).
+# Rooms open only with a JWT from the backend (get_lesson_room): ENABLE_AUTH=1,
+# AUTH_TYPE=jwt, guests off, recording/streaming/transcription off.
+
+x-xmpp: &xmpp
+  TZ: ${JITSI_TZ:-Europe/Belgrade}
+  PUBLIC_URL: https://${JITSI_DOMAIN}
+  XMPP_DOMAIN: meet.jitsi
+  XMPP_AUTH_DOMAIN: auth.meet.jitsi
+  XMPP_GUEST_DOMAIN: guest.meet.jitsi
+  XMPP_MUC_DOMAIN: muc.meet.jitsi
+  XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi
+  XMPP_SERVER: xmpp.meet.jitsi
+  ENABLE_AUTH: "1"
+  AUTH_TYPE: jwt
+  ENABLE_GUESTS: "0"
+  ENABLE_RECORDING: "0"
+  ENABLE_TRANSCRIPTIONS: "0"
+  ENABLE_LOBBY: "0"            # the token already limits who can join
+  JICOFO_AUTH_PASSWORD: ${JICOFO_AUTH_PASSWORD:?set JICOFO_AUTH_PASSWORD in .env}
+  JVB_AUTH_PASSWORD: ${JVB_AUTH_PASSWORD:?set JVB_AUTH_PASSWORD in .env}
+
+services:
+  jitsi-web:
+    image: jitsi/web:${JITSI_IMAGE_VERSION:-stable-10532-1}
+    restart: unless-stopped
+    environment:
+      <<: *xmpp
+      ENABLE_LETSENCRYPT: "1"      # certificate for JITSI_DOMAIN (DNS A record -> this server)
+      LETSENCRYPT_DOMAIN: ${JITSI_DOMAIN:?set JITSI_DOMAIN in .env}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?set LETSENCRYPT_EMAIL in .env}
+      ENABLE_HTTP_REDIRECT: "1"
+      ENABLE_PREJOIN_PAGE: "0"     # the app already shows the lesson; name comes from the token
+      ENABLE_WELCOME_PAGE: "0"     # no "start a meeting" page
+      ENABLE_CLOSE_PAGE: "0"
+      DISABLE_DEEP_LINKING: "true"
+      ENABLE_LIVESTREAMING: "0"
+      ENABLE_SERVICE_RECORDING: "0"
+      ENABLE_FILE_RECORDING_SHARING: "0"
+      ENABLE_LOCAL_RECORDING: "0"
+      DEFAULT_LANGUAGE: sq
+      TOKEN_AUTH_URL: ""
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - jitsi_web:/config
+      - ./custom-interface_config.js:/config/custom-interface_config.js:ro
+      - ./custom-config.js:/config/custom-config.js:ro
+    networks: [meet.jitsi]
+    depends_on: [jitsi-jvb]
+
+  jitsi-prosody:
+    image: jitsi/prosody:${JITSI_IMAGE_VERSION:-stable-10532-1}
+    restart: unless-stopped
+    expose: ["5222", "5280"]
+    environment:
+      <<: *xmpp
+      JWT_APP_ID: ${JITSI_APP_ID:?set JITSI_APP_ID in .env}
+      JWT_APP_SECRET: ${JITSI_APP_SECRET:?set JITSI_APP_SECRET in .env}
+      JWT_ACCEPTED_ISSUERS: ${JITSI_APP_ID}
+      JWT_ACCEPTED_AUDIENCES: jitsi
+      JWT_ALLOW_EMPTY: "0"
+      JWT_TOKEN_AUTH_MODULE: token_verification   # checks the room claim on join
+    volumes:
+      - jitsi_prosody:/config
+      - jitsi_prosody_plugins:/prosody-plugins-custom
+    networks:
+      meet.jitsi:
+        aliases: [xmpp.meet.jitsi]
+
+  jitsi-jicofo:
+    image: jitsi/jicofo:${JITSI_IMAGE_VERSION:-stable-10532-1}
+    restart: unless-stopped
+    environment:
+      <<: *xmpp
+      JICOFO_ENABLE_HEALTH_CHECKS: "1"
+    volumes:
+      - jitsi_jicofo:/config
+    networks: [meet.jitsi]
+    depends_on: [jitsi-prosody]
+
+  jitsi-jvb:
+    image: jitsi/jvb:${JITSI_IMAGE_VERSION:-stable-10532-1}
+    restart: unless-stopped
+    ports:
+      - "10000:10000/udp"          # media (open UDP 10000 in the firewall)
+    environment:
+      <<: *xmpp
+      JVB_PORT: "10000"
+      JVB_ADVERTISE_IPS: ${JITSI_PUBLIC_IP:?set JITSI_PUBLIC_IP (server public IPv4) in .env}
+      JVB_STUN_SERVERS: meet-jit-si-turnrelay.jitsi.net:443
+      COLIBRI_REST_ENABLED: "0"
+    volumes:
+      - jitsi_jvb:/config
+    networks: [meet.jitsi]
+    depends_on: [jitsi-prosody]
+
+networks:
+  meet.jitsi: {}
+
+volumes:
+  jitsi_web:
+  jitsi_prosody:
+  jitsi_prosody_plugins:
+  jitsi_jicofo:
+  jitsi_jvb:

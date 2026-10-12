@@ -71,13 +71,32 @@ class Command(BaseCommand):
         else:
             report('email', False, f'EMAIL_BACKEND is {settings.EMAIL_BACKEND}, emails will not be delivered')
         try:
-            settings.STORAGE_ROOT.mkdir(parents=True, exist_ok=True)
-            probe = settings.STORAGE_ROOT / '.preflight'
-            probe.write_text('ok')
-            probe.unlink()
-            report('file storage writable', True, str(settings.STORAGE_ROOT))
+            from core import storage
+            where = storage.backend().check()
+            report(f'file storage writable ({settings.STORAGE_BACKEND})', True, where)
         except Exception as exc:
-            report('file storage writable', False, str(exc))
+            report(f'file storage writable ({settings.STORAGE_BACKEND})', False, str(exc))
+        from core import jitsi
+        try:
+            which = jitsi.provider()
+        except ValueError as exc:
+            which = None
+            report('video lessons', False, str(exc))
+        if which == 'jitsi':
+            report('video lessons (own Jitsi, JWT HS256)', settings.JITSI_DOMAIN != 'meet.jit.si'
+                   and len(settings.JITSI_APP_SECRET) >= 32,
+                   f'{settings.JITSI_DOMAIN}, app {settings.JITSI_APP_ID} (needs own domain and a 32+ char secret)')
+        elif which == 'jaas':
+            try:
+                jitsi.check_key()
+                report('video lessons (8x8 JaaS, JWT RS256)', True, f'{settings.JAAS_DOMAIN}/{settings.JAAS_APP_ID}')
+            except Exception as exc:
+                report('video lessons (8x8 JaaS)', False, f'private key cannot sign: {exc}')
+        elif which == 'public':
+            report('video lessons', settings.JITSI_DOMAIN != 'meet.jit.si',
+                   f'VIDEO_PROVIDER not set: open rooms on {settings.JITSI_DOMAIN}, no tokens'
+                   + (' (meet.jit.si ends embedded calls after 5 minutes: set VIDEO_PROVIDER=jaas or jitsi)'
+                      if settings.JITSI_DOMAIN == 'meet.jit.si' else ''))
         g = settings.OAUTH['google']
         report('Google sign-in configured', bool(g['client_id'] and g['client_secret']),
                '' if g['client_id'] else 'GOOGLE_* empty: the Google button will be hidden')

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ejaBashkohu API</title>
+<style>
+:root { --bg:#fbfaf7; --panel:#fff; --ink:#1d1b18; --muted:#6b665d; --line:#e6e1d6; --accent:#b4471f;
+  --get:#2f6f4f; --post:#2f4f8f; --put:#7a5a12; --delete:#9a2f2f; --code:#f3efe6; }
+@media (prefers-color-scheme: dark) { :root { --bg:#151412; --panel:#1d1c19; --ink:#ece8df; --muted:#a39d91;
+  --line:#33312c; --accent:#e5835d; --get:#6fc39a; --post:#8fb0f0; --put:#e0bb63; --delete:#ee8a8a; --code:#26241f; } }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+code, pre, .path { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+code { background:var(--code); padding:1px 5px; border-radius:4px; }
+header { padding:22px 16px 14px; border-bottom:1px solid var(--line); }
+header h1 { margin:0 0 4px; font-size:22px; letter-spacing:-.01em; }
+header p { margin:4px 0 0; color:var(--muted); max-width:860px; }
+header a { color:var(--accent); }
+.wrap { display:grid; grid-template-columns: 270px 1fr; min-height: calc(100vh - 90px); }
+nav { border-right:1px solid var(--line); padding:14px 12px; position:sticky; top:0; align-self:start; max-height:100vh; overflow:auto; }
+nav input { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--ink); font:inherit; }
+nav h3 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:16px 0 4px; }
+nav a { display:block; padding:2px 4px; color:var(--ink); text-decoration:none; font-size:13px; border-radius:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+nav a:hover { background:var(--code); }
+main { padding:16px; min-width:0; }
+section.tag > h2 { font-size:18px; margin:26px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+.op { background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:0 0 12px; }
+.op > summary { list-style:none; cursor:pointer; padding:10px 12px; display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+.op > summary::-webkit-details-marker { display:none; }
+.m { font-weight:700; font-size:12px; min-width:58px; text-transform:uppercase; }
+.m.get { color:var(--get); } .m.post { color:var(--post); } .m.put { color:var(--put); } .m.delete { color:var(--delete); }
+.path { word-break:break-all; }
+.sum { color:var(--muted); font-size:14px; }
+.badge { font-size:11px; border:1px solid var(--line); border-radius:999px; padding:0 7px; color:var(--muted); }
+.badge.anon { color:var(--get); border-color:var(--get); }
+.body { padding:0 12px 12px; border-top:1px solid var(--line); }
+.body h4 { margin:12px 0 4px; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+.desc p { margin:8px 0; } .desc ul { margin:6px 0; padding-left:20px; }
+table { border-collapse:collapse; width:100%; font-size:13px; }
+td, th { text-align:left; border-top:1px solid var(--line); padding:5px 6px; vertical-align:top; }
+th { color:var(--muted); font-weight:600; }
+.req { color:var(--accent); font-weight:700; }
+.type { color:var(--muted); font-family: ui-monospace, Menlo, monospace; font-size:12px; }
+#err { color:var(--delete); }
+@media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } nav { position:static; max-height:none; border-right:0; border-bottom:1px solid var(--line); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>ejaBashkohu API</h1>
+  <p id="intro">Loading <a href="/api/openapi.json">/api/openapi.json</a>…</p>
+</header>
+<div class="wrap">
+  <nav><input id="q" type="search" placeholder="Filter endpoints" aria-label="Filter endpoints"><div id="toc"></div></nav>
+  <main id="main"><p id="err"></p></main>
+</div>
+<script>
+(function () {
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+  const md = (s) => {
+    const lines = esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').split('\n')
+    let out = '', list = false
+    for (const l of lines) {
+      if (/^\* /.test(l)) { if (!list) { out += '<ul>'; list = true } out += '<li>' + l.slice(2) + '</li>'; continue }
+      if (list) { out += '</ul>'; list = false }
+      if (l.trim()) out += '<p>' + l + '</p>'
+    }
+    return out + (list ? '</ul>' : '')
+  }
+  let spec
+  const deref = (s) => {
+    let n = 0
+    while (s && s.$ref && n++ < 10) s = s.$ref.replace('#/', '').split('/').reduce((o, k) => o?.[k], spec)
+    return s || {}
+  }
+  const typeOf = (s) => {
+    if (s && s.$ref) return s.$ref.split('/').pop()
+    s = deref(s)
+    if (s.oneOf) return s.oneOf.map(typeOf).join(' | ')
+    let t = Array.isArray(s.type) ? s.type.join(' | ') : (s.type || (s.const !== undefined ? JSON.stringify(s.const) : 'any'))
+    if (s.type === 'array') t = 'array<' + typeOf(s.items || {}) + '>'
+    if (s.format) t += ' (' + s.format + ')'
+    if (s.enum) t += ': ' + s.enum.map((e) => JSON.stringify(e)).join(', ')
+    return t
+  }
+  const props = (schema) => {
+    const s = deref(schema)
+    if (!s.properties) return '<p class="type">' + esc(typeOf(schema)) + '</p>'
+    const req = new Set(s.required || [])
+    const rows = Object.entries(s.properties).map(([k, v]) => {
+      const d = deref(v)
+      return '<tr><td><code>' + esc(k) + '</code>' + (req.has(k) ? ' <span class="req" title="required">*</span>' : '') +
+        '</td><td class="type">' + esc(typeOf(v)) + (d.default !== undefined ? ' = ' + esc(JSON.stringify(d.default)) : '') +
+        '</td><td>' + md(d.description || '') + '</td></tr>'
+    }).join('')
+    return '<table><tr><th>name</th><th>type</th><th></th></tr>' + rows + '</table>'
+  }
+  const opHtml = (path, method, op, id) => {
+    const anon = (op.security || spec.security || []).some((x) => Object.keys(x).length === 0)
+    let h = '<details class="op" id="' + id + '" data-k="' + esc((path + ' ' + (op.summary || '') + ' ' + (op.description || '')).toLowerCase()) + '">' +
+      '<summary><span class="m ' + method + '">' + method + '</span><span class="path">' + esc(path) + '</span>' +
+      '<span class="sum">' + esc(op.summary && op.summary !== path.split('/').pop() ? op.summary : '') + '</span>' +
+      (anon ? '<span class="badge anon">works signed out</span>' : '<span class="badge">bearer token</span>') + '</summary><div class="body">'
+    if (op.description) h += '<div class="desc">' + md(op.description) + '</div>'
+    if (op.parameters?.length) {
+      h += '<h4>Parameters</h4><table><tr><th>name</th><th>in</th><th>type</th><th></th></tr>' + op.parameters.map((p) => {
+        p = deref(p)
+        return '<tr><td><code>' + esc(p.name) + '</code>' + (p.required ? ' <span class="req">*</span>' : '') + '</td><td>' + esc(p.in) +
+          '</td><td class="type">' + esc(typeOf(p.schema || {})) + '</td><td>' + md(p.description || '') + '</td></tr>'
+      }).join('') + '</table>'
+    }
+    const body = op.requestBody?.content
+    if (body) {
+      const [ct, c] = Object.entries(body)[0]
+      h += '<h4>Body <span class="type">' + esc(ct) + '</span></h4>' + (c.schema ? props(c.schema) : '<p class="type">raw file bytes</p>')
+    }
+    h += '<h4>Responses</h4><table>' + Object.entries(op.responses || {}).map(([code, r0]) => {
+      const r = deref(r0)
+      const sch = r.content && Object.values(r.content)[0]?.schema
+      // shared error responses: just name the schema (see Components at the end)
+      const shown = !sch ? '' : (r0.$ref || (sch.$ref && /Error$/.test(sch.$ref))) ? '<span class="type">' + esc(typeOf(sch)) + '</span>' : props(sch)
+      return '<tr><td><code>' + code + '</code></td><td>' + esc(r.description || '') + '</td><td>' + shown + '</td></tr>'
+    }).join('') + '</table></div></details>'
+    return h
+  }
+  fetch('/api/openapi.json').then((r) => r.json()).then((s) => {
+    spec = s
+    document.getElementById('intro').innerHTML = md(s.info.description) +
+      '<p>Machine-readable: <a href="/api/openapi.json">/api/openapi.json</a> (OpenAPI ' + esc(s.openapi) + ') · server <code>' + esc(s.servers[0].url) + '</code></p>'
+    const byTag = new Map(s.tags.map((t) => [t.name, []]))
+    let n = 0
+    for (const [path, ops] of Object.entries(s.paths)) {
+      for (const [method, op] of Object.entries(ops)) {
+        const tag = (op.tags || ['Other'])[0]
+        if (!byTag.has(tag)) byTag.set(tag, [])
+        byTag.get(tag).push({ path, method, op, id: 'op' + (n++) })
+      }
+    }
+    let main = '', toc = ''
+    for (const [tag, list] of byTag) {
+      if (!list.length) continue
+      main += '<section class="tag"><h2 id="t-' + esc(tag) + '">' + esc(tag) + '</h2>' + list.map((o) => opHtml(o.path, o.method, o.op, o.id)).join('') + '</section>'
+      toc += '<h3>' + esc(tag) + '</h3>' + list.map((o) => '<a href="#' + o.id + '" data-for="' + o.id + '">' +
+        esc(o.path.startsWith('/rest/v1/rpc/') ? o.path.slice(13) : o.method.toUpperCase() + ' ' + o.path) + '</a>').join('')
+    }
+    main += '<section class="tag"><h2>Schemas</h2>' + Object.entries(s.components.schemas)
+      .filter(([k]) => !k.startsWith('table.')).map(([k, v]) => '<details class="op" data-k="' + esc(k.toLowerCase()) +
+        '"><summary><span class="path">' + esc(k) + '</span></summary><div class="body">' + props(v) + '</div></details>').join('') +
+      '<details class="op" data-k="tables rows"><summary><span class="path">Table rows (for /rest/v1/query)</span></summary><div class="body">' +
+      Object.entries(s.components.schemas).filter(([k]) => k.startsWith('table.')).map(([k, v]) =>
+        '<h4>' + esc(k.slice(6)) + '</h4>' + props(v)).join('') + '</div></details></section>'
+    document.getElementById('main').innerHTML = main
+    document.getElementById('toc').innerHTML = toc
+    document.getElementById('toc').addEventListener('click', (e) => {
+      const id = e.target.dataset?.for
+      if (id) document.getElementById(id).open = true
+    })
+    document.getElementById('q').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase()
+      document.querySelectorAll('.op').forEach((el) => { el.hidden = q && !el.dataset.k.includes(q) })
+      document.querySelectorAll('#toc a').forEach((a) => { a.hidden = document.getElementById(a.dataset.for).hidden })
+    })
+    if (location.hash) { const el = document.querySelector(location.hash); if (el) { el.open = true; el.scrollIntoView() } }
+  }).catch((e) => { document.getElementById('err').textContent = 'Could not load the API description: ' + e })
+})()
+</script>
+</body>
+</html>

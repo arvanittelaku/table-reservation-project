@@ -70,9 +70,18 @@ await section('Lessons: teacher applies, admin approves, student books, video ro
   await s.reload(); await sleep(2500)
   await s.locator('.browse-mode', { hasText: 'Mësimet' }).click(); await sleep(1000)
   await s.locator('.ls-views button', { hasText: 'Mësimet e mia' }).click(); await sleep(1200)
-  await s.locator('button', { hasText: 'Hyr në mësim' }).first().click(); await sleep(2000)
-  const src = await s.locator('.ls-room-frame').getAttribute('src').catch(() => '')
-  check('video room opens (Jitsi iframe with camera/microphone)', /meet\.jit\.si|8x8\.vc/.test(src) && (await s.locator('.ls-room-frame').getAttribute('allow')).includes('camera'), src)
+  // the app loads the Jitsi IFrame API from the room's domain; meet.jit.si is not reachable from
+  // this sandbox, so serve a stand-in that builds the iframe the way the real API does
+  await s.route('https://meet.jit.si/external_api.js', (route) => route.fulfill({ contentType: 'application/javascript', body: `window.JitsiMeetExternalAPI = function (domain, o) {
+    const f = document.createElement('iframe'); f.src = 'https://' + domain + '/' + o.roomName
+    f.setAttribute('allow', 'camera; microphone; display-capture; autoplay'); o.parentNode.appendChild(f)
+    window.__jitsi = { domain, o }; this.addListener = () => {}; this.getIFrame = () => f; this.executeCommand = () => {}; this.dispose = () => f.remove() }` }))
+  await s.route('https://meet.jit.si/ejaBashkohu-*', (route) => route.fulfill({ contentType: 'text/html', body: '<p>room</p>' }))
+  await s.locator('button', { hasText: 'Hyr në mësim' }).first().click(); await sleep(2500)
+  const frame = s.locator('.ls-room iframe').first()
+  const src = await frame.getAttribute('src').catch(() => '')
+  const j = await s.evaluate(() => window.__jitsi ? { domain: window.__jitsi.domain, room: window.__jitsi.o.roomName } : null)
+  check('video room opens (Jitsi IFrame API, camera/microphone allowed)', /meet\.jit\.si|8x8\.vc/.test(src) && ((await frame.getAttribute('allow')) || '').includes('camera') && /^ejaBashkohu-/.test(j?.room || ''), JSON.stringify({ src, j }))
   check('no page errors (teacher/student)', !t.errs.length && !s.errs.length, [...t.errs, ...s.errs].join(' | '))
   await t.context().close(); await s.context().close()
 })

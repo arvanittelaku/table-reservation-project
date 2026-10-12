@@ -1,4 +1,13 @@
 {$API_DOMAIN} {
 	encode gzip
-	reverse_proxy backend:8000
+	# Django admin static files (collectstatic volume); everything else goes to the backend
+	handle /django-admin/static/* {
+		root * /srv
+		header Cache-Control "public, max-age=86400"
+		file_server
+	}
+	handle {
+		reverse_proxy backend:8000
+	}
 }
+
