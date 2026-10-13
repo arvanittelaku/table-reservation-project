@@ -353,6 +353,27 @@ class Table(models.Model):
         ]
 
 
+class OfficialEvent(models.Model):
+    """A listing hosted by the ejaBashkohu team (an admin account) and marked
+    official by an admin. Until `premium_hours` before the event only Premium
+    members may request a seat or join the waitlist; Premium requests and
+    waitlist spots always go first (services/official.py, hooks.join_before_insert).
+    Kept beside `tables` (one row per official listing) so hosts cannot change it
+    through their own table updates."""
+    table = models.OneToOneField(Table, primary_key=True, on_delete=CASCADE, related_name='official')
+    premium_hours = models.IntegerField(default=48)
+    marked_by = models.ForeignKey(Profile, null=True, on_delete=SET_NULL, related_name='+')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'official_events'
+        constraints = [
+            models.CheckConstraint(condition=Q(premium_hours__gte=0) & Q(premium_hours__lte=720),
+                                   name='official_events_premium_hours_check'),
+        ]
+
+
 class Membership(models.Model):
     pk = models.CompositePrimaryKey('table_id', 'user_id')
     table = models.ForeignKey(Table, on_delete=CASCADE, related_name='memberships')

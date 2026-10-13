@@ -1,3 +1,4 @@
+import { stripDeparturePrefix } from './localizeTableDescription'
 /** Local date/time helpers for table event_datetime (avoid UTC date split bugs). */
 
 
@@ -106,7 +107,7 @@ export function mapsUrlForTable(t: { mapsLink?: string | null; cat?: string; are
 
     t?.cat === 'vozitje'
 
-      ? `${(t.area || '').replace('Nisja: ', '')}, ${t.city}, Kosovo`
+      ? `${stripDeparturePrefix(t.area)}, ${t.city}, Kosovo`
 
       : t?.cat === 'udhetim'
 

@@ -16,6 +16,7 @@ import { editProfile, rating } from './profile/sq'
 import { lessons } from './lessons/sq'
 import { plans } from './plans/sq'
 import { share } from './share/sq'
+import { official } from './official/sq'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/sq'
 
 export default {
@@ -394,6 +395,7 @@ export default {
   lessons,
   plans,
   share,
+  official,
   browse,
   support,
   termsOfService,

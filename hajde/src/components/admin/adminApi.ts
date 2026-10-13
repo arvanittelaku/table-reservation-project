@@ -3,7 +3,7 @@ import type { TableKind, TutorStatus, Uuid } from '../../types/db'
 import type {
   AdminBanGroup, AdminPaymentList, AdminReportRow, AdminTableDetail, AdminTableList, AdminTutor, AdminUserDetail,
   AdminUserListRow, AdminWednesday, AdminWednesdaySignup, AuditRow, Dashboard, DashboardRange, GlobalSearch, Page,
-  PlansOverview, PlanUpdate, ReportStatusFilter, RestaurantInput, TableStatusFilter, TutorStatusFilter,
+  OfficialEventRow, PlansOverview, PlanUpdate, ReportStatusFilter, RestaurantInput, TableStatusFilter, TutorStatusFilter,
   UserStatusFilter, WednesdayFormResult,
 } from './adminTypes'
 
@@ -86,6 +86,17 @@ export const adminApi = {
   notifyUser: (id: Uuid, message: string) => rpc('admin_notify_user', { p_user: id, p_message: message }),
   cancelTable: (id: Uuid, reason: string) => rpc<number>('admin_cancel_table', { p_table: id, p_reason: reason }),
   restoreTable: (id: Uuid) => rpc('admin_restore_table', { p_table: id }),
+  setOfficialEvent: (id: Uuid, premiumHours: number) =>
+    rpc('admin_set_official_event', { p_table: id, p_premium_hours: premiumHours }),
+  unsetOfficialEvent: (id: Uuid) => rpc<boolean>('admin_unset_official_event', { p_table: id }),
+  /** Which listings are official (readable by everyone; written only through the RPCs above). */
+  officialEvents: async (ids?: Uuid[]): Promise<OfficialEventRow[]> => {
+    let q = sb.from('official_events').select('table_id, premium_hours').returns<OfficialEventRow>()
+    if (ids) q = q.in('table_id', ids)
+    const { data, error } = await q
+    if (error) throw new AdminError(error.message || String(error), error.code)
+    return data ?? []
+  },
   dismissReport: (id: Uuid) => rpc('admin_dismiss_report', { p_report_id: id }),
   banFromReport: (id: Uuid, reason: string) => rpc<number>('admin_ban_from_report', { p_report_id: id, p_reason: reason }),
   deleteFromReport: (id: Uuid, reason: string) => rpc('admin_delete_immediately', { p_report_id: id, p_reason: reason }),

@@ -16,6 +16,7 @@ import { editProfile, rating } from './profile/mk'
 import { lessons } from './lessons/mk'
 import { plans } from './plans/mk'
 import { share } from './share/mk'
+import { official } from './official/mk'
 import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phase8/mk'
 
 export default {
@@ -94,7 +95,7 @@ export default {
     },
     citiesTitle: 'Активно низ цело Косово',
     citiesP1:
-      'ejaBashkohu е достапен во сите 38 општини на Косово, од Приштина и Призрен до Пеќ, Гjakovë, Mitrovica, Ferizaj, Gjilan и повеќе.',
+      'ejaBashkohu е достапен во сите 38 општини на Косово, од Приштина и Призрен до Пеќ, Ѓаковица, Митровица, Феризај, Гњилане и повеќе.',
     citiesP2:
       'Туристите и посетителите од Албанија, Македонија и целиот свет се добредојдени, платформата работи на албански и англиски.',
     faqTitle: 'Најчесто поставувани прашања',
@@ -394,6 +395,7 @@ export default {
   lessons,
   plans,
   share,
+  official,
   browse,
   support,
   termsOfService,

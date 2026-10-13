@@ -1,7 +1,8 @@
+import { localizeTableArea } from '../../lib/localizeTableDescription'
 import { useState } from 'react'
 import { useI18n } from '../../i18n/I18nContext'
 import { adminApi } from './adminApi'
-import type { AdminTableListRow, TableStatusFilter } from './adminTypes'
+import type { AdminTableListRow, OfficialEventRow, TableStatusFilter } from './adminTypes'
 import type { SectionProps } from './shared'
 import type { TableKind, Uuid } from '../../types/db'
 import {
@@ -15,7 +16,7 @@ import {
   errMsg,
 } from './ui'
 
-const STATUSES: TableStatusFilter[] = ['all', 'upcoming', 'past', 'full', 'cancelled', 'paid', 'reported']
+const STATUSES: TableStatusFilter[] = ['all', 'upcoming', 'past', 'full', 'cancelled', 'paid', 'reported', 'official']
 const KINDS: Array<TableKind | ''> = ['', 'tavoline', 'sport', 'vozitje', 'udhetim', 'darka_e_merkures']
 const SORTS = ['newest', 'oldest', 'event_asc', 'event_desc', 'most_guests', 'most_revenue', 'most_requests']
 
@@ -36,6 +37,8 @@ export default function Tables({ params }: SectionProps) {
     [q, status, kind, city, sort, offset, ctx.refreshKey],
   )
   const rows = data?.rows || []
+  const { data: officialRows } = useLoader(() => adminApi.officialEvents(), [ctx.refreshKey])
+  const officialIds = new Set((officialRows || []).map((o) => o.table_id))
   const cities = (data?.cities || []).slice().sort((a, b) => String(a).localeCompare(String(b)))
   const setFilter = <V,>(fn: (v: V) => void) => (v: V) => { fn(v); setOffset(0) }
 
@@ -91,7 +94,7 @@ export default function Tables({ params }: SectionProps) {
         <Select value={city} onChange={setFilter(setCity)} label={t('adm.tables.cityLabel')} options={[{ value: '', label: t('adm.common.all') }, ...cities.map((c) => ({ value: c, label: c }))]} />
         <Select value={sort} onChange={setFilter(setSort)} label={t('adm.common.sort')} options={SORTS.map((s) => ({ value: s, label: t(`adm.tables.sort.${s}`) }))} />
       </div>
-      <Segmented value={status} onChange={setFilter(setStatus)} options={STATUSES.map((s) => ({ value: s, label: t(`adm.tables.filter.${s}`) }))} />
+      <Segmented value={status} onChange={setFilter(setStatus)} options={STATUSES.map((s) => ({ value: s, label: s === 'official' ? t('official.admin.filter') : t(`adm.tables.filter.${s}`) }))} />
 
       <ErrorBox error={error} onRetry={reload} />
 
@@ -152,6 +155,7 @@ export default function Tables({ params }: SectionProps) {
                     <td data-label={t('adm.tables.col.status')}>
                       <span className="adm-pills">
                         <TableStatusPill tbl={tb} />
+                        {officialIds.has(tb.id) && <Pill tone="brand">★ {t('official.badge')}</Pill>}
                         {Number(tb.reports_count) > 0 && <Pill tone="bad">{t('adm.tables.reportsN', { count: tb.reports_count })}</Pill>}
                       </span>
                     </td>
@@ -174,6 +178,8 @@ export function TableDetail({ id, onClose }: { id: Uuid; onClose: () => void }) 
   const ctx = useAdmin()
   const [dialog, setDialog] = useState<'restore' | 'cancel' | null>(null)
   const { data, error, loading, reload } = useLoader(() => adminApi.getTable(id), [id])
+  const { data: officialData, reload: reloadOfficial } = useLoader(() => adminApi.officialEvents([id]), [id])
+  const officialRow = officialData?.[0] || null
   const tb = data?.table
   const members = data?.members || []
   const guests = members.filter((m) => m.role === 'member')
@@ -220,7 +226,10 @@ export function TableDetail({ id, onClose }: { id: Uuid; onClose: () => void }) 
             <TableStatusPill tbl={{ ...tb, seated: members.length }} />
             {tb.mystery && <Pill tone="info">{t('adm.tables.mystery')}</Pill>}
             {(tb.women_only || tb.men_only) && <Pill tone="info">{restrict}</Pill>}
+            {officialRow && <Pill tone="brand">★ {t('official.badge')}</Pill>}
           </div>
+
+          <OfficialEventBox table={tb} row={officialRow} onChanged={() => { reloadOfficial(); reload(); ctx.bump() }} />
 
           <div className="adm-mini-kpis">
             <Kpi label={t('adm.tables.kpi.seats')} value={`${members.length}/${tb.spots}`} sub={t('adm.tables.kpi.seatsSub', { guests: guests.length })} />
@@ -235,9 +244,8 @@ export function TableDetail({ id, onClose }: { id: Uuid; onClose: () => void }) 
               [t('adm.tables.col.host'), <UserLink key="h" id={tb.host_id} name={tb.host_name} />],
               [t('adm.fields.hostEmail'), tb.host_email],
               [t('adm.tables.col.when'), `${fmtDate(tb.event_datetime, locale)} (${fmtRelative(tb.event_datetime, locale)})`],
-              [t('adm.fields.timeLabel'), tb.time_label],
-              [t('adm.fields.category'), tb.category],
-              [t('adm.fields.place'), [tb.area, tb.city, tb.to_city && `→ ${tb.to_city}`].filter(Boolean).join(' · ')],
+              [t('adm.fields.category'), tb.category ? t(`feed.categories.${tb.category}`) : '–'],
+              [t('adm.fields.place'), [localizeTableArea(tb.area || '', t), tb.city, tb.to_city && `→ ${tb.to_city}`].filter(Boolean).join(' · ')],
               tb.budget && [t('adm.fields.budget'), tb.budget],
               [t('adm.fields.audience'), restrict],
               [t('adm.fields.languages'), Array.isArray(tb.langs) ? tb.langs.join(', ') : '–'],
@@ -381,5 +389,49 @@ export function TableDetail({ id, onClose }: { id: Uuid; onClose: () => void }) 
         onClose={() => setDialog(null)}
       />
     </Drawer>
+  )
+}
+
+
+/* Official event (hosted by the team): Premium-only window before the event, Premium first always. */
+function OfficialEventBox({ table, row, onChanged }: {
+  table: { id: Uuid; event_datetime: string; status: string }
+  row: OfficialEventRow | null
+  onChanged: () => void
+}) {
+  const { t, locale } = useI18n()
+  const ctx = useAdmin()
+  const [hours, setHours] = useState(String(row?.premium_hours ?? 48))
+  const [busy, setBusy] = useState(false)
+  const [shownFor, setShownFor] = useState<number | null>(row?.premium_hours ?? null)
+  if ((row?.premium_hours ?? null) !== shownFor) { setShownFor(row?.premium_hours ?? null); setHours(String(row?.premium_hours ?? 48)) }
+  const h = Math.max(0, Math.min(720, Math.round(Number(hours) || 0)))
+  const until = new Date(new Date(table.event_datetime).getTime() - h * 3600_000)
+  const go = async (fn: () => Promise<unknown>, okKey: string) => {
+    setBusy(true)
+    try { await fn(); ctx.toast(t(okKey)); onChanged() } catch (err) { ctx.toast(errMsg(err)) } finally { setBusy(false) }
+  }
+  return (
+    <div className="adm-card adm-official" data-testid="official-box">
+      <h4 className="adm-subhead">★ {t('official.admin.sectionTitle')}</h4>
+      {row && <p><strong>{t('official.admin.isOfficial', { date: fmtDate(new Date(new Date(table.event_datetime).getTime() - row.premium_hours * 3600_000).toISOString(), locale) })}</strong></p>}
+      <label className="adm-field"><span>{t('official.admin.hoursLabel')}</span>
+        <input type="number" min={0} max={720} value={hours} onChange={(e) => setHours(e.target.value)} data-testid="official-hours" />
+      </label>
+      <p className="adm-muted">{t('official.admin.hoursHint', { date: fmtDate(until.toISOString(), locale) })}</p>
+      {!row && <p className="adm-muted small">{t('official.admin.teamOnly')}</p>}
+      <div className="adm-page-actions">
+        <button type="button" className="adm-btn primary" disabled={busy || table.status === 'cancelled'}
+          onClick={() => go(() => adminApi.setOfficialEvent(table.id, h), 'official.admin.marked')}>
+          {row ? t('official.admin.update') : t('official.admin.mark')}
+        </button>
+        {row && (
+          <button type="button" className="adm-btn" disabled={busy}
+            onClick={() => go(() => adminApi.unsetOfficialEvent(table.id), 'official.admin.unmarked')}>
+            {t('official.admin.unmark')}
+          </button>
+        )}
+      </div>
+    </div>
   )
 }

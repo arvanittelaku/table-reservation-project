@@ -212,3 +212,18 @@ def drop_legacy_sql(apps, schema_editor):
         c.execute("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
         for (table,) in c.fetchall():
             c.execute(f'ALTER TABLE public."{table}" ENABLE ROW LEVEL SECURITY')
+
+
+def lock_new_table(table):
+    """RunPython for a table added after 0004: row-level security on (deny-all
+    without policies) and Supabase's `anon` / `authenticated` grants revoked, like
+    every other public table, so only this backend reads or writes it."""
+    def run(apps, schema_editor):
+        with schema_editor.connection.cursor() as c:
+            c.execute(f'ALTER TABLE public."{table}" ENABLE ROW LEVEL SECURITY')
+            c.execute("SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated')")
+            roles = [r[0] for r in c.fetchall()]
+            if roles:
+                c.execute(f'REVOKE ALL ON public."{table}" FROM {", ".join(roles)}')
+    run.__name__ = f'lock_{table}'
+    return run

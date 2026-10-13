@@ -2191,3 +2191,9 @@ body { overflow-x: clip; }
 .ep-follow-title { margin-top: 6px; }
 .edit-profile .ob-choice.ep-langs { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; }
 .edit-profile .ep-langs .choice { width: auto; padding: 8px 12px; font-size: 14px; }
+
+/* ── Official events (hosted by the team, Premium first) ── */
+.badge.official { color: #7A5410; background: #FBF0D9; margin: 2px 0 4px; display: inline-block; }
+.official-upsell { border: 1px solid #E9D3A4; background: #FFF8EA; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.official-upsell p { margin: 0; font-size: 13px; line-height: 1.45; color: #5B4A2A; }
+.official-upsell .official-upsell-title { font-weight: 800; display: flex; align-items: center; gap: 6px; color: #7A5410; }

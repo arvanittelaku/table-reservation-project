@@ -1,9 +1,20 @@
 import { callRpc } from './rpc'
 import { errorCode, errorMessage } from '../lib/errors'
-import type { MyPlan, MyWednesday, SubscriptionOrderRow } from '../types/db'
+import type { AffinityRow, BadgeRow, MyPlan, MyWednesday, ProfileRow, SubscriptionOrderRow, TasteProfileRow } from '../types/db'
+
+/** Shape returned by the startup_bundle RPC. */
+export interface StartupBundle {
+  profile: ProfileRow | null
+  taste: TasteProfileRow | null
+  affinity: AffinityRow[]
+  badges: BadgeRow[]
+  plan: MyPlan
+}
 
 export const plansApi = {
   mine: () => callRpc<MyPlan>('my_plan'),
+  /** Single call that replaces profile + taste_profile + affinity + badges + my_plan. */
+  startupBundle: () => callRpc<StartupBundle>('startup_bundle'),
   setHomeCity: (city: string) => callRpc<null>('set_home_city', { p_city: city }),
   requestPremium: (planId: string) => callRpc<Pick<SubscriptionOrderRow, 'id' | 'code' | 'plan_id' | 'amount_cents'>>('request_premium', { p_plan: planId }),
   cancelOrder: () => callRpc<null>('cancel_premium_order'),

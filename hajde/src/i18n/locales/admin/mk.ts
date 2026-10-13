@@ -443,6 +443,8 @@ export const adm = {
       admin_revoked: 'Одзеде админ права',
       table_cancelled: 'Откажа маса',
       table_restored: 'Врати маса',
+      table_marked_official: 'Означи официјален настан',
+      table_unmarked_official: 'Отстрани официјална ознака',
       report_dismissed: 'Одби пријава',
       restaurant_created: 'Додаде ресторан',
       restaurant_updated: 'Уреди ресторан',

@@ -144,7 +144,10 @@ def _tables_select(a):
         permissive |= Q(id__in=seated)
     if viewer_sees_all_cities(a) or a.is_admin:
         return permissive
-    restrictive = Q(host_id=a.uid) | Q(id__in=my_table_ids(a))
+    # official events (hosted by the team) are open to every city, like Wednesday Dinner
+    from .models import OfficialEvent
+    restrictive = (Q(host_id=a.uid) | Q(id__in=my_table_ids(a))
+                   | Q(Exists(OfficialEvent.objects.filter(table_id=OuterRef('pk')))))
     home = viewer_home_city(a)
     if home is not None:
         restrictive |= Q(city=home)
@@ -216,6 +219,8 @@ RULES = {
     'notifications': R(select=own(), insert=lambda a, o: o.user_id == a.uid,
                        update=own(), update_check=lambda a, o: o.user_id == a.uid),
     'payments': R(select=own(), insert=lambda a, o: o.user_id == a.uid and o.provider == 'stub'),
+    # which listings are official and their Premium window; written only by admin_set_official_event
+    'official_events': R(select=everyone),
     'plans': R(select=everyone),
     'profiles': R(select=everyone, update=own('user_id'),
                   update_check=lambda a, o: o.user_id == a.uid and o.age is not None and o.age >= 18),

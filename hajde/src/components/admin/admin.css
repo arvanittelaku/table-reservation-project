@@ -437,3 +437,8 @@ button.adm-list-row:hover { background: #faf9f6; }
   .adm-drawer-hdr, .adm-drawer-actions, .adm-drawer-body { padding-left: 16px; padding-right: 16px; }
   .adm-drawer-body .adm-table tr { padding: 10px 12px; }
 }
+
+/* official event box in the table drawer */
+.adm-official { padding: 12px 14px; margin: 12px 0; display: flex; flex-direction: column; gap: 8px; }
+.adm-official p { margin: 0; }
+.adm-action[class*='act-table_marked_official'] { color: #8a5a00; }

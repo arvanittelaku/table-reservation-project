@@ -1,12 +1,12 @@
 import React from 'react'
 import { useLocation, useNavigate, useNavigationType } from 'react-router'
 import { useAuth } from './hooks/useAuth'
-import { useProfile } from './hooks/useProfile'
+import { useProfile } from './hooks/useStartupBundle'
 import { useTables } from './hooks/useTables'
 import { useNotifications } from './hooks/useNotifications'
 import { useRequests } from './hooks/useRequests'
 import { useChat } from './hooks/useChat'
-import { createTable as apiCreateTable, saveTasteProfile, getTable as apiGetTable, listMyPastTables } from './api/tables'
+import { createTable as apiCreateTable, saveTasteProfile, getTable as apiGetTable, listMyPastTables, officialPremiumWindowUntil } from './api/tables'
 import { SharePreviewCard, ShareIcon, clearPendingShare, fetchSharePreview, parseShareCode, readPendingShare, shareTableLink } from './components/share/Share'
 import {
   requestJoin as apiRequestJoin,
@@ -29,7 +29,7 @@ import {
 import { mapError, parseResetRateLimitSeconds } from './lib/errorMap'
 import { parseAuthHashError, clearAuthHashFromUrl } from './lib/authHashError'
 import { formatEventTime, formatBlockDate, isTableExpired } from './lib/formatEventTime'
-import { localizeTableDescription } from './lib/localizeTableDescription'
+import { localizeTableDescription, localizeTableArea, stripDeparturePrefix } from './lib/localizeTableDescription'
 import {
   buildEventDatetime,
   defaultEventSchedule,
@@ -45,6 +45,7 @@ import { WED_QUIZ } from './lib/wednesdayQuiz'
 import { normalizeInterests, interestsForMatching } from './lib/tasteInterests'
 import { photoErrorKey, type PhotoValidation } from './lib/faceValidation'
 import { fetchOwnProfile, invalidateOwnProfile } from './lib/ownProfile'
+import { queryClient, queryKeys } from './lib/queryClient'
 import { sb } from './backendClient'
 import PrivacyPolicy from './components/PrivacyPolicy'
 import TermsOfService from './components/TermsOfService'
@@ -54,7 +55,7 @@ const AdminPanel = React.lazy(() => import('./components/AdminPanel'))
 const Lessons = React.lazy(() => import('./components/lessons/Lessons'))
 import WhatsAppButton from './components/WhatsAppButton'
 import { PlansSheet, HomeCityPicker } from './components/plans/Plans'
-import { usePlan } from './hooks/usePlan'
+import { usePlan } from './hooks/useStartupBundle'
 import { plansApi } from './api/plans'
 import { notifText, BADGE_LABEL_KEY } from './lib/notifText'
 import { awardBadgeOnce } from './api/notifications'
@@ -62,6 +63,7 @@ import LanguageSwitcher from './components/LanguageSwitcher'
 import PasswordInput from './components/PasswordInput'
 import EditProfile from './components/profile/EditProfile'
 import { useI18n } from './i18n/I18nContext'
+import { loc, fmtDate } from './lib/format'
 import type { LessonsView } from './components/lessons/Lessons'
 import type { TVars } from './i18n/index'
 import type { NewTable, UiTable, UiTableDetail } from './api/tables'
@@ -458,6 +460,7 @@ function CityScape({ variant = "generic", tone = "light", height = 78 }: { varia
 }
 
 /* ── Unaza e vendeve (elementi nënshkrim) ── */function SeatRing({ total, taken, size = 44 }: { total: number; taken: number; size?: number }) {
+  const { t } = useI18n();
   const dots: React.ReactNode[] = [];
   const r = size / 2 - 4;
   for (let i = 0; i < total; i++) {
@@ -472,7 +475,7 @@ function CityScape({ variant = "generic", tone = "light", height = 78 }: { varia
     );
   }
   return (
-    <svg width={size} height={size} aria-label={`${taken} nga ${total} vende të zëna`}>
+    <svg width={size} height={size} aria-label={t('appMisc.seatsTakenAria', { taken, total })}>
       <circle cx={size / 2} cy={size / 2} r={size / 5.5} fill="#FFF5F2" stroke="#FFD5C5" strokeWidth="1.5" />
       {dots}
     </svg>
@@ -596,8 +599,10 @@ function HajdeApp() {
   const tables = useMemo(
     () => rawTables.map((tbl) => ({
       ...tbl,
+      area: localizeTableArea(tbl.area, t),
       time: tbl.event_datetime ? formatEventTime(tbl.event_datetime, locale) : tbl.time,
     })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [rawTables, locale],
   );
   const catLabel = (id: string) => t(`feed.categories.${id}`);
@@ -667,7 +672,18 @@ function HajdeApp() {
   }, [persistAdminScreen]);
 
   const handlePostLogin = useCallback(async (userId: string, { preferStored = false }: { preferStored?: boolean } = {}) => {
-    const { data } = await fetchOwnProfile(userId);
+    // Prefetch the startup bundle so useProfile/usePlan find data in cache immediately.
+    let data: import('./types/db').ProfileRow | null = null;
+    try {
+      const bundle = await plansApi.startupBundle();
+      // Seed the TanStack Query cache so no second request fires from useProfile/usePlan
+      queryClient.setQueryData(queryKeys.startupBundle(userId), bundle);
+      data = bundle.profile;
+    } catch {
+      // Fallback: fetch profile individually (e.g. before plans migration)
+      const res = await fetchOwnProfile(userId);
+      data = res.data;
+    }
 
     if (data?.deactivated_at) {
       setShowDeactivatedGate(true);
@@ -1592,9 +1608,9 @@ function HajdeApp() {
 
   const displayMessages = (chatMessages || []).map((m) => ({
     id: m.id,
-    from: m.sender?.first_name ?? "Anonim",
+    from: m.sender?.first_name ?? t('appMisc.anonymous'),
     text: m.body,
-    time: new Date(m.created_at).toLocaleTimeString("sq", {
+    time: new Date(m.created_at).toLocaleTimeString(loc(locale), {
       hour: "2-digit",
       minute: "2-digit",
     }),
@@ -1633,6 +1649,18 @@ function HajdeApp() {
 
   /* Statusi i marrëdhënies sime me tavolinën */
   type MyStatus = 'host' | 'joined' | 'approved' | 'pending' | 'waitlist' | 'full' | 'none';
+  /* Official events (hosted by the team): Basic members wait until the Premium-only window ends (enforced by the server too). */
+  const officialLocked = (tbl: Pick<UiTable, 'official'>) => !isPremium && !!officialPremiumWindowUntil(tbl);
+  const officialBadge = (tbl: Pick<UiTable, 'official'>) => {
+    if (!tbl.official) return null;
+    const until = officialPremiumWindowUntil(tbl);
+    return (
+      <span className="badge official" data-testid="official-badge">
+        ★ {t('official.badge')} · {until ? t('official.premiumFirstUntil', { date: fmtDate(until, locale) }) : t('official.premiumPriority')}
+      </span>
+    );
+  };
+
   const myStatus = (t: FeedTable): MyStatus => {
     const uid = authUser?.id;
     if (t.host_id === uid || t.host === user.name) return "host";
@@ -1691,7 +1719,7 @@ function HajdeApp() {
       });
       await refetchTables();
       awardBadge("first-join");
-      pushNotif('seatConfirmedRide', { area: tbl?.area?.replace("Nisja: ", "") || "", time: tbl?.time || "" }, "►");
+      pushNotif('seatConfirmedRide', { area: stripDeparturePrefix(tbl?.area), time: tbl?.time || "" }, "►");
       showToast(t('toasts.seatConfirmedFree'));
     } catch (err) {
       showToast(mapErr(err));
@@ -3923,7 +3951,7 @@ function HajdeApp() {
                         {st === "approved" && <span className="badge approved">{t('feed.statusApproved')}</span>}
                         {st === "host" && <span className="badge hosting">{t('feed.statusHosting')}{(tbl.requests || []).filter(r=>r.status==="pending").length > 0 ? t('feed.statusHostingRequests', { count: tbl.requests.filter(r=>r.status==="pending").length }) : ""}</span>}
                       </div>
-                      <p className="meta"><MapPin size={13} /> {tbl.area} · <Clock size={13} /> {tbl.time}</p>
+                      <p className="meta"><MapPin size={13} /> {localizeTableArea(tbl.area, t)} · <Clock size={13} /> {tbl.time}</p>
                       {tbl.womenOnly && tbl.cat !== "vozitje" && tbl.cat !== "udhetim" && (
                         <span className="badge women">{t('feed.badgeWomenOnly')}</span>
                       )}
@@ -3938,6 +3966,7 @@ function HajdeApp() {
                         </span>
                       )}
                       {tbl.cat === "udhetim" && <span className="badge trip">{tbl.budget || t('feed.badgeTrip')}</span>}
+                      {officialBadge(tbl)}
                       <p className="desc">{localizeTableDescription(tbl.desc, t)}</p>
                       <div className="card-foot">
                         <span className="host" onClick={(e) => { e.stopPropagation(); setProfileView(hostProf(tbl)); }} role="button" title={t('feed.viewProfile')}>
@@ -4086,13 +4115,14 @@ function HajdeApp() {
                 <button className="icon-btn" onClick={() => setActive(null)} aria-label={t('tableDetail.close')}><ChevronLeft size={20} /></button>
                 <div>
                   <h2>{activeTable.cafe}</h2>
+                  {officialBadge(activeTable)}
                   {activeTable.sport && (
                     <span className="badge sport">
                       {t(`sports.list.${activeTable.sport}`)} · {t('sports.playersBadge', { count: activeTable.spots })}
                       {activeTable.skillLevel ? ` · ${t(`sports.levels.${activeTable.skillLevel}`)}` : ""}
                     </span>
                   )}
-                  <p className="meta"><MapPin size={13} /> {activeTable.area}, {activeTable.city} · <Clock size={13} /> {activeTable.time}</p>
+                  <p className="meta"><MapPin size={13} /> {localizeTableArea(activeTable.area, t)}, {activeTable.city} · <Clock size={13} /> {activeTable.time}</p>
                   {(activeTable.langs || []).length > 0 && (
                     <p className="meta langs"><Globe size={12} /> {formatLangs(activeTable.langs)}</p>
                   )}
@@ -4170,7 +4200,7 @@ function HajdeApp() {
                         id: r.user_id,
                         name: r.name,
                         age: r.age,
-                        from: r.from || t('feed.kosovo'),
+                        from: r.from || (r.isTourist ? t('feed.tourist') : t('feed.kosovo')),
                         photo: r.photo,
                       })}
                       role="button"
@@ -4179,7 +4209,7 @@ function HajdeApp() {
                       <Avatar name={r.name} photo={r.photo} large />
                       <div className="req-info">
                         <strong>{r.name}, {r.age}</strong>
-                        <span className="muted small">{r.from || t('feed.kosovo')}</span>
+                        <span className="muted small">{r.from || (r.isTourist ? t('feed.tourist') : t('feed.kosovo'))}</span>
                       </div>
                       <div className="req-actions">
                         <button className="btn-approve" onClick={(e) => { e.stopPropagation(); approveRequest(activeTable.id, r.rid); }} aria-label={t('tableDetail.approveAria', { name: r.name })}>
@@ -4311,8 +4341,18 @@ function HajdeApp() {
               </div>
 
               {/* ── Butoni sipas statusit ── */}
-              {st === "none" && !tableExpired && (
+              {(st === "none" || st === "full") && !tableExpired && officialLocked(activeTable) && (
+                <div className="official-upsell" data-testid="official-upsell">
+                  <p className="official-upsell-title"><Lock size={14} /> {t('official.upsellTitle')}</p>
+                  <p>{t('official.upsellBody', { date: fmtDate(officialPremiumWindowUntil(activeTable), locale) })}</p>
+                  <button type="button" className="btn full primary" onClick={() => setShowPlans(true)}>
+                    {t('official.upsellCta')}
+                  </button>
+                </div>
+              )}
+              {st === "none" && !tableExpired && !officialLocked(activeTable) && (
                 <>
+                  {activeTable.official && isPremium && <p className="fee-note">{t('official.premiumNote')}</p>}
                   <button className="btn full primary" onClick={() => requestJoin(activeTable.id)}>
                     {t('tableDetail.requestToJoin')}
                   </button>
@@ -4355,7 +4395,7 @@ function HajdeApp() {
                 <p className="fee-note muted">{t('tableDetail.expiredNoRequests')}</p>
               )}
 
-              {st === "full" && !tableExpired && (
+              {st === "full" && !tableExpired && !officialLocked(activeTable) && (
                 <>
                   <button className="btn full primary" onClick={() => joinWaitlist(activeTable.id)}>
                     <BellRing size={16} /> {t('tableDetail.joinWaitlist')}
@@ -4457,7 +4497,7 @@ function HajdeApp() {
                         title={t('chat.translateOwnTitle')}
                         aria-label={t('chat.translateAriaLabel')}
                       >
-                        {draftTranslating ? '...' : 'GL'}
+                        {draftTranslating ? '...' : '🌐'}
                       </button>
                       <button className="icon-btn send" onClick={() => sendMsg()} aria-label={t('chat.sendAria')}><Send size={16} /></button>
                     </div>

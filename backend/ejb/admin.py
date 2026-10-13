@@ -18,7 +18,7 @@ from django.utils.html import format_html, format_html_join
 from core.admin_site import run_for_each, run_service, site
 
 from . import models as m
-from .services import admin_actions, lessons, plans, wednesday
+from .services import admin_actions, lessons, official, plans, wednesday
 
 
 class ReasonActionForm(ActionForm):
@@ -223,7 +223,7 @@ class TableAdmin(ReadOnlyAdmin):
     readonly_fields = ('members',)
     inlines = (RequestInline, MessageInline)
     action_form = ReasonActionForm
-    actions = ('cancel_table', 'restore_table')
+    actions = ('cancel_table', 'restore_table', 'mark_official', 'unmark_official')
 
     def members(self, obj):
         return _rows(('member', 'role', 'joined'), [
@@ -236,6 +236,24 @@ class TableAdmin(ReadOnlyAdmin):
     @admin.action(description='Restore cancelled table')
     def restore_table(self, request, qs):
         run_for_each(self, request, qs, 'Restore table', lambda t: admin_actions.admin_restore_table(t.pk))
+
+    @admin.action(description='Mark as official event — Premium-first hours in the reason field (default 48)')
+    def mark_official(self, request, qs):
+        r = _reason(request)
+        hours = int(r) if r.isdigit() else official.DEFAULT_PREMIUM_HOURS
+        run_for_each(self, request, qs, 'Mark official', lambda t: official.admin_set_official_event(t.pk, hours))
+
+    @admin.action(description='Remove official event mark')
+    def unmark_official(self, request, qs):
+        run_for_each(self, request, qs, 'Unmark official', lambda t: official.admin_unset_official_event(t.pk))
+
+
+@admin.register(m.OfficialEvent, site=site)
+class OfficialEventAdmin(ReadOnlyAdmin):
+    list_display = ('table', 'premium_hours', 'marked_by', 'created_at', 'updated_at')
+    list_select_related = ('table', 'marked_by')
+    search_fields = ('table__title',)
+    ordering = ('-created_at',)
 
 
 @admin.register(m.Request, site=site)

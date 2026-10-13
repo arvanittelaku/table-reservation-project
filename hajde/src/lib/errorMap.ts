@@ -82,6 +82,54 @@ const ERROR_KEY_MAP: Record<string, string> = {
   "Dhoma hapet 15 minuta para mësimit": 'lessons.errors.roomNotOpen',
   "Mësimi ka përfunduar": 'lessons.errors.lessonEnded',
   "Lëndë e panjohur": 'lessons.errors.unknownSubject',
+
+  /* admin console + other backend (ejb/services, hooks) messages */
+  "Grupi nuk ekziston ose s'je pjesëmarrës": 'errors.groupNotFoundOrNotMember',
+  'Aplikimi nuk u gjet': 'errors.applicationNotFound',
+  'Data e tavolinës ka kaluar': 'errors.tableDatePassed',
+  'Dhoma video nuk është konfiguruar': 'errors.videoNotConfigured',
+  'Distinktiv i panjohur': 'errors.unknownBadge',
+  'Duhet të jesh i kyçur': 'errors.mustBeSignedIn',
+  'Emri, qyteti dhe adresa janë të detyrueshme': 'errors.restaurantFieldsRequired',
+  'Hiq fillimisht rolin admin': 'errors.removeAdminRoleFirst',
+  'Linku i hartës duhet të jetë link Google Maps': 'errors.mapsLinkGoogle',
+  'Llogaritë e çaktivizuara nuk mund të riaktivizohen': 'errors.deactivatedCannotReactivate',
+  'Mesazhi duhet të ketë 1 deri 500 karaktere': 'errors.messageLength',
+  'Nuk mund ta fshish llogarinë tënde': 'errors.cannotDeleteOwnAccount',
+  'Nuk mund ta heqësh rolin admin nga vetja': 'errors.cannotRemoveOwnAdmin',
+  'Nuk mund ta ndryshosh llogarinë tënde këtu': 'errors.cannotChangeOwnAccount',
+  'Nuk mund ta pezullosh veten': 'errors.cannotSuspendSelf',
+  'Pagesë pa aprovim — refuzohet': 'errors.paymentWithoutApproval',
+  'Porosia nuk është në pritje': 'errors.orderNotPending',
+  'Përdoruesi nuk u gjet': 'errors.userNotFound',
+  'Restoranti nuk u gjet': 'errors.restaurantNotFound',
+  'Shkruaj arsyen': 'errors.reasonRequired',
+  'Status i pavlefshëm': 'errors.invalidStatus',
+  'Tavolina nuk u gjet': 'errors.tableNotFound',
+  'Tavolina është anuluar tashmë': 'errors.tableAlreadyCancelled',
+  'Vetëm adminët mund ta bëjnë këtë': 'errors.adminsOnlyAction',
+  'Vetëm adminët mund ta shohin këtë': 'errors.adminsOnlyView',
+  'Vetëm tavolinat e anuluara rikthehen': 'errors.onlyCancelledRestore',
+  'Vetëm vozitjet konfirmohen falas': 'errors.onlyRidesFree',
+  'range lower bound must be less than or equal to range upper bound': 'errors.invalidDateRange',
+  'Vetëm eventet që hoston ekipi (llogari admini) mund të jenë zyrtare': 'errors.officialNotTeamHosted',
+  'Aprovo fillimisht kërkesat Premium: vendet e mbetura u takojnë atyre': 'errors.officialPremiumFirst',
+}
+
+/** Backend messages with a variable part (matched by prefix). */
+const ERROR_PREFIX_MAP: Array<[RegExp, string]> = [
+  [/^Ky event zyrtar është vetëm për anëtarët Premium/, 'errors.officialPremiumOnly'],
+  [/^Dritarja Premium duhet të jetë/, 'errors.officialPremiumWindow'],
+]
+
+/** The translated text when `error` is a known backend/client message, else null. */
+export function mapKnownError(error: unknown, locale: Locale = detectLocale()): string | null {
+  const err = fields(error)
+  const msg = String(err.message || err.error_description || (typeof error === 'string' ? error : '')).trim()
+  if (!msg) return null
+  if (ERROR_KEY_MAP[msg]) return tr(locale, ERROR_KEY_MAP[msg])
+  for (const [re, key] of ERROR_PREFIX_MAP) if (re.test(msg)) return tr(locale, key)
+  return null
 }
 
 /** Anything a call can fail with: Error, backend error body, string… */
@@ -134,6 +182,7 @@ export function mapError(error: unknown, locale: Locale = detectLocale()): strin
   if (!msg) return tr(locale, 'errors.genericError')
 
   if (ERROR_KEY_MAP[msg]) return tr(locale, ERROR_KEY_MAP[msg])
+  for (const [re, key] of ERROR_PREFIX_MAP) if (re.test(msg)) return tr(locale, key)
 
   const code = err.code
   const lower = msg.toLowerCase()

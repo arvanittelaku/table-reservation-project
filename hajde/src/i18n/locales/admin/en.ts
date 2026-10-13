@@ -443,6 +443,8 @@ export const adm = {
       admin_revoked: 'Removed admin',
       table_cancelled: 'Cancelled table',
       table_restored: 'Restored table',
+      table_marked_official: 'Marked official event',
+      table_unmarked_official: 'Removed official mark',
       report_dismissed: 'Dismissed report',
       restaurant_created: 'Added restaurant',
       restaurant_updated: 'Edited restaurant',

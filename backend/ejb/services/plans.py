@@ -10,7 +10,7 @@ from core.db import db_error_from
 
 from .. import context
 from ..errors import fail
-from ..models import AuthUser, Payment, Plan, Profile, Request, Subscription, SubscriptionOrder, Table
+from ..models import Affinity, AuthUser, Badge, Payment, Plan, Profile, Request, Subscription, SubscriptionOrder, Table, TasteProfile
 from ..rpc import rpc
 from . import common
 
@@ -115,6 +115,101 @@ def my_plan():
         'joins_this_month': Request.objects.filter(user_id=u, created_at__gte=ms).count(),
         'pending_order': o,
         'plans': plans or None,
+    }
+
+
+@rpc('startup_bundle')
+@db_errors
+def startup_bundle():
+    """Single endpoint that returns everything the app needs at startup.
+
+    Replaces 5 individual requests (profile, taste_profile, affinity, badges,
+    plan) with one round-trip. The feed and notifications are fetched separately
+    because they depend on different parameters (city/category, cursor).
+
+    Returns:
+        profile      – the user's Profile row (null until onboarding completes)
+        taste        – their completed TasteProfile row, or null
+        affinity     – list of Affinity rows
+        badges       – list of Badge rows
+        plan         – same shape as my_plan()
+    """
+    u = common.require_uid()
+    # All DB reads done at once (Django doesn't parallelize but they share a
+    # single connection and avoid 4 extra HTTP round-trips to the app server).
+    p = Profile.objects.filter(pk=u).first()
+    taste = TasteProfile.objects.filter(user_id=u, done=True).first()
+    affinity = list(Affinity.objects.filter(user_id=u).values('category', 'score'))
+    badges = list(Badge.objects.filter(user_id=u).values('badge_id', 'earned_at'))
+    plan_row = Plan.objects.filter(pk='basic').first()
+    ms = common.month_start()
+    pending_order = (SubscriptionOrder.objects.filter(user_id=u, status='pending')
+                     .values('id', 'code', 'plan_id', 'amount_cents', 'created_at').first())
+    available_plans = [
+        {'id': x.id, 'tier': x.tier, 'months': x.months, 'price_cents': x.price_cents,
+         'monthly_table_limit': x.monthly_table_limit, 'sort': x.sort}
+        for x in Plan.objects.filter(active=True).order_by('sort')
+    ]
+    changed = p.home_city_changed_at if p else None
+
+    profile_data = {
+        'id': str(u),
+        'first_name': p.first_name if p else None,
+        'last_name': p.last_name if p else None,
+        'photo_path': p.photo_path if p else None,
+        'age': p.age if p else None,
+        'city': p.city if p else None,
+        'bio': p.bio if p else None,
+        'is_admin': p.is_admin if p else False,
+        'deactivated_at': p.deactivated_at.isoformat() if (p and p.deactivated_at) else None,
+        'created_at': p.created_at.isoformat() if (p and p.created_at) else None,
+        'home_city': p.home_city if p else None,
+        'home_city_changed_at': changed.isoformat() if changed else None,
+    } if p else None
+
+    taste_data = None
+    if taste:
+        taste_data = {
+            'user_id': str(u),
+            'group_size': taste.group_size,
+            'depth': taste.depth,
+            'time_pref': taste.time_pref,
+            'energy': taste.energy,
+            'interests': taste.interests,
+            'field': taste.field,
+            'biz_sport': taste.biz_sport,
+            'weekend': taste.weekend,
+            'role': taste.role,
+            'music': taste.music,
+            'freq': taste.freq,
+            'organizer': taste.organizer,
+            'humor': taste.humor,
+            'new_people': taste.new_people,
+            'done': taste.done,
+            'updated_at': taste.updated_at.isoformat() if taste.updated_at else None,
+        }
+
+    plan_data = {
+        'tier': 'premium' if common.is_premium(u) else 'basic',
+        'premium_until': common.premium_until(u),
+        'is_admin': p.is_admin if p else None,
+        'home_city': p.home_city if p else None,
+        'home_city_changed_at': changed,
+        'can_change_city_at': None if changed is None else changed + datetime.timedelta(days=30),
+        'table_limit': plan_row.monthly_table_limit if plan_row else None,
+        'join_limit': plan_row.monthly_join_limit if plan_row else None,
+        'tables_this_month': Table.objects.filter(host_id=u, created_at__gte=ms).exclude(kind='darka_e_merkures').count(),
+        'joins_this_month': Request.objects.filter(user_id=u, created_at__gte=ms).count(),
+        'pending_order': pending_order,
+        'plans': available_plans or None,
+    }
+
+    return {
+        'profile': profile_data,
+        'taste': taste_data,
+        'affinity': affinity,
+        'badges': [{'badge_id': b['badge_id'], 'earned_at': b['earned_at'].isoformat() if b['earned_at'] else None} for b in badges],
+        'plan': plan_data,
     }
 
 

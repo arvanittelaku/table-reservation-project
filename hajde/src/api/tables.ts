@@ -16,6 +16,8 @@ export interface TableWithJoins extends TableRow {
   memberships?: Array<{ user_id: Uuid; role: MembershipRole; joined_at?: string; profile?: MemberProfile | null }>
   requests?: JoinedRequest[]
   waitlist?: Array<{ user_id: Uuid }>
+  /** official_events row (one or none): events hosted by the ejaBashkohu team */
+  official_events?: Array<{ premium_hours: number }>
   my_request?: JoinedRequest | null
   my_request_status?: RequestStatus | null
 }
@@ -69,8 +71,28 @@ export interface UiTable {
   my_request_status: RequestStatus | null
   seats_taken: number
   status: TableStatus
+  /** Official event hosted by the team: until `premiumUntil` only Premium members can join. */
+  official: OfficialInfo | null
   /** Match score (45–98) once a taste profile exists. */
   _match?: number | null
+}
+
+export interface OfficialInfo { premiumHours: number; premiumUntil: string | null }
+
+/** Official event whose Premium-only window is still running (else null). */
+export function officialPremiumWindowUntil(t: Pick<UiTable, 'official'>, now = Date.now()): Date | null {
+  const until = t.official?.premiumUntil ? new Date(t.official.premiumUntil) : null
+  return until && until.getTime() > now ? until : null
+}
+
+function officialInfo(row: TableWithJoins): OfficialInfo | null {
+  const o = Array.isArray(row.official_events) ? row.official_events[0] : undefined
+  if (!o) return null
+  const ev = row.event_datetime ? new Date(row.event_datetime).getTime() : NaN
+  return {
+    premiumHours: o.premium_hours,
+    premiumUntil: Number.isFinite(ev) ? new Date(ev - o.premium_hours * 3600_000).toISOString() : null,
+  }
 }
 
 /** A table loaded on its own (share link, just created) with extra detail. */
@@ -186,6 +208,7 @@ export function toUiTable(row: TableWithJoins): UiTable {
     my_request_status: row.my_request_status ?? null,
     seats_taken: joinedIds.length,
     status: row.status,
+    official: officialInfo(row),
   }
 }
 
@@ -213,7 +236,8 @@ export async function listTables(city: string | null | undefined, category: stri
         status,
         profile:profiles!requests_user_id_fkey ( id, first_name, last_name, age, photo_path )
       ),
-      waitlist ( user_id )
+      waitlist ( user_id ),
+      official_events ( premium_hours )
     `,
     )
     .returns<TableWithJoins>()
@@ -319,7 +343,8 @@ export async function getTable(id: Uuid): Promise<UiTableDetail | null> {
           id, first_name, last_name, age, photo_path, verified, rating
         )
       ),
-      waitlist ( user_id )
+      waitlist ( user_id ),
+      official_events ( premium_hours )
     `,
     )
     .returns<TableWithJoins>()

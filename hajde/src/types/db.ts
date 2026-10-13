@@ -104,6 +104,8 @@ export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'confirmed' | 
 export interface RequestRow { id: Uuid; table_id: Uuid; user_id: Uuid; status: RequestStatus; created_at: Timestamp }
 
 export interface WaitlistRow { table_id: Uuid; user_id: Uuid; created_at: Timestamp }
+/** An event hosted by the ejaBashkohu team: Premium-only until `premium_hours` before it, Premium first always. */
+export interface OfficialEventRow { table_id: Uuid; premium_hours: number; marked_by_id: Uuid | null; created_at: Timestamp; updated_at: Timestamp }
 export interface MessageRow { id: Uuid; table_id: Uuid; sender_id: Uuid; body: string; created_at: Timestamp }
 export interface RatingRow { id: Uuid; table_id: Uuid; rater_id: Uuid; stars: number; meet_again: boolean; created_at: Timestamp }
 export interface ConnectionPickRow { table_id: Uuid; picker_id: Uuid; picked_id: Uuid; created_at: Timestamp }
@@ -306,6 +308,7 @@ export interface DbTables {
   memberships: MembershipRow
   requests: RequestRow
   waitlist: WaitlistRow
+  official_events: OfficialEventRow
   messages: MessageRow
   ratings: RatingRow
   connection_picks: ConnectionPickRow

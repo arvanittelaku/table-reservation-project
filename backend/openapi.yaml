@@ -4,7 +4,7 @@ info:
   title: ejaBashkohu API
   version: '1.0'
   description: 'API of the ejaBashkohu backend (Django), used by the web app and the mobile apps. Send
-    `Authorization: Bearer <access_token>` when signed in. Errors keep Supabase/PostgREST shapes. 81 server
+    `Authorization: Bearer <access_token>` when signed in. Errors keep Supabase/PostgREST shapes. 83 server
     functions are generated from the code. Guide: backend/API.md.'
 servers:
 - url: http://localhost:8000
@@ -337,10 +337,10 @@ paths:
       description: 'PostgREST-style request as JSON. Row access is decided per user by the server (former
         RLS). Tables: `admin_audit_log`, `affinity`, `badges`, `bans`, `blocks`, `connection_picks`, `connections`,
         `lesson_participants`, `lesson_rooms`, `lesson_subjects`, `lessons`, `memberships`, `messages`,
-        `notification_badge_labels`, `notification_text_rules`, `notifications`, `payments`, `plans`,
-        `profiles`, `ratings`, `reports`, `requests`, `subscription_orders`, `subscriptions`, `tables`,
-        `taste_profiles`, `tutors`, `waitlist`, `wednesday_groups`, `wednesday_participants`, `wednesday_restaurants`,
-        `wednesday_signups`. Row shapes: components/schemas/table.*.
+        `notification_badge_labels`, `notification_text_rules`, `notifications`, `official_events`, `payments`,
+        `plans`, `profiles`, `ratings`, `reports`, `requests`, `subscription_orders`, `subscriptions`,
+        `tables`, `taste_profiles`, `tutors`, `waitlist`, `wednesday_groups`, `wednesday_participants`,
+        `wednesday_restaurants`, `wednesday_signups`. Row shapes: components/schemas/table.*.
 
 
         `select` uses PostgREST syntax incl. embeds, e.g. `*, host:profiles!tables_host_id_fkey(id, first_name)`.
@@ -2512,6 +2512,52 @@ paths:
       security:
       - bearer: []
       description: Admins only.
+  /rest/v1/rpc/admin_set_official_event:
+    post:
+      operationId: rpc_admin_set_official_event
+      tags:
+      - 'Functions: admin'
+      summary: admin_set_official_event
+      x-anon: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                p_table:
+                  type: string
+                  format: uuid
+                p_premium_hours:
+                  type: integer
+                  default: 48
+              required:
+              - p_table
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    description: JSON result
+        '400':
+          $ref: '#/components/responses/DbError'
+        '401':
+          $ref: '#/components/responses/DbError'
+        '404':
+          description: Unknown function or wrong argument names (PGRST202)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbError'
+      security:
+      - bearer: []
+      description: Mark a team-hosted listing official (or change its Premium window). Admins only.
   /rest/v1/rpc/admin_set_restaurant_active:
     post:
       operationId: rpc_admin_set_restaurant_active
@@ -2639,6 +2685,49 @@ paths:
                 properties:
                   data:
                     description: JSON result
+        '400':
+          $ref: '#/components/responses/DbError'
+        '401':
+          $ref: '#/components/responses/DbError'
+        '404':
+          description: Unknown function or wrong argument names (PGRST202)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbError'
+      security:
+      - bearer: []
+      description: Admins only.
+  /rest/v1/rpc/admin_unset_official_event:
+    post:
+      operationId: rpc_admin_unset_official_event
+      tags:
+      - 'Functions: admin'
+      summary: admin_unset_official_event
+      x-anon: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                p_table:
+                  type: string
+                  format: uuid
+              required:
+              - p_table
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: boolean
         '400':
           $ref: '#/components/responses/DbError'
         '401':
@@ -4403,6 +4492,7 @@ components:
           - notification_badge_labels
           - notification_text_rules
           - notifications
+          - official_events
           - payments
           - plans
           - profiles
@@ -4764,6 +4854,27 @@ components:
           - string
           - 'null'
         params: {}
+    table.official_events:
+      type: object
+      title: official_events
+      description: Row of `official_events`
+      properties:
+        table_id:
+          type: string
+          format: uuid
+        premium_hours:
+          type: integer
+        marked_by_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     table.payments:
       type: object
       title: payments

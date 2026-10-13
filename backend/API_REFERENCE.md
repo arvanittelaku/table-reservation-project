@@ -48,7 +48,7 @@ Body (JSON): `{"table", "action", ...}`. Keys read by the server (ejb/query.py):
 
 ## Server functions: `POST /rest/v1/rpc/<name>`
 
-81 functions (ejb.rpc.REGISTRY). Body: JSON object with the named arguments; response `{"data": <result>}`. "signed out" = callable without a token. Results are taken from the return annotation and the `return` statements in the code (uuid/timestamps as strings).
+83 functions (ejb.rpc.REGISTRY). Body: JSON object with the named arguments; response `{"data": <result>}`. "signed out" = callable without a token. Results are taken from the return annotation and the `return` statements in the code (uuid/timestamps as strings).
 
 ### `_distance_km`  (signed out ok)
 
@@ -310,6 +310,14 @@ The SQL read pg_net's net._http_response (responses to net.http_post calls), new
 - result: `n`
 - code: `ejb.services.plans.admin_revoke_premium`
 
+### `admin_set_official_event`  (admins only)
+
+Mark a team-hosted listing official (or change its Premium window).
+
+- args: `p_table`: uuid, `p_premium_hours`: int = 48
+- result: `_info(ev)`
+- code: `ejb.services.official.admin_set_official_event`
+
 ### `admin_set_restaurant_active`  (admins only)
 
 - args: `p_restaurant`: uuid, `p_active`: bool
@@ -327,6 +335,12 @@ The SQL read pg_net's net._http_response (responses to net.http_post calls), new
 - args: `p_user`: uuid, `p_deactivated`: bool, `p_reason`: str (optional)
 - result: **null** — null
 - code: `ejb.services.admin_actions.admin_set_user_deactivated`
+
+### `admin_unset_official_event`  (admins only)
+
+- args: `p_table`: uuid
+- result: **bool** — False / True
+- code: `ejb.services.official.admin_unset_official_event`
 
 ### `admin_update_plan`  (admins only)
 
@@ -659,6 +673,7 @@ From ejb/policies.py (the former row-level security). Everything requires a sign
 | `memberships` | everyone (signed in) | `o.user_id == me and Request.objects.filter(table_id=o.table_id, user_id=me, status='approved').exists()` | nobody | nobody |
 | `messages` | `Q(Exists(Membership.objects.filter(table_id=OuterRef('table_id'), user_id=me)))` | `o.sender_id == me and is_member(me, o.table_id)` | nobody | nobody |
 | `notifications` | own rows (`user_id` = me) | `o.user_id == me` | own rows (`user_id` = me) / `o.user_id == me` | nobody |
+| `official_events` | everyone (signed in) | nobody | nobody | nobody |
 | `payments` | own rows (`user_id` = me) | `o.user_id == me and o.provider == 'stub'` | nobody | nobody |
 | `plans` | everyone (signed in) | nobody | nobody | nobody |
 | `profiles` | everyone (signed in) | nobody | own rows (`user_id` = me) / `o.user_id == me and o.age is not None and (o.age >= 18)` | nobody |
@@ -735,7 +750,10 @@ def _tables_select(a):
         permissive |= Q(id__in=seated)
     if viewer_sees_all_cities(a) or a.is_admin:
         return permissive
-    restrictive = Q(host_id=a.uid) | Q(id__in=my_table_ids(a))
+    # official events (hosted by the team) are open to every city, like Wednesday Dinner
+    from .models import OfficialEvent
+    restrictive = (Q(host_id=a.uid) | Q(id__in=my_table_ids(a))
+                   | Q(Exists(OfficialEvent.objects.filter(table_id=OuterRef('pk')))))
     home = viewer_home_city(a)
     if home is not None:
         restrictive |= Q(city=home)

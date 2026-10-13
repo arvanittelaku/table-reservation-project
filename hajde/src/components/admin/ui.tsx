@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type DependencyList, type FormEvent, type ReactNode } from 'react'
 import { getAvatarUrl } from '../../api/storage'
 import { useI18n } from '../../i18n/I18nContext'
+import { mapError } from '../../lib/errorMap'
 
 /* formatting lives in lib/format.js (shared with the app); re-exported here */
 import { loc, fmtMoney, fmtNum, fmtDate, fmtRelative, fmtPeriod, pad2 } from '../../lib/format'
 export { loc, fmtMoney, fmtNum, fmtDate, fmtRelative, fmtPeriod }
 
-/** Message of a caught error (admin calls throw AdminError). */
-export const errMsg = (e: unknown): string =>
-  e instanceof Error ? e.message : String((e as { message?: unknown } | null)?.message ?? e)
+/** Message of a caught error (admin calls throw AdminError), in the UI language:
+ * known backend texts (Albanian by design) are translated, anything else becomes the generic error. */
+export const errMsg = (e: unknown): string => mapError(e)
 
 export const fullName = (o: { first_name?: string | null; last_name?: string | null } | null | undefined): string => [o?.first_name, o?.last_name].filter(Boolean).join(' ').trim()
 
@@ -191,7 +192,7 @@ export function ErrorBox({ error, onRetry }: { error: { message: string } | null
     <div className="adm-error" role="alert">
       <div>
         <strong>{t('adm.common.loadFailed')}</strong>
-        <p>{error.message}</p>
+        <p>{mapError(error)}</p>
       </div>
       {onRetry && (
         <button type="button" className="adm-btn" onClick={onRetry}>

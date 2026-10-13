@@ -1,6 +1,5 @@
 import { useAvatar } from '../hooks/useAvatar'
-
-const SHIELD_NOTE = 'Fotoja e çdo profili kalon kontrollin e fytyrës'
+import { useI18n } from '../i18n/I18nContext'
 
 /**
  * Profile modal avatar: signed URL from Storage, or initial placeholder.
@@ -14,6 +13,7 @@ interface ProfileAvatarProps {
 }
 
 export function ProfileAvatar({ profile, size = 72, className = '' }: ProfileAvatarProps) {
+  const { t } = useI18n()
   const path = profile?.photo_path ?? null
   const { url, loading, showPlaceholder } = useAvatar(path)
   const initial = (profile?.first_name || profile?.firstName || '?').charAt(0).toUpperCase()
@@ -58,10 +58,9 @@ export function ProfileAvatar({ profile, size = 72, className = '' }: ProfileAva
           marginInline: 'auto',
         }}
       >
-        {SHIELD_NOTE}
+        {t('appMisc.faceCheckNote')}
       </p>
     </div>
   )
 }
 
-export { SHIELD_NOTE }

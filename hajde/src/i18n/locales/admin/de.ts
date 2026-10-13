@@ -443,6 +443,8 @@ export const adm = {
       admin_revoked: 'Admin-Rechte entzogen',
       table_cancelled: 'Tisch abgesagt',
       table_restored: 'Tisch wiederhergestellt',
+      table_marked_official: 'Als offizielles Event markiert',
+      table_unmarked_official: 'Offizielle Markierung entfernt',
       report_dismissed: 'Meldung abgewiesen',
       restaurant_created: 'Restaurant hinzugefügt',
       restaurant_updated: 'Restaurant bearbeitet',

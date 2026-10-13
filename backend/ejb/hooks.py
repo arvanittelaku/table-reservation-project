@@ -228,10 +228,17 @@ def join_before_insert(row, table_name):
     """enforce_plan_join() then require_onboarded(), for requests and waitlist."""
     from .models import Plan, Profile, Request, Table
     from .policies import is_premium
+    from .services import official
     uid = context.uid()
+    ev = official.official_for(row.table_id)
+    # official events (hosted by the team): Premium only during the priority window
+    if ev is not None and not (uid is None or row.user_id != uid or is_premium(row.user_id)) \
+            and official.in_priority_window(ev):
+        fail(official.premium_only_message(ev), 'P0001')
     if not (uid is None or row.user_id != uid or is_premium(row.user_id)):
         t = Table.objects.filter(pk=row.table_id).values('city', 'kind').first() or {}
-        if t.get('kind') != 'darka_e_merkures':
+        # like Wednesday Dinner, official events are exempt from the Basic city lock / monthly limit
+        if t.get('kind') != 'darka_e_merkures' and ev is None:
             home = Profile.objects.filter(pk=row.user_id).values_list('home_city', flat=True).first()
             if home is None or t.get('city') != home:
                 fail('Me pakon Bazike bashkohesh vetëm në qytetin tënd')
@@ -309,9 +316,15 @@ def membership_after_delete(m):
     from .models import Request, Table, Waitlist
     touch_table(m.table_id)
     # notify_waitlist_on_leave()
-    nxt = Waitlist.objects.filter(table_id=m.table_id).order_by('created_at').first()
+    queue = Waitlist.objects.filter(table_id=m.table_id).order_by('created_at')
+    nxt = queue.first()
     if nxt is None:
         return
+    from .services import official
+    if official.official_for(m.table_id) is not None:
+        # official events: the first Premium member in the queue goes ahead of Basic ones
+        from .policies import is_premium
+        nxt = next((w for w in queue if is_premium(w.user_id)), nxt)
     title = Table.objects.filter(pk=m.table_id).values_list('title', flat=True).first()
     req = Request.objects.filter(table_id=m.table_id, user_id=nxt.user_id).first()
     if req is None:

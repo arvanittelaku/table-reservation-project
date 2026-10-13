@@ -15,6 +15,7 @@ export interface UiRequest {
   name: string
   age: number | null | undefined
   from: string
+  isTourist?: boolean
   photo: string | null
   photo_path: string | null
   status: RequestStatus
@@ -178,7 +179,8 @@ export function mapRequestForUi(r: IncomingRequest): UiRequest {
     table_id: r.table_id,
     name: personName(profile),
     age: profile?.age,
-    from: profile?.is_tourist ? (profile?.from_place || 'Turist') : (profile?.from_place || 'Kosovë'),
+    from: profile?.from_place || '',
+    isTourist: !!profile?.is_tourist,
     photo: null,
     photo_path: profile?.photo_path ?? null,
     status: r.status,

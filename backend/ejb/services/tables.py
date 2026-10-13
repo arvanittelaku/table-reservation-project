@@ -114,9 +114,27 @@ def approve_request(p_request: UUID) -> None:
     # could approve a request by id without signing in. Closed: only the host.
     if u is None or r.table.host_id != u:
         fail('Vetëm nikoqiri mund të aprovojë')
+    _official_premium_first(r)
     for row in Request.objects.filter(id=p_request):
         row.status = 'approved'
         row.save()
+
+
+def _official_premium_first(r):
+    """Official events: a Basic request is approved only if seats remain after
+    every pending Premium request (services/official.py)."""
+    from . import official
+    ev = official.official_for(r.table_id)
+    if ev is None or common.is_premium(r.user_id):
+        return
+    pending_premium = sum(1 for uid in Request.objects.filter(table_id=r.table_id, status='pending')
+                          .exclude(id=r.id).values_list('user_id', flat=True) if common.is_premium(uid))
+    if not pending_premium:
+        return
+    taken = (Membership.objects.filter(table_id=r.table_id).count()
+             + Request.objects.filter(table_id=r.table_id, status='approved').count())
+    if ev.table.spots - taken <= pending_premium:
+        fail(official.PREMIUM_FIRST)
 
 
 @rpc('reject_request', anon=True)

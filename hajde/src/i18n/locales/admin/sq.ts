@@ -443,6 +443,8 @@ export const adm = {
       admin_revoked: 'Hoqi rolin admin',
       table_cancelled: 'Anuloi tavolinën',
       table_restored: 'Riktheu tavolinën',
+      table_marked_official: 'Shënoi event zyrtar',
+      table_unmarked_official: 'Hoqi shenjën zyrtare',
       report_dismissed: 'Refuzoi raportin',
       restaurant_created: 'Shtoi restorant',
       restaurant_updated: 'Ndryshoi restorantin',

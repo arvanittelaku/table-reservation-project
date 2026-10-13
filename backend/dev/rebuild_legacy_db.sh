@@ -25,5 +25,6 @@ done
 $Q -f "$ROOT/backend/dev/legacy_django_backend.sql" 2>&1 | quiet
 # production also has this trigger (created in the dashboard, not in a migration)
 $Q -c "CREATE TRIGGER trg_email_request AFTER INSERT ON public.requests FOR EACH ROW EXECUTE FUNCTION public.email_on_request()"
+$Q -f "$ROOT/backend/dev/legacy_additions.sql" 2>&1 | quiet
 $Q -f "$ROOT/backend/dev/seed.sql" 2>&1 | quiet
 echo "rebuilt $DB"

@@ -79,7 +79,10 @@ export interface AdminUserDetail {
   audit: AuditEntry[]
 }
 
-export type TableStatusFilter = 'all' | 'upcoming' | 'past' | 'full' | 'cancelled' | 'reported' | 'paid'
+export type TableStatusFilter = 'all' | 'upcoming' | 'past' | 'full' | 'cancelled' | 'reported' | 'paid' | 'official'
+
+/** official_events row: an event hosted by the team with a Premium-first window. */
+export interface OfficialEventRow { table_id: Uuid; premium_hours: number }
 export interface AdminTableListRow extends Pick<TableRow,
   'id' | 'title' | 'kind' | 'category' | 'city' | 'to_city' | 'area' | 'time_label' | 'event_datetime' | 'created_at'
   | 'status' | 'spots' | 'women_only' | 'men_only' | 'mystery' | 'maps_link' | 'host_id'> {

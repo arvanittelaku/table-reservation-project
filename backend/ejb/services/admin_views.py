@@ -12,7 +12,7 @@ from uuid import UUID
 from .. import context
 from ..errors import fail
 from ..models import (AdminAuditLog, AuthUser, Ban, Block, Connection, Membership, Message,
-                      Payment, Profile, Rating, Report, Request, Table, Waitlist,
+                      OfficialEvent, Payment, Profile, Rating, Report, Request, Table, Waitlist,
                       WednesdayGroup, WednesdayParticipant)
 from ..rpc import rpc
 from . import common
@@ -623,6 +623,7 @@ def admin_list_tables(p_search: str = None, p_status: str = 'all', p_kind: str =
     msgs = _count_by(Message.objects.all(), 'table_id')
     reps = _count_by(Report.objects.all(), 'table_id')
 
+    official_ids = set(OfficialEvent.objects.values_list('table_id', flat=True)) if p_status == 'official' else set()
     rows = []
     for t in Table.objects.order_by('-created_at').values():
         h = profs.get(t['host_id'])
@@ -653,6 +654,7 @@ def admin_list_tables(p_search: str = None, p_status: str = 'all', p_kind: str =
             'cancelled': lambda: b['status'] == 'cancelled',
             'reported': lambda: b['reports_count'] > 0,
             'paid': lambda: b['paid_count'] > 0,
+            'official': lambda: tid in official_ids,   # events hosted by the team (services/official.py)
         }.get(st, lambda: True)()
         if ok:
             rows.append(b)
