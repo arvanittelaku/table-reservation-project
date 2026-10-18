@@ -204,8 +204,10 @@ class Auth {
     const token = this.session.refresh_token
     this.refreshing = (async () => {
       try {
+        // Time-boxed: a stalled server must not keep the whole app on the loading screen.
         const res = await fetch(`${API_URL}/auth/v1/token?grant_type=refresh_token`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: token }),
+          signal: AbortSignal.timeout(8000),
         })
         const body = await parse<Session>(res)
         if (res.ok && body) {
