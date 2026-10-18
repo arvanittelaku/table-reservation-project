@@ -2658,3 +2658,14 @@ body { overflow-x: clip; }
 .app-shell .quiz-fill, .app.onboard .quiz-fill { background: #FF4FD8; }
 .app-shell .quiz-q, .app.onboard .quiz-q { color: #fff; }
 .app-shell .quiz-skip, .app.onboard .quiz-skip { color: rgba(242,241,250,.6); }
+
+/* ── Header skyline + locked city chip + premium pill ── */
+.app-shell .hdr-art { opacity: .9; }
+.app-shell .sheet-art { opacity: .9; }
+.app-shell .chip.city.locked {
+  background: rgba(255,255,255,.05);
+  border: 1.5px dashed rgba(255,79,216,.4);
+  color: rgba(242,241,250,.8);
+}
+.app-shell .chip.city.locked:hover { border-color: #FF4FD8; color: #fff; }
+.app-shell .premium-pill.basic { background: rgba(255,230,109,.14); color: #FFE66D; border: 1px solid rgba(255,230,109,.4); }

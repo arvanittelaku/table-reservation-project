@@ -348,7 +348,7 @@ function CityScape({ variant = "generic", tone = "light", height = 78 }: { varia
   const dark = tone === "dark";
   const far = dark ? "rgba(255,255,255,0.06)" : "#F0F0F0";
   const near = dark ? "rgba(255,255,255,0.12)" : "#E8E8E8";
-  const glow = dark ? "#00C9A7" : "#D9C79C";
+  const glow = dark ? "#7CF5FF" : "#D9C79C";
   return (
     <svg viewBox="0 0 400 90" preserveAspectRatio="xMidYMax slice"
       style={{ width: "100%", height, display: "block" }} aria-hidden="true">
@@ -3712,7 +3712,7 @@ function HajdeApp() {
             )}
 
             <header className="hdr">
-        <div className="hdr-art"><CityScape variant={cityVariant(city)} tone="light" height={64} /></div>
+        <div className="hdr-art"><CityScape variant={cityVariant(city)} tone="dark" height={64} /></div>
         <div className="hdr-top">
           <h1 className="logo-word sm">eja<span className="logo-bang">Bashkohu</span></h1>
           <div className="hdr-right">
@@ -4129,7 +4129,7 @@ function HajdeApp() {
         return (
           <div className="sheet-wrap" onClick={() => setActive(null)}>
             <div className="sheet" onClick={(e) => e.stopPropagation()}>
-              <div className="sheet-art"><CityScape variant={cityVariant(activeTable.city)} tone="light" height={66} /></div>
+              <div className="sheet-art"><CityScape variant={cityVariant(activeTable.city)} tone="dark" height={66} /></div>
               <div className="sheet-hdr">
                 <button className="icon-btn" onClick={() => setActive(null)} aria-label={t('tableDetail.close')}><ChevronLeft size={20} /></button>
                 <div>
