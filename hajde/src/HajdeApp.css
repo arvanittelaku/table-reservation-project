@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Manrope:wght@400;500;600;700;800&display=swap');
 
-html, body { margin: 0; padding: 0; background: #F0F0F0; max-width: 100vw; }
+html, body { margin: 0; padding: 0; background: #080810; max-width: 100vw; }
 /* only the root propagates to the viewport; body uses clip so it does not
    become its own scroll container (which would break the sticky header) */
 html { overflow-x: hidden; }
