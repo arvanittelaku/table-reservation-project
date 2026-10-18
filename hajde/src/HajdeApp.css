@@ -2749,3 +2749,17 @@ body { overflow-x: clip; }
   color: #FF8FA3;
 }
 .app-shell .btn-deactivate:hover { background: rgba(255,92,122,.16); border-color: #FF5C7A; color: #fff; }
+
+/* ── Spacing polish: header, pills, badges, avatars ── */
+.app-shell .hdr-top { gap: 12px; }
+.app-shell .hdr-right { gap: 8px; min-width: 0; flex-shrink: 1; }
+.app-shell .hdr-user { white-space: nowrap; }
+.app-shell .premium-pill { padding: 7px 12px; line-height: 1.2; white-space: nowrap; }
+.app-shell .badge { padding: 5px 10px; line-height: 1.25; }
+.app-shell .avatar.avatar-sm { line-height: 1; }
+@media (max-width: 480px) {
+  .app-shell .hdr { padding-left: 18px; padding-right: 18px; }
+  .app-shell .hdr-top .logo-word.sm { font-size: 18px; letter-spacing: -.5px; }
+  .app-shell .hdr-user > span { display: none; }
+  .app-shell .hdr-right { gap: 6px; }
+}
