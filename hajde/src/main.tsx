@@ -1,3 +1,4 @@
+import { Component, type ReactNode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createBrowserRouter, RouterProvider } from 'react-router'
@@ -24,10 +25,31 @@ const router = createBrowserRouter([
   },
 ])
 
+// Developer-facing fallback shown only if rendering crashes (intentionally not translated).
+const CRASH_TITLE = 'Something went wrong'
+const CRASH_RELOAD = 'Reload'
+
+/* A render crash used to leave a blank page; show the error (and a reload button) instead. */
+class CrashBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  componentDidCatch(error: Error) { console.error('[ejaBashkohu] render crash:', error) }
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <div style={{ minHeight: '100vh', background: '#080810', color: '#F2F1FA', padding: 24, fontFamily: 'Manrope, system-ui, sans-serif' }}>
+        <h2 style={{ color: '#FF4FD8' }}>{CRASH_TITLE}</h2>
+        <pre style={{ whiteSpace: 'pre-wrap', opacity: .8, fontSize: 13 }}>{String(this.state.error.stack || this.state.error.message)}</pre>
+        <button onClick={() => location.reload()} style={{ marginTop: 16, padding: '10px 18px', borderRadius: 12, border: 0, background: '#FF4FD8', color: '#0B0B14', fontWeight: 700, cursor: 'pointer' }}>{CRASH_RELOAD}</button>
+      </div>
+    )
+  }
+}
+
 const render = () => ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <QueryClientProvider client={queryClient}>
     <I18nProvider>
-      <RouterProvider router={router} />
+      <CrashBoundary><RouterProvider router={router} /></CrashBoundary>
     </I18nProvider>
   </QueryClientProvider>,
 )

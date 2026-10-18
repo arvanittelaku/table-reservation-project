@@ -3056,6 +3056,14 @@ function HajdeApp() {
                   onSignIn={() => { setStep(0); setShowSignIn(true); setAuthError(null); }}
                 />
               )}
+              {/* Signed in but still on step 0 (waiting for the profile / onboarding resume): never a blank page */}
+              {authUser && step === 0 && !showSignIn && (
+                <div className="hero">
+                  <h1 className="logo-word hero-logo">eja<span className="logo-bang">Bashkohu</span></h1>
+                  <div className="spinner" style={{ width: 28, height: 28, borderColor: "rgba(255,255,255,.35)", borderTopColor: "#FF4FD8" }} />
+                  <p className="hero-foot">{t('app.loading')}</p>
+                </div>
+              )}
               {step === 0 && <WhatsAppButton variant="landing" context={showSignIn ? 'sign-in' : 'landing'} />}
 
               {step === 0 && showSignIn && (
