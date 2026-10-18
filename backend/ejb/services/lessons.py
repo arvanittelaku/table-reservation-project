@@ -5,7 +5,7 @@ import random
 from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
-from django.db.models import Q
+from django.db.models import Count, Q
 
 from .. import context
 from ..errors import fail
@@ -93,20 +93,29 @@ def admin_list_tutors(p_status: str = 'pending') -> list:
     qs = Tutor.objects.all()
     if not (p_status is None or p_status == 'all'):
         qs = qs.filter(status=p_status)
-    qs = qs.filter(user__isnull=False)[:500]
+    tutors = list(qs.filter(user__isnull=False)[:500])
+    uids = [t.user_id for t in tutors]
+    reviewer_ids = {t.reviewed_by_id for t in tutors if t.reviewed_by_id}
+    # one query per kind of data for all tutors (was 5-6 queries per tutor)
+    profiles = {x['pk']: x for x in Profile.objects.filter(pk__in=set(uids) | reviewer_ids)
+                .values('pk', 'first_name', 'last_name', 'photo_path', 'age')}
+    emails = dict(AuthUser.objects.filter(pk__in=uids).values_list('id', 'email'))
+    lessons_n = dict(Lesson.objects.filter(tutor_id__in=uids).values('tutor_id').annotate(n=Count('id'))
+                     .values_list('tutor_id', 'n'))
+    reports_n = dict(Report.objects.filter(reported_id__in=uids).values('reported_id').annotate(n=Count('id'))
+                     .values_list('reported_id', 'n'))
     out = []
-    for t in qs:
-        p = Profile.objects.filter(pk=t.user_id).values('first_name', 'last_name', 'photo_path', 'age').first()
-        if p is None:
+    for t in tutors:
+        pr = profiles.get(t.user_id)
+        if pr is None:
             continue
         row = row_json(t)
-        row.update(p)
-        row['email'] = AuthUser.objects.filter(pk=t.user_id).values_list('email', flat=True).first()
-        rv = (Profile.objects.filter(pk=t.reviewed_by_id).values('first_name', 'last_name').first()
-              if t.reviewed_by_id else None)
+        row.update({k: pr[k] for k in ('first_name', 'last_name', 'photo_path', 'age')})
+        row['email'] = emails.get(t.user_id)
+        rv = profiles.get(t.reviewed_by_id) if t.reviewed_by_id else None
         row['reviewed_by_name'] = _full_name(rv['first_name'], rv['last_name']) if rv else None
-        row['lessons_count'] = Lesson.objects.filter(tutor_id=t.user_id).count()
-        row['reports_against'] = Report.objects.filter(reported_id=t.user_id).count()
+        row['lessons_count'] = lessons_n.get(t.user_id, 0)
+        row['reports_against'] = reports_n.get(t.user_id, 0)
         out.append((t.created_at, row))
     out.sort(key=lambda x: x[0], reverse=True)
     return [r for _, r in out]
@@ -154,6 +163,11 @@ def list_tutors(p_subject: str = None, p_category: str = None, p_format: str = N
         blocked.add(b['blocked_id'] if b['blocker_id'] == me else b['blocker_id'])
     cat_subjects = (set(LessonSubject.objects.filter(category=p_category).values_list('id', flat=True))
                     if p_category is not None else None)
+    # counts for every tutor in two grouped queries (was 2 queries per tutor)
+    taught = dict(LessonParticipant.objects.filter(status='confirmed', lesson__starts_at__lt=now)
+                  .values('lesson__tutor_id').annotate(n=Count('student_id')).values_list('lesson__tutor_id', 'n'))
+    upcoming = dict(Lesson.objects.filter(kind='group', status='scheduled', starts_at__gt=now)
+                    .values('tutor_id').annotate(n=Count('id')).values_list('tutor_id', 'n'))
     rows = []
     for t in Tutor.objects.filter(status='approved', user__deactivated_at__isnull=True).select_related('user'):
         if t.user_id in blocked:
@@ -182,10 +196,8 @@ def list_tutors(p_subject: str = None, p_category: str = None, p_format: str = N
             'education': t.education,
             'distance_km': (float(Decimal(repr(dist)).quantize(Decimal('0.1'), ROUND_HALF_UP))
                             if dist is not None else None),
-            'lessons_taught': LessonParticipant.objects.filter(lesson__tutor_id=t.user_id, status='confirmed',
-                                                               lesson__starts_at__lt=now).count(),
-            'upcoming_groups': Lesson.objects.filter(tutor_id=t.user_id, kind='group', status='scheduled',
-                                                     starts_at__gt=now).count(),
+            'lessons_taught': taught.get(t.user_id, 0),
+            'upcoming_groups': upcoming.get(t.user_id, 0),
         }))
 
     def key(r):
@@ -211,18 +223,23 @@ def list_group_lessons(p_subject: str = None, p_category: str = None) -> list:
         qs = qs.filter(subject_id=p_subject)
     if p_category is not None:
         qs = qs.filter(subject_id__in=LessonSubject.objects.filter(category=p_category).values('id'))
+    lessons = list(qs[:200])
+    lids = [l.id for l in lessons]
+    seats = dict(LessonParticipant.objects.filter(lesson_id__in=lids, status__in=('accepted', 'confirmed'))
+                 .values('lesson_id').annotate(n=Count('student_id')).values_list('lesson_id', 'n'))
+    mine = dict(LessonParticipant.objects.filter(lesson_id__in=lids, student_id=me)
+                .values_list('lesson_id', 'status'))
     out = []
-    for l in qs[:200]:
+    for l in lessons:
         p = l.tutor.user
         out.append({
             'id': l.id, 'tutor_id': l.tutor_id, 'tutor_name': _full_name(p.first_name, p.last_name),
             'tutor_photo_path': p.photo_path, 'subject': l.subject_id, 'title': l.title,
             'starts_at': l.starts_at, 'duration_min': l.duration_min, 'format': l.format,
             'location_note': l.location_note, 'max_students': l.max_students,
-            'seats_taken': LessonParticipant.objects.filter(lesson_id=l.id, status__in=('accepted', 'confirmed')).count(),
+            'seats_taken': seats.get(l.id, 0),
             'price_cents': l.price_cents, 'city': l.tutor.city,
-            'my_status': LessonParticipant.objects.filter(lesson_id=l.id, student_id=me)
-                         .values_list('status', flat=True).first(),
+            'my_status': mine.get(l.id),
         })
     return out
 
@@ -232,8 +249,14 @@ def list_group_lessons(p_subject: str = None, p_category: str = None) -> list:
 def my_lessons() -> dict:
     me = context.uid()
     as_student = []
-    for lp in (LessonParticipant.objects.filter(student_id=me).select_related('lesson', 'lesson__tutor__user')
-               .order_by('-lesson__starts_at')[:100] if me else []):
+    student_rows = (list(LessonParticipant.objects.filter(student_id=me).select_related('lesson', 'lesson__tutor__user')
+                         .order_by('-lesson__starts_at')[:100]) if me else [])
+    tickets = {}
+    if student_rows:
+        for lid, code in Payment.objects.filter(lesson_id__in=[x.lesson_id for x in student_rows], user_id=me) \
+                                        .values_list('lesson_id', 'ticket_code'):
+            tickets.setdefault(lid, code)      # first payment per lesson, as before
+    for lp in student_rows:
         l = lp.lesson
         p = l.tutor.user
         as_student.append({
@@ -242,12 +265,17 @@ def my_lessons() -> dict:
             'price_cents': l.price_cents, 'lesson_status': l.status, 'my_status': lp.status,
             'tutor_id': l.tutor_id, 'tutor_name': _full_name(p.first_name, p.last_name),
             'tutor_photo_path': p.photo_path,
-            'ticket_code': Payment.objects.filter(lesson_id=l.id, user_id=me).values_list('ticket_code', flat=True).first(),
+            'ticket_code': tickets.get(l.id),
         })
     as_tutor = []
-    for l in (Lesson.objects.filter(tutor_id=me).order_by('-starts_at')[:100] if me else []):
+    tutor_lessons = list(Lesson.objects.filter(tutor_id=me).order_by('-starts_at')[:100]) if me else []
+    roster = {}
+    if tutor_lessons:
+        for lp in LessonParticipant.objects.filter(lesson_id__in=[x.id for x in tutor_lessons]).select_related('student'):
+            roster.setdefault(lp.lesson_id, []).append(lp)
+    for l in tutor_lessons:
         students = []
-        for lp in LessonParticipant.objects.filter(lesson_id=l.id).select_related('student'):
+        for lp in roster.get(l.id, []):
             sp = lp.student
             students.append({'student_id': lp.student_id, 'status': lp.status, 'note': lp.note,
                              'name': _full_name(sp.first_name, sp.last_name), 'photo_path': sp.photo_path,

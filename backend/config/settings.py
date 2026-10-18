@@ -71,6 +71,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+if DEBUG or env_bool('PERF_LOG', False):
+    MIDDLEWARE.insert(1, 'core.perf.PerfMiddleware')   # per-request time / DB time / query count log
+
 ROOT_URLCONF = 'config.urls'
 ASGI_APPLICATION = 'config.asgi.application'
 TEMPLATES = [{
@@ -104,6 +107,28 @@ CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 
 # The existing Postgres (Supabase's database or the local dev copy).
+# Connections come from a small pool kept open between requests (psycopg_pool, Django 5.1+):
+# opening a new TLS connection to a remote database costs several round trips (hundreds of ms)
+# and Supabase's session pooler allows only 15 clients, so the pool stays below that.
+# Without psycopg_pool installed (pip install "psycopg[pool]") dev falls back to one
+# connection per request, which is slower but never exhausts the limit.
+try:
+    import psycopg_pool  # noqa: F401
+    _HAS_POOL = True
+except ImportError:
+    _HAS_POOL = False
+
+_DB_OPTIONS = {'sslmode': env('DB_SSLMODE', 'prefer')}
+if _HAS_POOL and env_bool('DB_POOL', True):
+    _DB_OPTIONS['pool'] = {
+        'min_size': int(env('DB_POOL_MIN', '2')),
+        'max_size': int(env('DB_POOL_MAX', '10')),
+        'timeout': 20,
+    }
+    _CONN_MAX_AGE = 0                      # Django requires 0 when a pool is configured
+else:
+    _CONN_MAX_AGE = int(env('DB_CONN_MAX_AGE', '0' if DEBUG else '60'))
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -112,11 +137,8 @@ DATABASES = {
         'PASSWORD': env('DB_PASSWORD', ''),
         'HOST': env('DB_HOST', '/tmp'),
         'PORT': env('DB_PORT', '54329'),
-        # Dev (DEBUG) closes the connection after every request: ASGI serves each request on a
-        # pool thread and every thread would otherwise keep its own persistent connection, which
-        # exhausts Supabase's session pooler (15 clients on the free tier -> EMAXCONNSESSION).
-        'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '0' if DEBUG else '60')),
-        'OPTIONS': {'sslmode': env('DB_SSLMODE', 'prefer')},
+        'CONN_MAX_AGE': _CONN_MAX_AGE,
+        'OPTIONS': _DB_OPTIONS,
     }
 }
 

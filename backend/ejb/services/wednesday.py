@@ -32,6 +32,19 @@ def _members(group_id, cols):
     return out
 
 
+def _premium_user_ids(user_ids):
+    """Which of these users are premium (admin or active subscription) - 2 queries for any number of users."""
+    from ..models import Subscription
+    ids = set(user_ids)
+    if not ids:
+        return set()
+    now = context.now()
+    out = set(Profile.objects.filter(pk__in=ids, is_admin=True).values_list('pk', flat=True))
+    out |= set(Subscription.objects.filter(user_id__in=ids, status='active', starts_at__lte=now, ends_at__gt=now)
+               .values_list('user_id', flat=True))
+    return out
+
+
 # ───────────── grouping ─────────────
 
 def _form_wednesday_groups(p_dinner):
@@ -45,7 +58,8 @@ def _form_wednesday_groups(p_dinner):
     for city in cities:
         signups = list(WednesdaySignup.objects.filter(dinner_date=p_dinner, city=city, status='signed_up')
                        .order_by('created_at'))
-        prem = {s.user_id: common.is_premium(s.user_id) for s in signups}
+        premium_ids = _premium_user_ids([s.user_id for s in signups])
+        prem = {s.user_id: s.user_id in premium_ids for s in signups}
         prev_wait = set(WednesdaySignup.objects.filter(
             user_id__in=[s.user_id for s in signups], status='waitlisted', dinner_date__lt=p_dinner,
             dinner_date__gte=p_dinner - datetime.timedelta(days=15)).values_list('user_id', flat=True))
@@ -244,14 +258,23 @@ def create_wednesday_dinner_group(p_city: str, p_dinner_date: datetime.datetime)
 def admin_list_wednesday():
     common.admin_guard()
     now = context.now()
+    cols = ('first_name', 'last_name', 'photo_path', 'age')
+    group_rows = list(WednesdayGroup.objects.select_related('restaurant').order_by('-dinner_date')[:200])
+    by_group = {}          # one query for every member of every listed group (was 1-2 queries per group)
+    for wp in (WednesdayParticipant.objects.filter(group_id__in=[g.id for g in group_rows])
+               .select_related('user')):
+        row = {'user_id': wp.user.pk}
+        for c in cols:
+            row[c] = getattr(wp.user, c)
+        by_group.setdefault(wp.group_id, []).append(row)
     groups = []
-    for g in WednesdayGroup.objects.order_by('-dinner_date')[:200]:
-        r = WednesdayRestaurant.objects.filter(pk=g.restaurant_id).first()
+    for g in group_rows:
+        r = g.restaurant
         groups.append({'id': g.id, 'city': g.city, 'dinner_date': g.dinner_date, 'created_at': g.created_at,
                        'restaurant_id': g.restaurant_id,
                        'restaurant_name': r.name if r else None, 'restaurant_address': r.address if r else None,
                        'revealed': now >= g.dinner_date - H24,
-                       'participants': _members(g.id, ('first_name', 'last_name', 'photo_path', 'age'))})
+                       'participants': by_group.get(g.id, [])})
     restaurants = [{'id': r.id, 'name': r.name, 'city': r.city, 'address': r.address, 'maps_link': r.maps_link,
                     'active': r.active, 'times_used': 0}
                    for r in WednesdayRestaurant.objects.order_by('city', 'name')]
@@ -266,13 +289,14 @@ def admin_list_wednesday():
 def admin_wednesday_signups():
     common.admin_guard()
     rows = []
-    qs = (WednesdaySignup.objects.filter(dinner_date__gt=context.now() - datetime.timedelta(days=1))
-          .exclude(status='cancelled').select_related('user').order_by('dinner_date', 'city', 'created_at'))
+    qs = list(WednesdaySignup.objects.filter(dinner_date__gt=context.now() - datetime.timedelta(days=1))
+              .exclude(status='cancelled').select_related('user').order_by('dinner_date', 'city', 'created_at'))
+    premium_ids = _premium_user_ids([s.user_id for s in qs if s.status == 'signed_up'])
     for s in qs:
         p = s.user
         rows.append({'user_id': s.user_id, 'dinner_date': s.dinner_date, 'city': s.city, 'status': s.status,
                      'created_at': s.created_at, 'group_id': s.group_id,
-                     'is_premium': common.is_premium(s.user_id) if s.status == 'signed_up' else s.premium,
+                     'is_premium': (s.user_id in premium_ids) if s.status == 'signed_up' else s.premium,
                      'first_name': p.first_name, 'last_name': p.last_name, 'photo_path': p.photo_path, 'age': p.age})
     rows.sort(key=lambda r: (r['dinner_date'], r['city'], not r['is_premium']))  # stable: created_at kept
     return rows

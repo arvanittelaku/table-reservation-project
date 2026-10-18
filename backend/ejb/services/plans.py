@@ -327,12 +327,16 @@ def admin_plans_overview():
                     .values_list('user_id', flat=True))
     long_users = set(active.filter(ends_at__gt=now + datetime.timedelta(days=7)).values_list('user_id', flat=True))
 
-    profiles = {}
+    # Every profile involved in one query (was one query per distinct user, plus one e-mail query per order).
+    all_orders = list(SubscriptionOrder.objects.all())
+    all_subs = list(Subscription.objects.order_by('-created_at'))
+    involved = {o.user_id for o in all_orders} | {x.user_id for x in all_subs}
+    profiles = {x['pk']: x for x in Profile.objects.filter(pk__in=involved)
+                .values('pk', 'first_name', 'last_name', 'photo_path')}
+    emails = dict(AuthUser.objects.filter(pk__in={o.user_id for o in all_orders}).values_list('id', 'email'))
 
     def prof(uid):
-        if uid not in profiles:
-            profiles[uid] = Profile.objects.filter(pk=uid).values('first_name', 'last_name', 'photo_path').first()
-        return profiles[uid]
+        return profiles.get(uid)
 
     def name(p):
         if p['first_name'] is None or p['last_name'] is None:
@@ -341,7 +345,7 @@ def admin_plans_overview():
 
     orders = []
     rows = []
-    for o in SubscriptionOrder.objects.all():
+    for o in all_orders:
         p = prof(o.user_id)
         if p is None:
             continue
@@ -354,10 +358,10 @@ def admin_plans_overview():
         orders.append({'id': o.id, 'code': o.code, 'plan_id': o.plan_id, 'amount_cents': o.amount_cents,
                        'status': o.status, 'created_at': o.created_at, 'handled_at': o.handled_at,
                        'user_id': o.user_id, 'name': name(p), 'photo_path': p['photo_path'],
-                       'email': AuthUser.objects.filter(pk=o.user_id).values_list('email', flat=True).first()})
+                       'email': emails.get(o.user_id)})
 
     subs = []
-    for s in Subscription.objects.order_by('-created_at'):
+    for s in all_subs:
         p = prof(s.user_id)
         if p is None:
             continue

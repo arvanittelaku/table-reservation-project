@@ -37,7 +37,9 @@ def _db_errors(fn):
 def table_query(request):
     claims = bearer_claims(request)
     req = json_body(request)
-    with context.acting(Actor.from_claims(claims), direct=True):
+    # Plain selects need no transaction (2 fewer round trips); anything that writes keeps one.
+    read_only = (req.get('action') or 'select') == 'select'
+    with context.acting(Actor.from_claims(claims), direct=True, atomic=not read_only):
         data, count = query.run(req)
     return ok({'data': data, 'count': count})
 

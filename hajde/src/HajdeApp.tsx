@@ -678,9 +678,13 @@ function HajdeApp() {
     // Prefetch the startup bundle so useProfile/usePlan find data in cache immediately.
     let data: import('./types/db').ProfileRow | null = null;
     try {
-      const bundle = await plansApi.startupBundle();
-      // Seed the TanStack Query cache so no second request fires from useProfile/usePlan
-      queryClient.setQueryData(queryKeys.startupBundle(userId), bundle);
+      // fetchQuery shares the in-flight request (and cache entry) with useStartupBundle, so the
+      // bundle is requested once, not twice, on every page load.
+      const bundle = await queryClient.fetchQuery({
+        queryKey: queryKeys.startupBundle(userId),
+        queryFn: () => plansApi.startupBundle(),
+        staleTime: 30_000,
+      });
       data = bundle.profile;
     } catch {
       // Fallback: fetch profile individually (e.g. before plans migration)

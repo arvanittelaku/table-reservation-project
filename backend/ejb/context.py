@@ -86,11 +86,17 @@ def now():
 
 
 @contextmanager
-def acting(act, direct=False):
-    """Run a unit of work (one transaction) as `act`."""
+def acting(act, direct=False, atomic=True):
+    """Run a unit of work (one transaction) as `act`.
+
+    atomic=False is for plain reads: no BEGIN/COMMIT, which saves two round trips to the
+    database per request (each one is a network wait when the database is remote)."""
     token = _state.set(_State(actor=act, direct=direct))
     try:
-        with transaction.atomic():
+        if atomic:
+            with transaction.atomic():
+                yield act
+        else:
             yield act
     finally:
         _state.reset(token)
