@@ -5,6 +5,7 @@ password reset links, Google/Apple sign-in, 1-hour access tokens with rotating
 refresh tokens, and email links that return to the app with the session (or an
 "otp_expired" error) in the URL fragment.
 """
+import logging
 import base64
 import hashlib
 import json
@@ -303,7 +304,9 @@ def callback(request):
         tokens = _exchange(provider, cfg, src['code'], state.get('v'))
         posted_user = json.loads(src['user']) if src.get('user') else None
         provider_id, email, verified, data = _identity(provider, cfg, tokens, posted_user)
-    except Exception:
+    except Exception as exc:
+        body = getattr(getattr(exc, 'response', None), 'text', '')
+        logging.getLogger('ejb.auth').error('OAuth %s sign-in failed: %r %s', provider, exc, body[:500])
         frag = urlencode({'error': 'server_error', 'error_code': 'unexpected_failure',
                           'error_description': 'Sign-in with this provider failed'})
         return HttpResponseRedirect(f'{base}#{frag}')
