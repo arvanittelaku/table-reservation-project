@@ -33,14 +33,14 @@ body { overflow-x: clip; }
       .stars { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 800; color: #B07C1E; }
 
       /* Onboarding */
-      .onboard { justify-content: center; align-items: center; padding: 24px; background: linear-gradient(175deg, #FAFAF8 0%, #F2E9D8 100%); }
+      .onboard { justify-content: center; align-items: center; padding: 24px; background: #080810; }
       .ob-inner { width: 100%; max-width: 360px; }
       .ob-logo { text-align: center; margin-bottom: 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-      .ob-tag { color: #6B7280; font-size: 15px; line-height: 1.5; font-weight: 500; }
+      .ob-tag { color: rgba(255,255,255,0.5); font-size: 15px; line-height: 1.5; font-weight: 500; }
       .ob-trust { display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
-      .ob-trust span { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: #55503F; background: #fff; border: 1.5px solid #E8DFCC; padding: 5px 10px; border-radius: 999px; }
-      .ob-card { background: #fff; border: 1.5px solid #E8DFCC; border-radius: 20px; padding: 22px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 24px rgba(255,107,53,0.07); }
-      .ob-q { font-weight: 700; font-size: 17px; }
+      .ob-trust span { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 999px; }
+      .ob-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 22px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 40px rgba(0,0,0,0.4); backdrop-filter: blur(16px); }
+      .ob-q { font-weight: 700; font-size: 17px; color: #fff; }
       .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
       .age-warn { font-size: 13px; font-weight: 600; color: #A33; background: #FBEAEA; border: 1.5px solid #EFC7C7; border-radius: 12px; padding: 10px 12px; line-height: 1.4; }
       .reset-expired-banner { font-size: 13px; font-weight: 600; color: #7A4A00; background: #FFF5E6; border: 1.5px solid #FFD08A; border-radius: 14px; padding: 14px 16px; line-height: 1.45; display: flex; flex-direction: column; gap: 10px; margin: 0 auto 16px; width: 100%; max-width: 340px; box-shadow: 0 6px 18px rgba(255,107,53,0.08); }
@@ -53,7 +53,7 @@ body { overflow-x: clip; }
 
 
       /* ── Onboarding i ri: Hero + hapa ── */
-      .onboard.hero-bg { background: linear-gradient(168deg, #1A1A2E 0%, #2D1B69 55%, #FF6B35 140%); }
+      .onboard.hero-bg { background: #080810; }
       .hero {
         display: flex;
         flex-direction: column;
@@ -1531,7 +1531,7 @@ body { overflow-x: clip; }
 
 .onboard-shell {
   min-height: 100vh;
-  background: linear-gradient(168deg, #1A1A2E 0%, #2D1B69 55%, #FF6B35 140%);
+  background: #080810;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1539,6 +1539,21 @@ body { overflow-x: clip; }
   padding: 24px 20px;
   width: 100%;
   position: relative;
+  overflow: hidden;
+}
+
+/* Ambient glow behind the card */
+.onboard-shell::before {
+  content: '';
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(ellipse, rgba(255,79,216,0.12) 0%, rgba(124,245,255,0.06) 50%, transparent 70%);
+  transform: translate(-50%,-50%);
+  pointer-events: none;
+  border-radius: 50%;
 }
 
 .onboard-shell-back {
@@ -1563,13 +1578,17 @@ body { overflow-x: clip; }
 }
 
 .onboard-card {
-  background: rgba(255, 255, 255, 0.97);
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 24px;
   padding: 36px 28px 32px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 1;
 }
 
 .onboard-header {
@@ -1591,10 +1610,10 @@ body { overflow-x: clip; }
 }
 
 .onboard-logo {
-  font-family: 'Unbounded', sans-serif;
+  font-family: 'Unbounded', 'Manrope', sans-serif;
   font-size: 18px;
   font-weight: 800;
-  color: #1A1A2E;
+  color: #FFFFFF;
 }
 
 .onboard-progress {
@@ -1607,14 +1626,15 @@ body { overflow-x: clip; }
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #E8E8E8;
+  background: rgba(255,255,255,0.15);
   transition: all 0.2s;
 }
 
 .progress-dot.active {
-  background: #FF6B35;
+  background: #FF4FD8;
   width: 24px;
   border-radius: 4px;
+  box-shadow: 0 0 8px rgba(255,79,216,0.5);
 }
 
 .onboard-card .step-body {
@@ -1624,13 +1644,13 @@ body { overflow-x: clip; }
 .step-title {
   font-size: 22px;
   font-weight: 800;
-  color: #1A1A2E;
+  color: #FFFFFF;
   margin: 0 0 4px;
 }
 
 .step-sub {
   font-size: 13px;
-  color: #9CA3AF;
+  color: rgba(255,255,255,0.4);
   margin: 0 0 24px;
 }
 
@@ -1644,25 +1664,25 @@ body { overflow-x: clip; }
 .input.modern {
   width: 100%;
   padding: 15px 16px;
-  border: 1.5px solid #E8E8E8;
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 12px;
   font-family: 'Manrope', sans-serif;
   font-size: 15px;
-  color: #1A1A2E;
-  background: #FAFAFA;
+  color: #FFFFFF;
+  background: rgba(255,255,255,0.07);
   outline: none;
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
 }
 
 .input.modern:focus {
-  border-color: #FF6B35;
-  background: #FFFFFF;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.12);
+  border-color: rgba(255,79,216,0.6);
+  background: rgba(255,255,255,0.1);
+  box-shadow: 0 0 0 3px rgba(255,79,216,0.15);
 }
 
 .input.modern::placeholder {
-  color: #B0B0B0;
+  color: rgba(255,255,255,0.3);
 }
 
 .input-password-wrap {
@@ -1716,29 +1736,32 @@ body { overflow-x: clip; }
   justify-content: center;
   background: none;
   border: none;
-  color: #FF6B35;
+  color: rgba(255,255,255,0.4);
   cursor: pointer;
   padding: 6px;
   line-height: 0;
 }
 
+.password-toggle:hover { color: #FF4FD8; }
+
 .input-hint {
   font-size: 12px;
-  color: #9CA3AF;
+  color: rgba(255,255,255,0.3);
   line-height: 1.5;
   margin: -4px 0 12px;
 }
 
 .onboard-card .terms-row {
   margin: 0 0 8px;
-  background: #F7F7F5;
-  border-color: #EDEDED;
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
 }
 
 .onboard-card .terms-label .link-btn {
   display: inline;
   margin: 0;
-  color: #FF6B35;
+  color: #FF4FD8;
 }
 
 .modern-btn {
@@ -1749,11 +1772,15 @@ body { overflow-x: clip; }
   border-radius: 14px !important;
   margin-top: 8px;
   transition: transform 0.1s, box-shadow 0.15s !important;
+  background: linear-gradient(135deg, #FF4FD8, #A855F7) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(255,79,216,0.35) !important;
 }
 
 .modern-btn:not(:disabled):hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.35) !important;
+  box-shadow: 0 10px 32px rgba(255,79,216,0.55) !important;
 }
 
 .modern-btn:not(:disabled):active {
@@ -1773,14 +1800,14 @@ body { overflow-x: clip; }
   border: none;
   font-family: inherit;
   font-size: 13.5px;
-  color: #9CA3AF;
+  color: rgba(255,255,255,0.4);
   cursor: pointer;
   margin-top: 16px;
   padding: 8px;
 }
 
 .onboard-signin-link span {
-  color: #FF6B35;
+  color: #FF4FD8;
   font-weight: 700;
 }
 
@@ -1812,21 +1839,21 @@ body { overflow-x: clip; }
   height: 120px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #FF6B35;
-  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.2);
+  border: 3px solid #FF4FD8;
+  box-shadow: 0 8px 28px rgba(255,79,216,0.4);
 }
 
 .photo-placeholder {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: #F5F5F5;
-  border: 2px dashed #E8E8E8;
+  background: rgba(255,255,255,0.05);
+  border: 2px dashed rgba(255,255,255,0.2);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #B0B0B0;
+  color: rgba(255,255,255,0.3);
   font-size: 32px;
   cursor: pointer;
   padding: 0;
@@ -1849,36 +1876,37 @@ body { overflow-x: clip; }
 .onboard-card .choice.big {
   padding: 18px 20px;
   border-radius: 14px;
-  border: 2px solid #E8E8E8;
-  background: #FAFAFA;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
   font-family: inherit;
   font-size: 15px;
   font-weight: 700;
-  color: #1A1A2E;
+  color: rgba(255,255,255,0.8);
   cursor: pointer;
   text-align: left;
   transition: all 0.15s;
 }
 
 .onboard-card .choice.big:hover {
-  border-color: #FFD5C5;
-  background: #FFF5F2;
+  border-color: rgba(255,79,216,0.4);
+  background: rgba(255,79,216,0.07);
 }
 
 .onboard-card .choice.big.on {
-  border-color: #FF6B35;
-  background: #FFF0EB;
-  color: #FF6B35;
+  border-color: #FF4FD8;
+  background: rgba(255,79,216,0.12);
+  color: #FF4FD8;
+  box-shadow: 0 0 0 1px rgba(255,79,216,0.3);
 }
 
-/* Sign-in forgot password — readable on white card */
+/* Sign-in forgot password */
 .forgot-link {
   background: none;
   border: none;
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 600;
-  color: #6B7280;
+  color: rgba(255,255,255,0.35);
   cursor: pointer;
   text-align: right;
   width: 100%;
@@ -1888,7 +1916,7 @@ body { overflow-x: clip; }
 }
 
 .forgot-link:hover {
-  color: #FF6B35;
+  color: #FF4FD8;
 }
 
 .location-banner {
@@ -2262,12 +2290,13 @@ body { overflow-x: clip; }
 }
 .social-btn:disabled { opacity: .6; cursor: wait; }
 .social-btn:active:not(:disabled) { transform: scale(.99); }
-/* Google & Apple brand rules: white/outlined vs. black button. Official logo
-   assets can be added inside these buttons from their brand kits. */
-.social-btn.google { background: #fff; color: #1F1F1F; border: 1px solid #747775; }
-.social-btn.apple { background: #000; color: #fff; border: 1px solid #000; }
-.social-or { display: flex; align-items: center; gap: 10px; color: #8A8478; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin: 4px 0; }
-.social-or::before, .social-or::after { content: ""; flex: 1; height: 1px; background: #E8DFCC; }
+/* Google & Apple brand rules: white/outlined vs. black button. */
+.social-btn.google { background: rgba(255,255,255,0.08); color: #FFFFFF; border: 1px solid rgba(255,255,255,0.18); }
+.social-btn.google:hover:not(:disabled) { background: rgba(255,255,255,0.13); }
+.social-btn.apple { background: rgba(255,255,255,0.08); color: #FFFFFF; border: 1px solid rgba(255,255,255,0.18); }
+.social-btn.apple:hover:not(:disabled) { background: rgba(255,255,255,0.13); }
+.social-or { display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.25); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin: 4px 0; }
+.social-or::before, .social-or::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
 
 /* ── Sports ── */
 .badge.sport { color: #1B6B3A; background: #E4F4EA; margin: 2px 0 4px; }
