@@ -18,16 +18,27 @@ LIVE_TABLES = {'lesson_participants', 'lessons', 'memberships', 'messages', 'not
                'requests', 'tables'}
 
 
+_redis_down_warned = False
+
+
 def _send(events):
     from channels.layers import get_channel_layer
     layer = get_channel_layer()
     if layer is None:
         return
+    global _redis_down_warned
     for ev in events:
         try:
             async_to_sync(layer.group_send)(f"rt.{ev['table']}", {'type': 'rt.change', 'payload': ev})
-        except Exception:
-            log.exception('realtime publish failed')
+        except Exception as exc:
+            if 'ConnectionError' in type(exc).__name__ or 'refused' in str(exc).lower():
+                # Redis not running (e.g. local dev on Windows): live updates are
+                # skipped, everything else keeps working. Warn once, not per write.
+                if not _redis_down_warned:
+                    log.warning('Redis unavailable - live updates disabled (%s)', exc)
+                    _redis_down_warned = True
+            else:
+                log.exception('realtime publish failed')
 
 
 def record(obj, op):
