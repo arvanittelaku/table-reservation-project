@@ -2727,3 +2727,12 @@ body { overflow-x: clip; }
 .share-wrap .share-pill.off { background: rgba(255,92,122,.15); color: #FF8FA3; }
 .share-row .btn.share-main { background: rgba(255,255,255,.06); color: #F2F1FA; border-color: rgba(255,255,255,.14); }
 .share-row.nudge .btn.share-main { background: #FF4FD8; color: #0B0B14; border-color: #FF4FD8; }
+
+/* Table sheet: close-table, translate hint, host note */
+.app-shell .btn-delete-table {
+  background: rgba(255,92,122,.1);
+  border: 1.5px solid rgba(255,92,122,.5);
+  color: #FF8FA3;
+}
+.app-shell .btn-delete-table:hover { background: rgba(255,92,122,.18); border-color: #FF5C7A; color: #fff; }
+.app-shell .lang-hint { color: #7CF5FF; background: rgba(124,245,255,.12); border: 1px solid rgba(124,245,255,.25); }
