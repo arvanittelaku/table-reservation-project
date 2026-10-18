@@ -2669,3 +2669,61 @@ body { overflow-x: clip; }
 }
 .app-shell .chip.city.locked:hover { border-color: #FF4FD8; color: #fff; }
 .app-shell .premium-pill.basic { background: rgba(255,230,109,.14); color: #FFE66D; border: 1px solid rgba(255,230,109,.4); }
+
+/* ── Create-table tabs, plan/premium sheet, lessons, share (component stylesheets were still light) ── */
+.app-shell .mode-btn { background: rgba(255,255,255,.05); border: 1.5px solid rgba(255,255,255,.12); color: #F2F1FA; }
+.app-shell .mode-btn:hover { border-color: rgba(255,79,216,.5); }
+.app-shell .mode-btn.on { background: rgba(255,79,216,.16); border-color: #FF4FD8; color: #fff; box-shadow: 0 0 0 3px rgba(255,79,216,.14); }
+
+.app-shell .usage-meter { background: rgba(255,255,255,.05); border: 1.5px solid rgba(255,255,255,.1); color: #F2F1FA; }
+.app-shell .usage-meter .bar { background: rgba(255,255,255,.12); }
+.app-shell .usage-meter .bar span { background: linear-gradient(90deg, #FF4FD8, #A855F7); }
+.app-shell .usage-meter.full .bar span { background: #FF5C7A; }
+.app-shell .upsell { background: rgba(255,230,109,.08); border: 1.5px solid rgba(255,230,109,.3); color: #F2F1FA; }
+
+.app-shell .pl-close, .app-shell .ls-close { background: rgba(255,255,255,.1); color: #fff; }
+.app-shell .pl-active { background: rgba(255,230,109,.1); color: #FFE66D; }
+.app-shell .pl-tier { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.12); }
+.app-shell .pl-tier.premium { border-color: rgba(255,230,109,.5); background: linear-gradient(180deg, rgba(255,230,109,.1), rgba(255,255,255,.03)); }
+.app-shell .pl-tier.current { box-shadow: 0 0 0 2px #FF4FD8 inset; }
+.app-shell .pl-tier.premium h3 { color: #FFE66D; }
+.app-shell .pl-price, .app-shell .pl-pack-price { color: #fff; }
+.app-shell .pl-tier ul { color: rgba(242,241,250,.8); }
+.app-shell .pl-tier li::before { color: #7CF5FF; }
+.app-shell .pl-badge { background: #FF4FD8; color: #0B0B14; }
+.app-shell .pl-pack { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.12); color: #F2F1FA; }
+.app-shell .pl-pack:hover:not(:disabled) { border-color: #FFE66D; }
+.app-shell .pl-pack.best { border-color: rgba(255,230,109,.5); background: rgba(255,230,109,.08); }
+.app-shell .pl-pack-sub { color: rgba(242,241,250,.6); }
+.app-shell .pl-pack-cta { color: #FF4FD8; }
+.app-shell .pl-ribbon { background: #FFE66D; color: #0B0B14; }
+.app-shell .pl-order { background: rgba(255,230,109,.06); border-color: rgba(255,230,109,.4); }
+
+.app-shell .ls-head h2, .app-shell .ls-dist, .app-shell .ls-card, .app-shell .ls-item { color: #F2F1FA; }
+.app-shell .ls-views, .app-shell .ls-seg { background: rgba(255,255,255,.07); }
+.app-shell .ls-views button, .app-shell .ls-seg button { color: rgba(242,241,250,.75); }
+.app-shell .ls-views button.on { background: rgba(255,79,216,.2); color: #fff; box-shadow: none; }
+.app-shell .ls-seg button.on { background: #FF4FD8; color: #0B0B14; }
+.app-shell .ls-subjects .chip { background: rgba(255,255,255,.06); }
+.app-shell .ls-subjects .chip.on { background: #FF4FD8; border-color: #FF4FD8; color: #0B0B14; }
+.app-shell .ls-select { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); color: #F2F1FA; }
+.app-shell .ls-card, .app-shell .ls-item { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1); }
+.app-shell .ls-headline, .app-shell .ls-bio { color: rgba(242,241,250,.8); }
+.app-shell .ls-price { color: #7CF5FF; }
+.app-shell .ls-tag, .app-shell .ls-status, .app-shell .ls-banner { background: rgba(255,255,255,.08); color: rgba(242,241,250,.85); }
+.app-shell .ls-avatar { background: rgba(255,255,255,.1); color: #F2F1FA; }
+.app-shell .ls-book { border-top-color: rgba(255,255,255,.1); }
+.app-shell .ls-price-box { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1); }
+.app-shell .ls-student { border-top-color: rgba(255,255,255,.08); }
+
+/* share card (own stylesheet, loaded later → raise specificity) */
+.share-wrap .share-card { background: #12121F; color: #F2F1FA; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.share-wrap .share-x { color: rgba(242,241,250,.6); }
+.share-wrap .share-kicker { color: #FF4FD8; }
+.share-wrap .share-title { color: #fff; }
+.share-wrap .share-meta, .share-wrap .share-body, .share-wrap .share-host { color: rgba(242,241,250,.75); }
+.share-wrap .share-pill { background: rgba(255,255,255,.08); color: rgba(242,241,250,.85); }
+.share-wrap .share-pill.ok { background: rgba(124,245,255,.14); color: #7CF5FF; }
+.share-wrap .share-pill.off { background: rgba(255,92,122,.15); color: #FF8FA3; }
+.share-row .btn.share-main { background: rgba(255,255,255,.06); color: #F2F1FA; border-color: rgba(255,255,255,.14); }
+.share-row.nudge .btn.share-main { background: #FF4FD8; color: #0B0B14; border-color: #FF4FD8; }
