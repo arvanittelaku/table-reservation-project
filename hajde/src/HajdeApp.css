@@ -2736,3 +2736,16 @@ body { overflow-x: clip; }
 }
 .app-shell .btn-delete-table:hover { background: rgba(255,92,122,.18); border-color: #FF5C7A; color: #fff; }
 .app-shell .lang-hint { color: #7CF5FF; background: rgba(124,245,255,.12); border: 1px solid rgba(124,245,255,.25); }
+
+/* Profile sheet: photo-verification note + deactivate (old rules used !important / equal specificity) */
+.app-shell .photo-note {
+  background: rgba(255,230,109,.08) !important;
+  border: 1.5px solid rgba(255,230,109,.3) !important;
+  color: rgba(242,241,250,.85) !important;
+}
+.app-shell .btn-deactivate {
+  background: rgba(255,92,122,.08);
+  border: 1.5px solid rgba(255,92,122,.4);
+  color: #FF8FA3;
+}
+.app-shell .btn-deactivate:hover { background: rgba(255,92,122,.16); border-color: #FF5C7A; color: #fff; }
