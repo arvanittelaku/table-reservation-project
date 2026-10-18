@@ -642,7 +642,7 @@ class BackendClient {
     if (token) headers.Authorization = `Bearer ${token}`
     let res: Response
     try {
-      res = await fetch(`${API_URL}${path}`, { ...init, headers })
+      res = await fetch(`${API_URL}${path}`, { signal: AbortSignal.timeout(20000), ...init, headers })
     } catch (err) {
       return { data: null, error: makeError({ message: errMessage(err) }, 0), status: 0 }
     }

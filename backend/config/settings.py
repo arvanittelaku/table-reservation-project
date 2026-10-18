@@ -121,18 +121,25 @@ DATABASES = {
 }
 
 REDIS_URL = env('REDIS_URL', 'redis://127.0.0.1:6379/0')
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {'hosts': [REDIS_URL]},
+if DEBUG and not os.environ.get('REDIS_URL'):
+    # Local dev without Redis (e.g. Windows): in-process channel layer + cache. Live updates
+    # still work inside the single dev server; nothing tries to reach 127.0.0.1:6379, which
+    # used to crash every WebSocket and make the browser reconnect in a tight loop.
+    CHANNEL_LAYERS = {'default': {'BACKEND': 'channels.layers.InMemoryChannelLayer'}}
+    CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {'hosts': [REDIS_URL]},
+        }
     }
-}
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': REDIS_URL,
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+        }
     }
-}
 
 USE_TZ = True
 TIME_ZONE = 'UTC'
