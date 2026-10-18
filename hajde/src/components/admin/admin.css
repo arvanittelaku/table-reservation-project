@@ -442,3 +442,68 @@ button.adm-list-row:hover { background: #faf9f6; }
 .adm-official { padding: 12px 14px; margin: 12px 0; display: flex; flex-direction: column; gap: 8px; }
 .adm-official p { margin: 0; }
 .adm-action[class*='act-table_marked_official'] { color: #8a5a00; }
+
+
+/* ═══════════════ B·Night Out dark theme (admin) — remaps the variables, then fixes hard-coded light colours ═══════════════ */
+div.adm {
+  --ink: #F2F1FA;
+  --ink-2: rgba(242, 241, 250, 0.78);
+  --muted: rgba(242, 241, 250, 0.55);
+  --line: rgba(255, 255, 255, 0.1);
+  --line-2: rgba(255, 255, 255, 0.06);
+  --bg: #080810;
+  --surface: #12121F;
+  --brand: #FF4FD8;
+  --brand-ink: #FF8AE8;
+  --chart: #FF4FD8;
+  --side: #0D0D1A;
+  --side-2: #1A1A2E;
+  --side-ink: #C9C9D9;
+  --focus: 0 0 0 3px rgba(255, 79, 216, 0.28);
+  --shadow: none;
+}
+div.adm .adm-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.2); }
+div.adm .adm-btn.primary { background: linear-gradient(135deg, #FF4FD8, #A855F7); border-color: transparent; color: #0B0B14; }
+div.adm .adm-btn.primary:hover:not(:disabled) { background: linear-gradient(135deg, #ff6ade, #b66cf8); }
+div.adm .adm-btn.danger { background: rgba(255, 92, 122, 0.08); border-color: rgba(255, 92, 122, 0.45); color: #FF8FA3; }
+div.adm .adm-btn.danger:hover:not(:disabled) { background: rgba(255, 92, 122, 0.16); border-color: #FF5C7A; }
+div.adm .adm-btn.ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
+div.adm .adm-modal .adm-btn.danger[type='submit'] { background: #FF5C7A; border-color: #FF5C7A; color: #0B0B14; }
+div.adm .adm-lang button.active { background: #FF4FD8; color: #0B0B14; border-color: #FF4FD8; }
+div.adm .adm-link { text-decoration-color: rgba(255, 255, 255, 0.25); }
+div.adm .adm-seg button:hover { border-color: rgba(255, 255, 255, 0.25); }
+div.adm .adm-seg button.on { background: #FF4FD8; border-color: #FF4FD8; color: #0B0B14; }
+div.adm .adm-field input, div.adm .adm-field textarea, div.adm .adm-field select { background: rgba(255, 255, 255, 0.05); }
+div.adm .adm-search:focus-within, div.adm .adm-select:focus-within,
+div.adm .adm-field input:focus, div.adm .adm-field textarea:focus { border-color: rgba(255, 79, 216, 0.6); }
+div.adm .adm-kpi.is-link:hover { border-color: rgba(255, 255, 255, 0.25); }
+div.adm .adm-kpi.tone-brand { border-color: rgba(255, 79, 216, 0.35); background: linear-gradient(180deg, var(--surface) 40%, rgba(255, 79, 216, 0.1)); }
+div.adm .adm-kpi.tone-warn { border-color: rgba(255, 230, 109, 0.35); background: linear-gradient(180deg, var(--surface) 40%, rgba(255, 230, 109, 0.08)); }
+div.adm .adm-kpi.tone-warn .adm-kpi-value { color: #FFE66D; }
+div.adm .adm-notice { background: rgba(255, 230, 109, 0.08); border-color: rgba(255, 230, 109, 0.3); color: #FFE66D; }
+div.adm .adm-notice.subtle { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.12); color: var(--ink-2); }
+div.adm .adm-setup, div.adm .adm-error { background: rgba(255, 92, 122, 0.1); border-color: rgba(255, 92, 122, 0.35); color: #FF8FA3; }
+div.adm .adm-pill.tone-neutral { background: rgba(255, 255, 255, 0.08); color: var(--ink-2); }
+div.adm .adm-pill.tone-good { background: rgba(124, 245, 255, 0.12); color: #7CF5FF; }
+div.adm .adm-pill.tone-warn { background: rgba(255, 230, 109, 0.12); color: #FFE66D; }
+div.adm .adm-pill.tone-bad { background: rgba(255, 92, 122, 0.14); color: #FF8FA3; }
+div.adm .adm-pill.tone-info { background: rgba(169, 155, 255, 0.15); color: #A99BFF; }
+div.adm .adm-pill.tone-brand { background: rgba(255, 79, 216, 0.14); color: #FF8AE8; }
+div.adm .adm-table th { background: rgba(255, 255, 255, 0.03); }
+div.adm .adm-table tr.is-clickable:hover td, div.adm .adm-table .adm-subrow td, div.adm button.adm-list-row:hover { background: rgba(255, 255, 255, 0.04); }
+div.adm .adm-tip { background: #26263d; color: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); }
+div.adm .adm-report-details, div.adm .adm-wed-rest { background: rgba(255, 255, 255, 0.04); }
+div.adm .adm-chip { background: rgba(255, 255, 255, 0.05); }
+div.adm .adm-chip:hover { border-color: rgba(255, 255, 255, 0.25); }
+div.adm .adm-switch { background: rgba(255, 255, 255, 0.18); }
+div.adm .adm-switch.on { background: #FF4FD8; }
+div.adm .adm-switch span { background: #fff; }
+div.adm .adm-gs-group button:hover { background: rgba(255, 255, 255, 0.06); }
+div.adm .adm-strikes > span.on { background: #FF5C7A; }
+div.adm .adm-action[class*='act-user_deleted'], div.adm .adm-action[class*='act-user_banned'], div.adm .adm-action[class*='act-table_cancelled'] { color: #FF8FA3; }
+div.adm .adm-action[class*='act-table_marked_official'] { color: #FFE66D; }
+div.adm .adm-toast { background: #26263d; color: #fff; }
+div.adm .adm-skel { background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 37%, rgba(255, 255, 255, 0.05) 63%); background-size: 400% 100%; }
+div.adm .adm-drawer-scrim { background: rgba(0, 0, 0, 0.6); }
+div.adm .adm-top { background: rgba(8, 8, 16, 0.85); }
+div.adm .adm-avatar { background: rgba(255, 255, 255, 0.1); color: #F2F1FA; }
