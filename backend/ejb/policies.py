@@ -12,7 +12,7 @@ A table without an entry, or a missing hook, means "nobody" (RLS enabled and no
 policy). These apply only to the app's direct table queries; services (the
 former SECURITY DEFINER functions) do their own checks, as before.
 """
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Exists, OuterRef, Q, Subquery
 
 from . import context
 from .models import (
@@ -40,7 +40,14 @@ def is_premium(user_id):
 
 
 def viewer_sees_all_cities(a):
-    return a.uid is not None and is_premium(a.uid)
+    """Admins and subscribers (is_admin is looked up once per request)."""
+    if a.uid is None:
+        return False
+    if a.is_admin:
+        return True
+    now = context.now()
+    return Subscription.objects.filter(user_id=a.uid, status='active',
+                                       starts_at__lte=now, ends_at__gt=now).exists()
 
 
 def viewer_home_city(a):
@@ -129,28 +136,28 @@ def own_or_admin(field='user_id'):
 
 
 def _tables_select(a):
+    """Visibility of tables. Everything that depends on other rows is a SQL subquery inside the one
+    statement (not a separate lookup first), so reading the feed costs no extra round trips."""
     if a.uid is None:
         return NOTHING
+    from .models import OfficialEvent
     now = context.now()
-    blocked = Block.objects.filter(Q(blocker_id=a.uid) | Q(blocked_id=a.uid))
-    blocked_ids = {b if bl == a.uid else bl for bl, b in blocked.values_list('blocker_id', 'blocked_id')}
+    blocked = Block.objects.filter(Q(blocker_id=a.uid, blocked_id=OuterRef('host_id'))
+                                   | Q(blocked_id=a.uid, blocker_id=OuterRef('host_id')))
     permissive = (Q(event_datetime__gt=now, status='open')
-                  & ~Q(host_id__in=blocked_ids)
+                  & ~Q(Exists(blocked))
                   & ~Q(host__deactivated_at__isnull=False)) | Q(host_id=a.uid)
     # people with a seat keep seeing their table after the event (to rate it,
     # pick connections, read the chat); the old policy hid it once it was past
-    seated = list(Membership.objects.filter(user_id=a.uid).values_list('table_id', flat=True))
-    if seated:
-        permissive |= Q(id__in=seated)
-    if viewer_sees_all_cities(a) or a.is_admin:
+    permissive |= Q(Exists(Membership.objects.filter(user_id=a.uid, table_id=OuterRef('pk'))))
+    if viewer_sees_all_cities(a):
         return permissive
     # official events (hosted by the team) are open to every city, like Wednesday Dinner
-    from .models import OfficialEvent
-    restrictive = (Q(host_id=a.uid) | Q(id__in=my_table_ids(a))
-                   | Q(Exists(OfficialEvent.objects.filter(table_id=OuterRef('pk')))))
-    home = viewer_home_city(a)
-    if home is not None:
-        restrictive |= Q(city=home)
+    restrictive = (Q(host_id=a.uid)
+                   | Q(Exists(Membership.objects.filter(user_id=a.uid, table_id=OuterRef('pk'))))
+                   | Q(Exists(Request.objects.filter(user_id=a.uid, table_id=OuterRef('pk'))))
+                   | Q(Exists(OfficialEvent.objects.filter(table_id=OuterRef('pk'))))
+                   | Q(city=Subquery(Profile.objects.filter(pk=a.uid).values('home_city')[:1])))
     return permissive & restrictive
 
 

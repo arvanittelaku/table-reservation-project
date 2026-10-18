@@ -339,15 +339,18 @@ def admin_update_plan(p_plan: str, p_price_cents: int, p_table_limit: int, p_joi
 def admin_plans_overview():
     common.admin_guard()
     now = context.now()
-    active = Subscription.objects.filter(status='active')
     plans = [_plan_row(p) for p in Plan.objects.order_by('sort')]
-    exp_users = set(active.filter(ends_at__gte=now, ends_at__lte=now + datetime.timedelta(days=7))
-                    .values_list('user_id', flat=True))
-    long_users = set(active.filter(ends_at__gt=now + datetime.timedelta(days=7)).values_list('user_id', flat=True))
 
     # Every profile involved in one query (was one query per distinct user, plus one e-mail query per order).
     all_orders = list(SubscriptionOrder.objects.all())
     all_subs = list(Subscription.objects.order_by('-created_at'))
+
+    # The headline numbers come from the subscriptions already loaded (was 5 more queries).
+    week = now + datetime.timedelta(days=7)
+    active = [x for x in all_subs if x.status == 'active']
+    exp_users = {x.user_id for x in active if now <= x.ends_at <= week}
+    long_users = {x.user_id for x in active if x.ends_at > week}
+    month_ago = now - datetime.timedelta(days=30)
     involved = {o.user_id for o in all_orders} | {x.user_id for x in all_subs}
     profiles = {x['pk']: x for x in Profile.objects.filter(pk__in=involved)
                 .values('pk', 'first_name', 'last_name', 'photo_path')}
@@ -393,10 +396,9 @@ def admin_plans_overview():
 
     return {
         'plans': plans or None,
-        'active_premium': len(set(active.filter(starts_at__lte=now, ends_at__gt=now).values_list('user_id', flat=True))),
-        'revenue_30d_cents': active.filter(created_at__gte=now - datetime.timedelta(days=30))
-                                   .aggregate(s=Sum('amount_cents'))['s'] or 0,
-        'revenue_total_cents': active.aggregate(s=Sum('amount_cents'))['s'] or 0,
+        'active_premium': len({x.user_id for x in active if x.starts_at <= now < x.ends_at}),
+        'revenue_30d_cents': sum(x.amount_cents or 0 for x in active if x.created_at >= month_ago),
+        'revenue_total_cents': sum(x.amount_cents or 0 for x in active),
         'expiring_7d': len(exp_users - long_users),
         'orders': orders,
         'subscriptions': subs,

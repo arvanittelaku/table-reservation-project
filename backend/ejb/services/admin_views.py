@@ -40,6 +40,21 @@ def _profiles(ids=None):
     return {p['user_id']: p for p in qs.values()}
 
 
+def _count_sub(qs, col):
+    """Correlated COUNT(*) of `qs` rows whose `col` equals the outer row's pk (0 when none)."""
+    from django.db.models import IntegerField, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+    sub = qs.filter(**{col: OuterRef('pk')}).order_by().values(col).annotate(c=Count('pk')).values('c')
+    return Coalesce(Subquery(sub, output_field=IntegerField()), 0)
+
+
+def _sum_sub(qs, col, field):
+    from django.db.models import IntegerField, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+    sub = qs.filter(**{col: OuterRef('pk')}).order_by().values(col).annotate(c=Sum(field)).values('c')
+    return Coalesce(Subquery(sub, output_field=IntegerField()), 0)
+
+
 def _counts_row(base_qs, spec):
     """Several counts in ONE query: base_qs.annotate(name=(SELECT COUNT FROM ...)) fetched as a single row.
     spec: {name: (queryset filtered to the rows to count, outer-ref column on that queryset)}."""
@@ -152,42 +167,39 @@ def admin_get_dashboard(p_range: str = 'month'):
     paid = Payment.objects.filter(status='paid')
     future = Table.objects.filter(event_datetime__gt=now)
 
-    # One aggregate query per table (conditional counts) instead of 26 separate count queries.
-    pr = Profile.objects.aggregate(
-        users_total=Count('pk'),
-        users_today=Count('pk', filter=Q(created_at__gte=today)),
-        users_7d=Count('pk', filter=Q(created_at__gte=d7)),
-        users_30d=Count('pk', filter=Q(created_at__gte=d30)),
-        users_deactivated=Count('pk', filter=Q(deactivated_at__isnull=False)),
-        admins=Count('pk', filter=Q(is_admin=True)))
-    au = AuthUser.objects.aggregate(
-        users_unconfirmed=Count('pk', filter=Q(email_confirmed_at__isnull=True)),
-        users_active_7d=Count('pk', filter=Q(last_sign_in_at__gte=d7)))
-    tb = Table.objects.aggregate(
-        tables_total=Count('pk'),
-        tables_upcoming=Count('pk', filter=Q(event_datetime__gt=now, status__in=('open', 'full'))),
-        tables_today=Count('pk', filter=Q(created_at__gte=today)),
-        tables_cancelled=Count('pk', filter=Q(status='cancelled')))
-    rq = Request.objects.aggregate(
-        requests_pending=Count('pk', filter=Q(status='pending', table__event_datetime__gt=now)),
-        requests_awaiting_payment=Count('pk', filter=Q(status='approved', table__event_datetime__gt=now)))
-    pay = Payment.objects.aggregate(
-        payments_count=Count('pk', filter=Q(status='paid')),
-        revenue_total_cents=Sum('amount_cents', filter=Q(status='paid')),
-        revenue_today_cents=Sum('amount_cents', filter=Q(status='paid', created_at__gte=today)),
-        revenue_30d_cents=Sum('amount_cents', filter=Q(status='paid', created_at__gte=d30)),
-        payments_stub=Count('pk', filter=Q(provider='stub')))
-    rp = Report.objects.aggregate(reports_pending=Count('pk', filter=Q(status='pending')), reports_total=Count('pk'))
-    bn = Ban.objects.aggregate(bans_total=Count('pk'), banned_users=Count('user_id', distinct=True))
-    totals = {
-        **pr, **au, **tb,
-        'seats_taken': Membership.objects.filter(role='member').count(),
-        **rq,
-        **{k: (v or 0) for k, v in pay.items()},
-        **rp, **bn,
-        'wednesday_upcoming': WednesdayGroup.objects.filter(dinner_date__gt=now).count(),
-        'wednesday_participants': WednesdayParticipant.objects.filter(group__dinner_date__gt=now).count(),
-    }
+    # Every headline number in ONE round trip: a single row of scalar subqueries.
+    G = _global_count
+    S = _global_sum
+    spec = dict(
+        users_total=G(Profile.objects.all()),
+        users_today=G(Profile.objects.filter(created_at__gte=today)),
+        users_7d=G(Profile.objects.filter(created_at__gte=d7)),
+        users_30d=G(Profile.objects.filter(created_at__gte=d30)),
+        users_deactivated=G(Profile.objects.filter(deactivated_at__isnull=False)),
+        users_unconfirmed=G(AuthUser.objects.filter(email_confirmed_at__isnull=True)),
+        users_active_7d=G(AuthUser.objects.filter(last_sign_in_at__gte=d7)),
+        admins=G(Profile.objects.filter(is_admin=True)),
+        tables_total=G(Table.objects.all()),
+        tables_upcoming=G(future.filter(status__in=('open', 'full'))),
+        tables_today=G(Table.objects.filter(created_at__gte=today)),
+        tables_cancelled=G(Table.objects.filter(status='cancelled')),
+        seats_taken=G(Membership.objects.filter(role='member')),
+        requests_pending=G(Request.objects.filter(status='pending', table__event_datetime__gt=now)),
+        requests_awaiting_payment=G(Request.objects.filter(status='approved', table__event_datetime__gt=now)),
+        payments_count=G(paid),
+        revenue_total_cents=S(paid, 'amount_cents'),
+        revenue_today_cents=S(paid.filter(created_at__gte=today), 'amount_cents'),
+        revenue_30d_cents=S(paid.filter(created_at__gte=d30), 'amount_cents'),
+        payments_stub=G(Payment.objects.filter(provider='stub')),
+        reports_pending=G(Report.objects.filter(status='pending')),
+        reports_total=G(Report.objects.all()),
+        bans_total=G(Ban.objects.all()),
+        banned_users=G(Ban.objects.all(), distinct='user_id'),
+        wednesday_upcoming=G(WednesdayGroup.objects.filter(dinner_date__gt=now)),
+        wednesday_participants=G(WednesdayParticipant.objects.filter(group__dinner_date__gt=now)),
+    )
+    totals = (Profile.objects.filter(pk=context.uid()).annotate(**spec).values(*spec).first()
+              or {k: 0 for k in spec})
 
     rev = list(paid.filter(created_at__gte=since).values_list('created_at', 'amount_cents'))
     series = {
@@ -250,15 +262,41 @@ def _coalesce(*vals):
     return None
 
 
+def _global_count(qs, distinct=None):
+    from django.db.models import IntegerField, Subquery, Value
+    from django.db.models.functions import Coalesce
+    expr = Count(distinct, distinct=True) if distinct else Count('pk')
+    sub = qs.order_by().annotate(_g=Value(1)).values('_g').annotate(c=expr).values('c')
+    return Coalesce(Subquery(sub, output_field=IntegerField()), 0)
+
+
+def _global_sum(qs, field):
+    from django.db.models import IntegerField, Subquery, Value
+    from django.db.models.functions import Coalesce
+    sub = qs.order_by().annotate(_g=Value(1)).values('_g').annotate(c=Sum(field)).values('c')
+    return Coalesce(Subquery(sub, output_field=IntegerField()), 0)
+
+
 def _stats_totals():
-    t = Table.objects.aggregate(total_tables=Count('pk'), active_tables_now=Count('pk', filter=Q(status='open')))
-    r = Report.objects.aggregate(pending_reports=Count('pk', filter=Q(status='pending')))
-    b = Ban.objects.aggregate(total_bans=Count('pk'), banned_users_distinct=Count('user_id', distinct=True))
-    return {
-        'total_users': Profile.objects.count(),
-        'total_memberships': Membership.objects.count(),
-        **t, **r, **b,
-    }
+    """All seven totals in one query (a single row of scalar subqueries)."""
+    row = Profile.objects.filter(pk=context.uid()).annotate(
+        total_users=_global_count(Profile.objects.all()),
+        total_tables=_global_count(Table.objects.all()),
+        total_memberships=_global_count(Membership.objects.all()),
+        active_tables_now=_global_count(Table.objects.filter(status='open')),
+        pending_reports=_global_count(Report.objects.filter(status='pending')),
+        total_bans=_global_count(Ban.objects.all()),
+        banned_users_distinct=_global_count(Ban.objects.all(), distinct='user_id'),
+    ).values('total_users', 'total_tables', 'total_memberships', 'active_tables_now',
+             'pending_reports', 'total_bans', 'banned_users_distinct').first()
+    if row is None:   # viewer without a profile row: fall back to plain counts
+        return {'total_users': Profile.objects.count(), 'total_tables': Table.objects.count(),
+                'total_memberships': Membership.objects.count(),
+                'active_tables_now': Table.objects.filter(status='open').count(),
+                'pending_reports': Report.objects.filter(status='pending').count(),
+                'total_bans': Ban.objects.count(),
+                'banned_users_distinct': Ban.objects.values('user_id').distinct().count()}
+    return row
 
 
 @rpc('admin_get_stats')
@@ -350,16 +388,24 @@ def admin_get_table(p_table: UUID):
     t = Table.objects.filter(pk=p_table).first() if p_table is not None else None
     if t is None:
         fail('Tavolina nuk u gjet')
-    profs = _profiles()
-    emails = _emails()
+    member_rows = list(Membership.objects.filter(table_id=p_table).values())
+    request_rows = list(Request.objects.filter(table_id=p_table).order_by('-created_at').values())
+    waitlist_rows = list(Waitlist.objects.filter(table_id=p_table).order_by('created_at').values())
+    pay_rows = list(Payment.objects.filter(table_id=p_table).order_by('-created_at').values())
+    report_rows = list(Report.objects.filter(table_id=p_table).order_by('-created_at').values())
+    ids = ({t.host_id} | {m['user_id'] for m in member_rows} | {r['user_id'] for r in request_rows}
+           | {w['user_id'] for w in waitlist_rows} | {x['user_id'] for x in pay_rows}
+           | {r['reporter_id'] for r in report_rows} | {r['reported_id'] for r in report_rows})
+    profs = _profiles(ids)
+    emails = dict(AuthUser.objects.filter(pk__in=[i for i in ids if i]).values_list('id', 'email'))
     host = profs.get(t.host_id)
     table = _row(t)
     table.update(host_name=_name(host), host_photo_path=host and host['photo_path'],
                  host_email=emails.get(t.host_id), is_past=t.event_datetime <= common.now())
 
-    pays = {p['user_id']: p for p in Payment.objects.filter(table_id=p_table).values()}
+    pays = {p['user_id']: p for p in pay_rows}
     members = []
-    for m in Membership.objects.filter(table_id=p_table).values():
+    for m in member_rows:
         p = profs.get(m['user_id'])
         if p is None:
             continue
@@ -374,7 +420,7 @@ def admin_get_table(p_table: UUID):
     members.sort(key=lambda x: x['role'] != 'host')
 
     requests = []
-    for r in Request.objects.filter(table_id=p_table).order_by('-created_at').values():
+    for r in request_rows:
         p = profs.get(r['user_id'])
         if p is None:
             continue
@@ -384,20 +430,19 @@ def admin_get_table(p_table: UUID):
 
     waitlist = [{'user_id': w['user_id'], 'created_at': w['created_at'],
                  'first_name': profs[w['user_id']]['first_name'], 'last_name': profs[w['user_id']]['last_name']}
-                for w in Waitlist.objects.filter(table_id=p_table).order_by('created_at').values()
-                if w['user_id'] in profs]
+                for w in waitlist_rows if w['user_id'] in profs]
 
     payments = [{'id': p['id'], 'user_id': p['user_id'], 'amount_cents': p['amount_cents'],
                  'currency': p['currency'], 'status': p['status'], 'provider': p['provider'],
                  'provider_ref': p['provider_ref'], 'ticket_code': p['ticket_code'],
                  'created_at': p['created_at'],
                  'payer_name': _coalesce(_name(profs.get(p['user_id'])), p['payer_name'])}
-                for p in Payment.objects.filter(table_id=p_table).order_by('-created_at').values()]
+                for p in pay_rows]
 
     reports = [{'id': r['id'], 'reason': r['reason'], 'status': r['status'], 'created_at': r['created_at'],
                 'reporter_name': _name(profs.get(r['reporter_id'])),
                 'reported_name': _name(profs.get(r['reported_id'])), 'reported_id': r['reported_id']}
-               for r in Report.objects.filter(table_id=p_table).order_by('-created_at').values()]
+               for r in report_rows]
 
     msgs = list(Message.objects.filter(table_id=p_table).values_list('created_at', flat=True))
     return {
@@ -658,22 +703,33 @@ def admin_list_tables(p_search: str = None, p_status: str = 'all', p_kind: str =
     offset = max(0, p_offset or 0)
     rx = _like_regex(q) if q is not None else None
     now = common.now()
-    profs = _profiles()
-    guests = _count_by(Membership.objects.filter(role='member'), 'table_id')
-    seated = _count_by(Membership.objects.all(), 'table_id')
-    pending = _count_by(Request.objects.filter(status='pending'), 'table_id')
-    approved = _count_by(Request.objects.filter(status='approved'), 'table_id')
-    wait = _count_by(Waitlist.objects.all(), 'table_id')
-    paid_count, revenue = {}, {}
-    for tid, cents in Payment.objects.filter(status='paid').values_list('table_id', 'amount_cents'):
-        paid_count[tid] = paid_count.get(tid, 0) + 1
-        revenue[tid] = revenue.get(tid, 0) + cents
-    msgs = _count_by(Message.objects.all(), 'table_id')
-    reps = _count_by(Report.objects.all(), 'table_id')
+    # Per-table counts are computed by the database inside one query, instead of loading
+    # every membership / request / message / payment row and counting them in Python.
+    table_rows = list(Table.objects.annotate(
+        n_guests=_count_sub(Membership.objects.filter(role='member'), 'table_id'),
+        n_seated=_count_sub(Membership.objects.all(), 'table_id'),
+        n_pending=_count_sub(Request.objects.filter(status='pending'), 'table_id'),
+        n_approved=_count_sub(Request.objects.filter(status='approved'), 'table_id'),
+        n_wait=_count_sub(Waitlist.objects.all(), 'table_id'),
+        n_paid=_count_sub(Payment.objects.filter(status='paid'), 'table_id'),
+        n_revenue=_sum_sub(Payment.objects.filter(status='paid'), 'table_id', 'amount_cents'),
+        n_msgs=_count_sub(Message.objects.all(), 'table_id'),
+        n_reports=_count_sub(Report.objects.all(), 'table_id'),
+    ).order_by('-created_at').values())
+    profs = _profiles({t['host_id'] for t in table_rows})
+    guests = {t['id']: t['n_guests'] for t in table_rows}
+    seated = {t['id']: t['n_seated'] for t in table_rows}
+    pending = {t['id']: t['n_pending'] for t in table_rows}
+    approved = {t['id']: t['n_approved'] for t in table_rows}
+    wait = {t['id']: t['n_wait'] for t in table_rows}
+    paid_count = {t['id']: t['n_paid'] for t in table_rows}
+    revenue = {t['id']: t['n_revenue'] for t in table_rows}
+    msgs = {t['id']: t['n_msgs'] for t in table_rows}
+    reps = {t['id']: t['n_reports'] for t in table_rows}
 
     official_ids = set(OfficialEvent.objects.values_list('table_id', flat=True)) if p_status == 'official' else set()
     rows = []
-    for t in Table.objects.order_by('-created_at').values():
+    for t in table_rows:
         h = profs.get(t['host_id'])
         tid = t['id']
         b = {k: t[k] for k in ('id', 'title', 'kind', 'category', 'city', 'to_city', 'area', 'time_label',
@@ -725,19 +781,27 @@ def admin_list_users(p_search: str = None, p_status: str = 'all', p_sort: str = 
     offset = max(0, p_offset or 0)
     rx = _like_regex(q) if q is not None else None
     users = {u['id']: u for u in AuthUser.objects.values('id', 'email', 'last_sign_in_at', 'email_confirmed_at')}
-    hosted = _count_by(Table.objects.all(), 'host_id')
-    joined = _count_by(Membership.objects.filter(role='member'), 'user_id')
-    pay_count, paid_cents = {}, {}
-    for uid, cents in Payment.objects.filter(status='paid').values_list('user_id', 'amount_cents'):
-        pay_count[uid] = pay_count.get(uid, 0) + 1
-        paid_cents[uid] = paid_cents.get(uid, 0) + cents
-    bans = _count_by(Ban.objects.all(), 'user_id')
-    rep = _count_by(Report.objects.all(), 'reported_id')
-    rep_p = _count_by(Report.objects.filter(status='pending'), 'reported_id')
-    blocked = _count_by(Block.objects.all(), 'blocked_id')
+    profile_rows = list(Profile.objects.annotate(
+        n_hosted=_count_sub(Table.objects.all(), 'host_id'),
+        n_joined=_count_sub(Membership.objects.filter(role='member'), 'user_id'),
+        n_pay=_count_sub(Payment.objects.filter(status='paid'), 'user_id'),
+        n_paid_cents=_sum_sub(Payment.objects.filter(status='paid'), 'user_id', 'amount_cents'),
+        n_bans=_count_sub(Ban.objects.all(), 'user_id'),
+        n_rep=_count_sub(Report.objects.all(), 'reported_id'),
+        n_rep_p=_count_sub(Report.objects.filter(status='pending'), 'reported_id'),
+        n_blocked=_count_sub(Block.objects.all(), 'blocked_id'),
+    ).order_by('-created_at').values())
+    hosted = {p['user_id']: p['n_hosted'] for p in profile_rows}
+    joined = {p['user_id']: p['n_joined'] for p in profile_rows}
+    pay_count = {p['user_id']: p['n_pay'] for p in profile_rows}
+    paid_cents = {p['user_id']: p['n_paid_cents'] for p in profile_rows}
+    bans = {p['user_id']: p['n_bans'] for p in profile_rows}
+    rep = {p['user_id']: p['n_rep'] for p in profile_rows}
+    rep_p = {p['user_id']: p['n_rep_p'] for p in profile_rows}
+    blocked = {p['user_id']: p['n_blocked'] for p in profile_rows}
 
     rows = []
-    for p in Profile.objects.order_by('-created_at').values():
+    for p in profile_rows:
         uid = p['user_id']
         u = users.get(uid) or {}
         b = {k: p[k] for k in ('first_name', 'last_name', 'age', 'photo_path', 'is_tourist', 'from_place',
