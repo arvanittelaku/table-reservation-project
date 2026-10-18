@@ -2889,7 +2889,7 @@ function HajdeApp() {
         <div className="hero hero-login">
           <h1 className="logo-word hero-logo">eja<span className="logo-bang">Bashkohu</span></h1>
           <form className="ob-card" style={{ width: "100%", maxWidth: 340 }} onSubmit={submitNewPassword}>
-            <p className="ob-q" style={{ color: "#1E2432" }}>{t('passwordRecovery.title')}</p>
+            <p className="ob-q">{t('passwordRecovery.title')}</p>
             <PasswordInput
               className="input xl"
               placeholder={t('passwordRecovery.placeholder')}
@@ -3093,7 +3093,7 @@ function HajdeApp() {
 
                   {forgotPassword ? (
                     <form className="ob-card" style={{ width: "100%", maxWidth: 340 }} onSubmit={handleForgotPassword}>
-                      <p className="ob-q" style={{ color: "#1E2432" }}>{t('auth.resetTitle')}</p>
+                      <p className="ob-q">{t('auth.resetTitle')}</p>
                       {forgotSent ? (
                         <p className="step-hint" style={{ textAlign: "center" }}>
                           {t('auth.resetSent')}
@@ -3129,7 +3129,7 @@ function HajdeApp() {
                     </form>
                   ) : (
                     <form className="ob-card" style={{ width: "100%", maxWidth: 340 }} onSubmit={handleSignIn}>
-                      <p className="ob-q" style={{ color: "#1E2432" }}>{t('auth.signInTitle')}</p>
+                      <p className="ob-q">{t('auth.signInTitle')}</p>
                       {socialButtons}
                       <input
                         className="input xl"

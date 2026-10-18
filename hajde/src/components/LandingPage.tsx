@@ -27,22 +27,49 @@ export default function LandingPage({ onGetStarted, onSignIn }: { onGetStarted: 
         </nav>
 
         <div className="landing-hero-content">
-          <div className="landing-live-strip">
-            <span className="landing-live-dot" />
-            Live events tonight
+          <div className="landing-hero-text">
+            <div className="landing-live-strip">
+              <span className="landing-live-dot" />
+              {t('landing.liveBadge')}
+            </div>
+            <h1 className="landing-h1">
+              {t('landing.heroTitleBefore')}
+              <br />
+              {t('landing.heroTitleMid') ? `${t('landing.heroTitleMid')} ` : ''}
+              <em>{t('landing.heroTitleEmphasis')}</em>
+              {t('landing.heroTitleAfter') ? ` ${t('landing.heroTitleAfter')}` : ''}
+            </h1>
+            <p className="landing-sub">{t('landing.heroSubtitle')}</p>
+            <div className="landing-hero-actions">
+              <button type="button" className="btn hero-cta" onClick={onGetStarted}>
+                {t('nav.joinCtaFree')}
+              </button>
+              <a href="#si-funksionon" className="landing-hero-link">
+                {t('landing.heroHow')}
+              </a>
+            </div>
+            <p className="landing-fee">{t('landing.heroFee')}</p>
           </div>
-          <h1 className="landing-h1">
-            {t('landing.heroTitleBefore')}
-            <br />
-            {t('landing.heroTitleMid') ? `${t('landing.heroTitleMid')} ` : ''}
-            <em>{t('landing.heroTitleEmphasis')}</em>
-            {t('landing.heroTitleAfter') ? ` ${t('landing.heroTitleAfter')}` : ''}
-          </h1>
-          <p className="landing-sub">{t('landing.heroSubtitle')}</p>
-          <button type="button" className="btn hero-cta" onClick={onGetStarted}>
-            {t('nav.joinCtaFree')}
-          </button>
-          <p className="landing-fee">{t('landing.heroFee')}</p>
+
+          <div className="landing-hero-cards" aria-hidden="true">
+            <div className="lp-card lp-card-main">
+              <span className="lp-card-label lp-cyan">{t('landing.heroCards.mainLabel')}</span>
+              <strong className="lp-card-title">{t('landing.heroCards.mainTitle')}</strong>
+              <div className="lp-spots">
+                <span className="lp-spot lp-spot-1" />
+                <span className="lp-spot lp-spot-2" />
+                <span className="lp-spot lp-spot-3" />
+                <span className="lp-spot lp-spot-empty" />
+                <span className="lp-spot-count">4/6</span>
+              </div>
+              <span className="lp-card-sub">{t('landing.heroCards.mainHost')}</span>
+            </div>
+            <div className="lp-card lp-card-sport">
+              <span className="lp-card-label lp-gold">{t('landing.heroCards.sportLabel')}</span>
+              <strong className="lp-card-title lp-card-title-sm">{t('landing.heroCards.sportTitle')}</strong>
+              <span className="lp-card-sub">{t('landing.heroCards.sportSeats')}</span>
+            </div>
+          </div>
         </div>
       </section>
 

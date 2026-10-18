@@ -1104,14 +1104,72 @@ body { overflow-x: clip; }
 .landing-hero-content {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  text-align: center;
+  gap: 56px;
+  width: 100%;
+  max-width: 1260px;
+  margin: 0 auto;
   padding: 60px 28px 100px;
-  gap: 24px;
   position: relative;
   z-index: 2;
+}
+.landing-hero-text {
+  flex: 1 1 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 24px;
+}
+.landing-hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.landing-hero-link {
+  color: #EDEAFF; font-weight: 700; font-size: 16px; text-decoration: none; padding: 14px 18px;
+}
+.landing-hero-link:hover { color: #FF4FD8; }
+
+/* Floating glass cards (right column) */
+.landing-hero-cards { flex: 1 1 400px; min-height: 440px; position: relative; perspective: 900px; }
+.lp-card {
+  position: absolute; border-radius: 26px; padding: 26px; display: flex; flex-direction: column; gap: 14px;
+  box-shadow: 0 40px 80px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.18);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+.lp-card-main {
+  left: 0; top: 20px; width: 310px;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
+  animation: lp-card-float1 8s ease-in-out infinite;
+}
+.lp-card-sport {
+  right: 0; bottom: 40px; width: 250px;
+  background: linear-gradient(145deg, rgba(124,245,255,.18), rgba(255,255,255,.04));
+  border: 1px solid rgba(124,245,255,.38);
+  animation: lp-card-float2 7s ease-in-out infinite; animation-delay: 1.2s;
+}
+.lp-card-label { font-size: 12px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; }
+.lp-cyan { color: #7CF5FF; }
+.lp-gold { color: #FFE66D; }
+.lp-card-title { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 700; color: #EDEAFF; }
+.lp-card-title-sm { font-size: 18px; }
+.lp-card-sub { color: #9995C0; font-size: 14px; }
+.lp-spots { display: flex; gap: 6px; align-items: center; }
+.lp-spot { width: 32px; height: 32px; border-radius: 9px; }
+.lp-spot-1 { background: #FF4FD8; }
+.lp-spot-2 { background: #7CF5FF; }
+.lp-spot-3 { background: #FFE66D; }
+.lp-spot-empty { border: 1.5px dashed #9995C0; }
+.lp-spot-count { font-weight: 700; font-size: 15px; margin-left: 4px; color: #9995C0; }
+@keyframes lp-card-float1 { 0%,100%{transform:translateY(0) rotateX(6deg) rotateY(-14deg)} 50%{transform:translateY(-16px) rotateX(3deg) rotateY(-8deg)} }
+@keyframes lp-card-float2 { 0%,100%{transform:translateY(0) rotateX(-4deg) rotateY(10deg)} 50%{transform:translateY(-10px) rotateX(-2deg) rotateY(5deg)} }
+@media (max-width: 768px) {
+  .landing-hero-content { gap: 40px; padding: 40px 20px 70px; }
+  .landing-hero-cards { min-height: 340px; }
+  .lp-card-main { width: 250px; }
+  .lp-card-sport { width: 200px; }
+}
+@media (max-width: 500px) {
+  .landing-hero-cards { display: none; }
 }
 
 /* Live events ticker above headline */
@@ -1145,17 +1203,14 @@ body { overflow-x: clip; }
   font-weight: 900;
   color: #FFFFFF;
   line-height: 1.12;
-  letter-spacing: -1px;
+  letter-spacing: -1.5px;
   max-width: 780px;
   margin: 0;
 }
 
 .landing-h1 em {
   font-style: normal;
-  background: linear-gradient(90deg, #FF4FD8, #7CF5FF);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #FF4FD8;
 }
 
 .landing-sub {
@@ -2357,3 +2412,55 @@ body { overflow-x: clip; }
 .official-upsell { border: 1px solid #E9D3A4; background: #FFF8EA; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .official-upsell p { margin: 0; font-size: 13px; line-height: 1.45; color: #5B4A2A; }
 .official-upsell .official-upsell-title { font-weight: 800; display: flex; align-items: center; gap: 6px; color: #7A5410; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   B·Night Out — logged-out screens (sign-in, forgot password, hero)
+   Overrides the generic light-theme .input / .btn.primary / .hero rules.
+   ═══════════════════════════════════════════════════════════════════════ */
+.app.onboard,
+.app.onboard.hero-bg { background: #080810; color: #FFFFFF; max-width: none; position: relative; }
+.app.onboard.hero-bg::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(520px 420px at 15% 10%, rgba(255,79,216,0.22), transparent 70%),
+    radial-gradient(520px 420px at 90% 85%, rgba(124,245,255,0.14), transparent 70%);
+}
+.app.onboard > * { position: relative; z-index: 1; }
+.app.onboard .hero { background: transparent; }
+
+.app.onboard .logo-word { color: #FFFFFF; font-family: 'Unbounded', sans-serif; font-weight: 900; }
+.app.onboard .logo-bang { color: #FF4FD8; }
+
+.app.onboard .ob-q { color: #FFFFFF; font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 16px; text-align: center; }
+
+.app.onboard .input,
+.app.onboard .input.xl {
+  background: rgba(255,255,255,0.07); color: #FFFFFF;
+  border: 1px solid rgba(255,255,255,0.14);
+}
+.app.onboard .input::placeholder { color: rgba(255,255,255,0.4); }
+.app.onboard .input:focus {
+  outline: none; border-color: #FF4FD8; box-shadow: 0 0 0 3px rgba(255,79,216,0.18);
+}
+.app.onboard input:-webkit-autofill {
+  -webkit-text-fill-color: #FFFFFF; caret-color: #FFFFFF;
+  -webkit-box-shadow: 0 0 0 1000px #17172a inset;
+}
+
+.app.onboard .btn.primary {
+  background: linear-gradient(135deg, #FF4FD8, #A855F7); color: #FFFFFF; border: none;
+  box-shadow: 0 8px 28px rgba(255,79,216,0.35);
+}
+.app.onboard .btn.primary:hover { background: linear-gradient(135deg, #ff68de, #b66cf8); }
+.app.onboard .btn.primary:disabled { opacity: .55; box-shadow: none; }
+
+.app.onboard .link-btn { color: #FF4FD8; }
+.app.onboard .forgot-link { color: rgba(255,255,255,0.5); }
+.app.onboard .forgot-link:hover { color: #FF4FD8; }
+.app.onboard .age-warn { color: #FF8FA3; }
+.app.onboard .step-hint { color: rgba(255,255,255,0.6); }
+
+.app.onboard .lang-switcher { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); }
+.app.onboard .lang-switcher button { color: rgba(255,255,255,0.7); }
+.app.onboard .lang-switcher button.active,
+.app.onboard .lang-switcher .active { background: #FF4FD8; color: #FFFFFF; }

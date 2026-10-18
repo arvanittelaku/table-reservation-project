@@ -44,6 +44,16 @@ export default {
     heroSubtitle:
       'Kosovo’s social platform where people open tables at cafés, organize hikes, and share rides. You choose where to sit.',
     heroFee: 'Free registration · Seat reservation 2.00 €',
+    liveBadge: 'Live · events open tonight',
+    heroHow: 'How it works →',
+    heroCards: {
+      mainLabel: 'Tonight · 21:00',
+      mainTitle: 'Quiz at Soma',
+      mainHost: 'host: Dardan · 0.6 km',
+      sportLabel: 'Sport · tomorrow',
+      sportTitle: 'Padel 2v2',
+      sportSeats: '1 free seat',
+    },
     howTitle: 'How does ejaBashkohu work?',
     steps: {
       s1: {

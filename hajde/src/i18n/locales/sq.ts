@@ -44,6 +44,16 @@ export default {
     heroSubtitle:
       'Platforma sociale e Kosovës ku njerëzit hapin tavolina në kafene, organizojnë hiking dhe ndajnë vozitje. Ti zgjedh ku të ulesh.',
     heroFee: 'Regjistrim falas · Rezervimi i vendit 2.00 €',
+    liveBadge: 'LIVE · ngjarje të hapura sonte',
+    heroHow: 'Si funksionon →',
+    heroCards: {
+      mainLabel: 'Sonte · 21:00',
+      mainTitle: 'Kuiz te Soma',
+      mainHost: 'nikoqir: Dardani · 0,6 km',
+      sportLabel: 'Sport · nesër',
+      sportTitle: 'Padel 2v2',
+      sportSeats: '1 vend i lirë',
+    },
     howTitle: 'Si funksionon ejaBashkohu?',
     steps: {
       s1: {

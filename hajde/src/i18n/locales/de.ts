@@ -44,6 +44,16 @@ export default {
     heroSubtitle:
       'Kosovos soziale Plattform, auf der Menschen Tische in Cafés eröffnen, Wanderungen organisieren und Fahrten teilen. Du wählst, wo du sitzt.',
     heroFee: 'Kostenlose Registrierung · Platzreservierung 2,00 €',
+    liveBadge: 'Live · Events heute Abend',
+    heroHow: 'So funktioniert’s →',
+    heroCards: {
+      mainLabel: 'Heute · 21:00',
+      mainTitle: 'Quiz bei Soma',
+      mainHost: 'Gastgeber: Dardan · 0,6 km',
+      sportLabel: 'Sport · morgen',
+      sportTitle: 'Padel 2v2',
+      sportSeats: '1 freier Platz',
+    },
     howTitle: 'Wie funktioniert ejaBashkohu?',
     steps: {
       s1: {
