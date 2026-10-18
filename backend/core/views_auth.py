@@ -329,8 +329,8 @@ def _oauth_sign_in(provider, provider_id, email, verified, data):
     else:
         user = acc.get_user_by_email(email) if (email and verified) else None
         if user:  # same verified email: link the provider to the existing account
-            Identity(provider_id=provider_id, user=user, identity_data=data, provider=provider,
-                     last_sign_in_at=now, email=email).save(force_insert=True)
+            Identity.insert(provider_id=provider_id, user=user, identity_data=data, provider=provider,
+                            last_sign_in_at=now)
             providers = sorted(set(Identity.objects.filter(user_id=user.id).values_list('provider', flat=True)))
             user.raw_app_meta_data = {**(user.raw_app_meta_data or {}), 'providers': providers}
             if user.email_confirmed_at is None:

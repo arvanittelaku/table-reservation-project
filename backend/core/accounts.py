@@ -84,8 +84,8 @@ def create_user(email, password, user_metadata, provider='email', confirmed=Fals
     user.save(force_insert=True)          # hook: creates the profile
     data = identity_data or {'sub': str(user.id), 'email': email, 'email_verified': confirmed,
                              'phone_verified': False}
-    Identity(provider_id=provider_id or str(user.id), user=user, identity_data=data, provider=provider,
-             last_sign_in_at=now, email=email).save(force_insert=True)
+    Identity.insert(provider_id=provider_id or str(user.id), user=user, identity_data=data, provider=provider,
+                    last_sign_in_at=now)
     return user
 
 

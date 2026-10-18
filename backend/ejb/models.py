@@ -89,6 +89,17 @@ class Identity(models.Model):
         db_table = 'auth"."identities'
         constraints = [models.UniqueConstraint(fields=['provider_id', 'provider'], name='identities_provider_id_provider_unique')]
 
+    @classmethod
+    def insert(cls, **kwargs):
+        """INSERT without the `email` column. On Supabase auth.identities.email is
+        GENERATED ALWAYS (lower(identity_data->>'email')) and rejects any value; on a
+        database built by Django it is a plain nullable column nothing reads."""
+        kwargs.pop('email', None)
+        obj = cls(**kwargs)
+        fields = [f for f in cls._meta.concrete_fields if f.name != 'email']
+        cls._base_manager._insert([obj], fields=fields, using='default')
+        return obj
+
 
 class RefreshToken(models.Model):
     token_hash = models.TextField(primary_key=True)
