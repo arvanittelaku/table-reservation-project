@@ -168,16 +168,22 @@ class RealtimeConsumer(AsyncJsonWebsocketConsumer):
 # ───────────── background: job runner + scheduled work ─────────────
 
 async def job_runner():
-    """Runs queued jobs when woken through Redis (ejb.jobs.wake) and every 30 s."""
+    """Runs queued jobs when woken through Redis (ejb.jobs.wake) and every 30 s.
+
+    Falls back to a simple polling loop when Redis is unavailable (e.g. local
+    dev on Windows without a Redis server running).
+    """
     import redis.asyncio as aioredis
     from ejb.jobs import WAKE_CHANNEL
     from .jobs import run_pending
     run = sync_to_async(run_pending, thread_sensitive=False)
+    _redis_warned = False
     while True:
         try:
             r = aioredis.from_url(settings.REDIS_URL)
             pubsub = r.pubsub()
             await pubsub.subscribe(WAKE_CHANNEL)
+            _redis_warned = False
             await run()
             while True:
                 msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=30)
@@ -186,9 +192,21 @@ async def job_runner():
                     continue
         except asyncio.CancelledError:
             raise
-        except Exception:
-            log.exception('job runner crashed; restarting')
-            await asyncio.sleep(2)
+        except Exception as exc:
+            # If Redis is simply not running locally, log once and poll instead.
+            err = str(exc)
+            if 'ConnectionError' in type(exc).__name__ or 'ConnectionRefused' in err or 'refused' in err.lower():
+                if not _redis_warned:
+                    log.warning('Redis unavailable (%s) — job runner falling back to 30-second polling', err)
+                    _redis_warned = True
+                try:
+                    await run()
+                except Exception:
+                    log.exception('job runner (poll fallback) error')
+                await asyncio.sleep(30)
+            else:
+                log.exception('job runner crashed; restarting')
+                await asyncio.sleep(2)
 
 
 async def _leader(name, ttl=120):
