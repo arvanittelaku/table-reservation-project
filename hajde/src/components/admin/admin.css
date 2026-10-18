@@ -507,3 +507,6 @@ div.adm .adm-skel { background: linear-gradient(90deg, rgba(255, 255, 255, 0.05)
 div.adm .adm-drawer-scrim { background: rgba(0, 0, 0, 0.6); }
 div.adm .adm-top { background: rgba(8, 8, 16, 0.85); }
 div.adm .adm-avatar { background: rgba(255, 255, 255, 0.1); color: #F2F1FA; }
+div.adm .adm-nav button.on { background: rgba(255, 79, 216, 0.16); }
+div.adm .adm-nav button.on svg { color: #FF4FD8; }
+div.adm .adm-logo span { color: #FF4FD8; }
