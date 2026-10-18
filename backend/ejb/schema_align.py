@@ -28,6 +28,10 @@ def align(apps, schema_editor):
         for model in apps.get_app_config('ejb').get_models():
             table = model._meta.db_table
             short = table.split('"."')[-1]
+            if table.startswith('auth"."'):
+                # Supabase owns the auth schema; its tables can't be altered
+                # by the app's database role (and already have the live shape).
+                continue
             for f in model._meta.local_fields:
                 if not f.is_relation or not f.db_constraint:
                     continue
