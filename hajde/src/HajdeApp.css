@@ -2464,3 +2464,166 @@ body { overflow-x: clip; }
 .app.onboard .lang-switcher button { color: rgba(255,255,255,0.7); }
 .app.onboard .lang-switcher button.active,
 .app.onboard .lang-switcher .active { background: #FF4FD8; color: #FFFFFF; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   B·Night Out — logged-in app (feed, tables, sheets, chat, payment, modals)
+   Everything below is scoped to .app-shell so the logged-out screens above
+   keep their own rules. Tokens follow the design: #080810 bg, #0F0F1E /
+   #141426 surfaces, #FF4FD8 accent, #7CF5FF accent2, #FFE66D gold.
+   ═══════════════════════════════════════════════════════════════════════ */
+.app-shell {
+  --bn-bg: #080810; --bn-surface: #0F0F1E; --bn-surface2: #141426;
+  --bn-border: rgba(255,255,255,.10); --bn-border2: rgba(255,255,255,.06);
+  --bn-fg: #EDEAFF; --bn-muted: #9995C0;
+  --bn-accent: #FF4FD8; --bn-accent2: #7CF5FF; --bn-gold: #FFE66D; --bn-purple: #A99BFF;
+  --bn-on-accent: #0B0B14;
+  background: var(--bn-bg);
+  color: var(--bn-fg);
+  color-scheme: dark;
+}
+.app-shell .app,
+.app-shell .app-mobile-frame { background: var(--bn-bg); color: var(--bn-fg); }
+@media (min-width: 768px) {
+  .app-shell .app-mobile-frame { box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px var(--bn-border2); }
+}
+.app-shell h1, .app-shell h2, .app-shell h3, .app-shell h4,
+.app-shell .section-title, .app-shell .sheet-hdr h2, .app-shell .card h3 {
+  font-family: 'Unbounded', 'Manrope', sans-serif; color: var(--bn-fg); letter-spacing: -.3px;
+}
+.app-shell .card h3 { font-size: 15px; font-weight: 700; }
+.app-shell .muted, .app-shell .count, .app-shell .meta, .app-shell .langs,
+.app-shell .sheet-desc, .app-shell .desc, .app-shell .f-label, .app-shell .fee-note,
+.app-shell .label { color: var(--bn-muted); }
+.app-shell .desc, .app-shell .sheet-desc { color: #B9B5DA; }
+.app-shell .logo-word { color: var(--bn-fg); font-family: 'Unbounded', sans-serif; font-weight: 900; }
+.app-shell .logo-bang { color: var(--bn-accent); }
+
+/* Sidebar (desktop) */
+.app-sidebar { background: #0B0B16; border-right: 1px solid var(--bn-border2); }
+.app-sidebar .logo-word, .sidebar-logo .logo-word { color: #FFFFFF; font-family: 'Unbounded', sans-serif; font-weight: 900; }
+.sidebar-logo .logo-bang, .app-sidebar .logo-bang { color: #FF4FD8; }
+.sidebar-tag { color: #9995C0; }
+.sb-btn { color: #9995C0; }
+.sb-btn.on { background: rgba(255,79,216,.14); color: #FF4FD8; }
+.sb-btn:hover { background: rgba(255,255,255,.06); color: #FFFFFF; }
+.sb-badge { background: #FF4FD8; color: #0B0B14; }
+
+/* Header, city chips, bell, notifications */
+.app-shell .hdr { background: rgba(8,8,16,.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--bn-border2); }
+.app-shell .hdr-art { opacity: .12; filter: hue-rotate(250deg) saturate(1.4); }
+.app-shell .hdr-user { color: var(--bn-fg); }
+.app-shell .bell, .app-shell .icon-btn {
+  background: var(--bn-surface2); border: 1px solid var(--bn-border2); color: var(--bn-fg);
+}
+.app-shell .bell-badge, .app-shell .nav-count, .app-shell .chat-dot {
+  background: var(--bn-accent); color: var(--bn-on-accent);
+}
+.app-shell .notif-panel { background: #12122A; border: 1px solid var(--bn-border); box-shadow: 0 20px 50px rgba(0,0,0,.6); color: var(--bn-fg); }
+.app-shell .notif-hdr { border-bottom: 1px solid var(--bn-border2); }
+.app-shell .notif-item { border-bottom: 1px solid var(--bn-border2); }
+.app-shell .notif-item em { color: var(--bn-muted); }
+.app-shell .notif-icon { background: var(--bn-accent); }
+
+/* Chips, search */
+.app-shell .chip { background: var(--bn-surface2); border: 1px solid var(--bn-border2); color: var(--bn-fg); font-weight: 600; border-radius: 12px; }
+.app-shell .chip:hover { border-color: var(--bn-border); }
+.app-shell .chip.on { background: var(--bn-accent); border-color: var(--bn-accent); color: var(--bn-on-accent); font-weight: 700; }
+.app-shell .chip.city { border-radius: 12px; }
+.app-shell .chip.city.on { background: var(--bn-accent); border-color: var(--bn-accent); color: var(--bn-on-accent); }
+.app-shell .chip-count { opacity: .7; }
+.app-shell .search { background: var(--bn-surface2); border: 1px solid var(--bn-border2); color: var(--bn-muted); }
+.app-shell .search input { color: var(--bn-fg); }
+.app-shell .search input::placeholder { color: var(--bn-muted); }
+.app-shell .clear { background: rgba(255,255,255,.1); color: var(--bn-fg); }
+
+/* Cards */
+.app-shell .card { background: var(--bn-surface); border: 1px solid var(--bn-border2); box-shadow: none; border-radius: 22px; }
+.app-shell .card:hover { border-color: rgba(255,79,216,.4); box-shadow: 0 0 28px rgba(255,79,216,.12); }
+.app-shell .card.rec { border-color: rgba(255,79,216,.5); background: linear-gradient(150deg, rgba(255,79,216,.14), rgba(255,255,255,.03)); }
+.app-shell .seats-label { color: var(--bn-gold); }
+.app-shell .seats-label.full { color: #FF8FA3; }
+.app-shell .host { color: var(--bn-fg); }
+.app-shell .badge.joined, .app-shell .badge.approved { color: #7CF5B8; background: rgba(124,245,184,.12); border-color: rgba(124,245,184,.4); }
+.app-shell .badge.pending { color: var(--bn-gold); background: rgba(255,230,109,.12); }
+.app-shell .badge.women { color: #FF9AC4; background: rgba(255,154,196,.12); }
+.app-shell .badge.men { color: var(--bn-accent2); background: rgba(124,245,255,.12); }
+.app-shell .badge.hosting { color: var(--bn-accent); background: rgba(255,79,216,.14); }
+.app-shell .badge.ticket-mini { color: var(--bn-gold); background: rgba(255,230,109,.12); }
+.app-shell .tag { background: rgba(169,155,255,.14); color: var(--bn-purple); }
+.app-shell .avatar.dashed { border-color: rgba(255,255,255,.25); color: var(--bn-muted); background: transparent; }
+.app-shell img.avatar { border-color: var(--bn-border); }
+
+/* Banners / rows / boxes */
+.app-shell .wed-banner { background: linear-gradient(120deg, rgba(255,79,216,.22), rgba(124,245,255,.12));
+  border: 1px solid rgba(255,79,216,.35); box-shadow: 0 0 32px rgba(255,79,216,.14); }
+.app-shell .wed-kicker, .app-shell .wed-cta { color: var(--bn-accent2); }
+.app-shell .loc-row, .app-shell .host-box, .app-shell .pay-summary, .app-shell .req-card {
+  background: var(--bn-surface); border: 1px solid var(--bn-border2); color: var(--bn-fg);
+}
+.app-shell .loc-info { color: var(--bn-fg); }
+.app-shell .loc-link, .app-shell .link-btn { color: var(--bn-accent); }
+.app-shell .btn-reject { background: rgba(255,143,163,.12); color: #FF8FA3; border-color: rgba(255,143,163,.3); }
+.app-shell .btn-approve { background: #1FA85A; color: #fff; }
+.app-shell .empty p, .app-shell .empty-state { color: var(--bn-muted); }
+.app-shell .ticket { background: rgba(124,245,255,.08); border-color: rgba(124,245,255,.5); }
+.app-shell .ticket-left, .app-shell .ticket-left strong, .app-shell .ticket-note { color: var(--bn-gold); }
+.app-shell .ticket-code { color: var(--bn-accent); }
+.app-shell .success-ring { background: rgba(124,245,255,.12); color: var(--bn-accent2); }
+.app-shell .pay-row.total { border-top-color: var(--bn-border); color: var(--bn-fg); }
+.app-shell .method { background: var(--bn-surface2); border-color: var(--bn-border2); color: var(--bn-fg); }
+.app-shell .method.on { background: rgba(255,79,216,.14); border-color: var(--bn-accent); color: var(--bn-accent); }
+.app-shell .quiz-bar { background: rgba(255,255,255,.1); }
+.app-shell .quiz-fill { background: var(--bn-accent); }
+
+/* Buttons, FAB, bottom nav */
+.app-shell .btn.primary, .app-shell .fab {
+  background: var(--bn-accent); color: var(--bn-on-accent);
+  box-shadow: 0 0 28px rgba(255,79,216,.45), 0 8px 20px rgba(255,79,216,.28);
+}
+.app-shell .btn.primary:hover { background: #ff69de; }
+.app-shell .btn.primary.glow { background: #1FA85A; color: #fff; box-shadow: 0 0 24px rgba(31,168,90,.4); }
+.app-shell .btn.ghost { background: transparent; color: var(--bn-fg); border: 1px solid var(--bn-border); }
+.app-shell .btn.ghost:hover { border-color: var(--bn-muted); }
+.app-shell .btn.safety { background: var(--bn-surface2); color: var(--bn-fg); border: 1px solid var(--bn-border); }
+.app-shell .nav { background: rgba(15,15,30,.92); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-top: 1px solid var(--bn-border2); }
+.app-shell .nav button { color: var(--bn-muted); }
+.app-shell .nav button.on { color: var(--bn-accent); }
+.sidebar-cta.btn.primary { background: #FF4FD8; color: #0B0B14; box-shadow: 0 0 28px rgba(255,79,216,.45); }
+
+/* Forms */
+.app-shell .input, .app-shell input.input, .app-shell select.input, .app-shell textarea.input,
+.app-shell .chat-input input {
+  background: rgba(255,255,255,.06); color: var(--bn-fg); border: 1px solid var(--bn-border);
+}
+.app-shell .input::placeholder, .app-shell .chat-input input::placeholder { color: var(--bn-muted); }
+.app-shell .input:focus, .app-shell .chat-input input:focus {
+  outline: none; border-color: var(--bn-accent); box-shadow: 0 0 0 3px rgba(255,79,216,.18);
+}
+.app-shell select.input option { background: #12122A; color: var(--bn-fg); }
+.app-shell .range, .app-shell .toggle-row input { accent-color: var(--bn-accent); }
+
+/* Sheets and modals */
+.app-shell .sheet-wrap, .sheet-wrap { background: rgba(4,4,10,.7); backdrop-filter: blur(4px); }
+.app-shell .sheet, .sheet { background: #0F0F1E; color: var(--bn-fg); border: 1px solid var(--bn-border2); border-bottom: none; }
+.app-shell .sheet-art { opacity: .25; filter: hue-rotate(250deg); }
+.app-shell .modal, .modal { background: #12122A; color: var(--bn-fg); border: 1px solid var(--bn-border); box-shadow: 0 30px 80px rgba(0,0,0,.7); }
+.app-shell .person em { color: var(--bn-gold); }
+.app-shell .person.free span { color: var(--bn-muted); }
+
+/* Chat */
+.app-shell .chat { border-top-color: var(--bn-border2); }
+.app-shell .bubble { background: var(--bn-surface2); border: 1px solid var(--bn-border2); color: var(--bn-fg); }
+.app-shell .bubble strong { color: var(--bn-accent2); }
+.app-shell .bubble em { color: var(--bn-muted); }
+.app-shell .bubble.mine { background: var(--bn-accent); color: var(--bn-on-accent); border: none; }
+.app-shell .bubble.mine em { color: rgba(11,11,20,.6); }
+.app-shell .icon-btn.send { background: var(--bn-accent); color: var(--bn-on-accent); border: none; }
+.app-shell .icon-btn.dice { background: rgba(255,230,109,.12); color: var(--bn-gold); border-color: rgba(255,230,109,.3); }
+
+/* Toast */
+.toast { background: #1B1B38; color: var(--bn-fg, #EDEAFF); border: 1px solid rgba(255,255,255,.12); }
+
+/* Leftover orange accents on small elements */
+.app-shell .verified { color: var(--bn-accent2); }
+.app-shell .stars { color: var(--bn-gold); }
