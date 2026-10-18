@@ -35,7 +35,7 @@ FEED_SELECT = ('*, host:%s, memberships(user_id, role, profile:profiles!membersh
 
 QUERIES = [
     ('feed: tables (Prishtinë)', {'table': 'tables', 'action': 'select', 'select': FEED_SELECT,
-                                   'filters': [], 'order': [{'column': 'event_datetime', 'ascending': True}], 'limit': 50}),
+                                   'filters': [{'col': 'city', 'op': 'eq', 'value': 'Prishtinë'}], 'order': [{'col': 'event_datetime', 'ascending': True}], 'limit': 50}),
     ('my notifications', {'table': 'notifications', 'action': 'select', 'select': '*', 'limit': 50}),
     ('my memberships', {'table': 'memberships', 'action': 'select', 'select': 'table_id'}),
     ('my profile', {'table': 'profiles', 'action': 'select', 'select': '*', 'limit': 5}),

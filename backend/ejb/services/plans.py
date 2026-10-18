@@ -89,22 +89,39 @@ def activate_subscription(p_user, p_plan, p_amount_cents, p_provider_ref):
 
 # ───────────── user ─────────────
 
+def _premium_state(u, is_admin):
+    """(is_premium, premium_until) from ONE query (was 3: admin check, subscription check, max end date)."""
+    now = context.now()
+    rows = list(Subscription.objects.filter(user_id=u, status='active', ends_at__gt=now)
+                .values_list('starts_at', 'ends_at'))
+    premium = bool(is_admin) or any(start <= now for start, _ in rows)
+    return premium, max((end for _, end in rows), default=None)
+
+
+def _plans_basic_and_active():
+    """The 'basic' plan row and the active plans, from one query (was 2)."""
+    from django.db.models import Q
+    rows = list(Plan.objects.filter(Q(active=True) | Q(pk='basic')).order_by('sort'))
+    return next((x for x in rows if x.id == 'basic'), None), [x for x in rows if x.active]
+
+
 @rpc('my_plan')
 @db_errors
 def my_plan():
     u = common.require_uid()
     p = Profile.objects.filter(pk=u).first()
-    b = Plan.objects.filter(pk='basic').first()
+    b, active_plans = _plans_basic_and_active()
     ms = common.month_start()
     o = (SubscriptionOrder.objects.filter(user_id=u, status='pending')
          .values('id', 'code', 'plan_id', 'amount_cents', 'created_at').first())
     plans = [{'id': x.id, 'tier': x.tier, 'months': x.months, 'price_cents': x.price_cents,
               'monthly_table_limit': x.monthly_table_limit, 'sort': x.sort}
-             for x in Plan.objects.filter(active=True).order_by('sort')]
+             for x in active_plans]
     changed = p.home_city_changed_at if p else None
+    premium, until = _premium_state(u, p.is_admin if p else False)
     return {
-        'tier': 'premium' if common.is_premium(u) else 'basic',
-        'premium_until': common.premium_until(u),
+        'tier': 'premium' if premium else 'basic',
+        'premium_until': until,
         'is_admin': p.is_admin if p else None,
         'home_city': p.home_city if p else None,
         'home_city_changed_at': changed,
@@ -141,15 +158,16 @@ def startup_bundle():
     taste = TasteProfile.objects.filter(user_id=u, done=True).first()
     affinity = list(Affinity.objects.filter(user_id=u).values('category', 'score'))
     badges = list(Badge.objects.filter(user_id=u).values('badge_id', 'earned_at'))
-    plan_row = Plan.objects.filter(pk='basic').first()
+    plan_row, active_plans = _plans_basic_and_active()
     ms = common.month_start()
     pending_order = (SubscriptionOrder.objects.filter(user_id=u, status='pending')
                      .values('id', 'code', 'plan_id', 'amount_cents', 'created_at').first())
     available_plans = [
         {'id': x.id, 'tier': x.tier, 'months': x.months, 'price_cents': x.price_cents,
          'monthly_table_limit': x.monthly_table_limit, 'sort': x.sort}
-        for x in Plan.objects.filter(active=True).order_by('sort')
+        for x in active_plans
     ]
+    premium, premium_until = _premium_state(u, p.is_admin if p else False)
     changed = p.home_city_changed_at if p else None
 
     profile_data = {
@@ -197,8 +215,8 @@ def startup_bundle():
         }
 
     plan_data = {
-        'tier': 'premium' if common.is_premium(u) else 'basic',
-        'premium_until': common.premium_until(u),
+        'tier': 'premium' if premium else 'basic',
+        'premium_until': premium_until,
         'is_admin': p.is_admin if p else None,
         'home_city': p.home_city if p else None,
         'home_city_changed_at': changed,

@@ -9,6 +9,8 @@ import datetime
 import re
 from uuid import UUID
 
+from django.db.models import Count, Q, Sum
+
 from .. import context
 from ..errors import fail
 from ..models import (AdminAuditLog, AuthUser, Ban, Block, Connection, Membership, Message,
@@ -136,34 +138,39 @@ def admin_get_dashboard(p_range: str = 'month'):
     paid = Payment.objects.filter(status='paid')
     future = Table.objects.filter(event_datetime__gt=now)
 
-    def csum(qs):
-        return sum(qs.values_list('amount_cents', flat=True))
-
+    # One aggregate query per table (conditional counts) instead of 26 separate count queries.
+    pr = Profile.objects.aggregate(
+        users_total=Count('pk'),
+        users_today=Count('pk', filter=Q(created_at__gte=today)),
+        users_7d=Count('pk', filter=Q(created_at__gte=d7)),
+        users_30d=Count('pk', filter=Q(created_at__gte=d30)),
+        users_deactivated=Count('pk', filter=Q(deactivated_at__isnull=False)),
+        admins=Count('pk', filter=Q(is_admin=True)))
+    au = AuthUser.objects.aggregate(
+        users_unconfirmed=Count('pk', filter=Q(email_confirmed_at__isnull=True)),
+        users_active_7d=Count('pk', filter=Q(last_sign_in_at__gte=d7)))
+    tb = Table.objects.aggregate(
+        tables_total=Count('pk'),
+        tables_upcoming=Count('pk', filter=Q(event_datetime__gt=now, status__in=('open', 'full'))),
+        tables_today=Count('pk', filter=Q(created_at__gte=today)),
+        tables_cancelled=Count('pk', filter=Q(status='cancelled')))
+    rq = Request.objects.aggregate(
+        requests_pending=Count('pk', filter=Q(status='pending', table__event_datetime__gt=now)),
+        requests_awaiting_payment=Count('pk', filter=Q(status='approved', table__event_datetime__gt=now)))
+    pay = Payment.objects.aggregate(
+        payments_count=Count('pk', filter=Q(status='paid')),
+        revenue_total_cents=Sum('amount_cents', filter=Q(status='paid')),
+        revenue_today_cents=Sum('amount_cents', filter=Q(status='paid', created_at__gte=today)),
+        revenue_30d_cents=Sum('amount_cents', filter=Q(status='paid', created_at__gte=d30)),
+        payments_stub=Count('pk', filter=Q(provider='stub')))
+    rp = Report.objects.aggregate(reports_pending=Count('pk', filter=Q(status='pending')), reports_total=Count('pk'))
+    bn = Ban.objects.aggregate(bans_total=Count('pk'), banned_users=Count('user_id', distinct=True))
     totals = {
-        'users_total': Profile.objects.count(),
-        'users_today': Profile.objects.filter(created_at__gte=today).count(),
-        'users_7d': Profile.objects.filter(created_at__gte=d7).count(),
-        'users_30d': Profile.objects.filter(created_at__gte=d30).count(),
-        'users_deactivated': Profile.objects.filter(deactivated_at__isnull=False).count(),
-        'users_unconfirmed': AuthUser.objects.filter(email_confirmed_at__isnull=True).count(),
-        'users_active_7d': AuthUser.objects.filter(last_sign_in_at__gte=d7).count(),
-        'admins': Profile.objects.filter(is_admin=True).count(),
-        'tables_total': Table.objects.count(),
-        'tables_upcoming': future.filter(status__in=('open', 'full')).count(),
-        'tables_today': Table.objects.filter(created_at__gte=today).count(),
-        'tables_cancelled': Table.objects.filter(status='cancelled').count(),
+        **pr, **au, **tb,
         'seats_taken': Membership.objects.filter(role='member').count(),
-        'requests_pending': Request.objects.filter(status='pending', table__event_datetime__gt=now).count(),
-        'requests_awaiting_payment': Request.objects.filter(status='approved', table__event_datetime__gt=now).count(),
-        'payments_count': paid.count(),
-        'revenue_total_cents': csum(paid),
-        'revenue_today_cents': csum(paid.filter(created_at__gte=today)),
-        'revenue_30d_cents': csum(paid.filter(created_at__gte=d30)),
-        'payments_stub': Payment.objects.filter(provider='stub').count(),
-        'reports_pending': Report.objects.filter(status='pending').count(),
-        'reports_total': Report.objects.count(),
-        'bans_total': Ban.objects.count(),
-        'banned_users': Ban.objects.values('user_id').distinct().count(),
+        **rq,
+        **{k: (v or 0) for k, v in pay.items()},
+        **rp, **bn,
         'wednesday_upcoming': WednesdayGroup.objects.filter(dinner_date__gt=now).count(),
         'wednesday_participants': WednesdayParticipant.objects.filter(group__dinner_date__gt=now).count(),
     }
@@ -225,6 +232,17 @@ def _coalesce(*vals):
     return None
 
 
+def _stats_totals():
+    t = Table.objects.aggregate(total_tables=Count('pk'), active_tables_now=Count('pk', filter=Q(status='open')))
+    r = Report.objects.aggregate(pending_reports=Count('pk', filter=Q(status='pending')))
+    b = Ban.objects.aggregate(total_bans=Count('pk'), banned_users_distinct=Count('user_id', distinct=True))
+    return {
+        'total_users': Profile.objects.count(),
+        'total_memberships': Membership.objects.count(),
+        **t, **r, **b,
+    }
+
+
 @rpc('admin_get_stats')
 def admin_get_stats(p_range: str = 'month'):
     _guard_view()
@@ -238,15 +256,7 @@ def admin_get_stats(p_range: str = 'month'):
         'tables_opened': _series(Table.objects.filter(created_at__gte=since).values_list('created_at', flat=True), unit),
         'memberships_joined': _series(Membership.objects.filter(joined_at__gte=since)
                                       .values_list('joined_at', flat=True), unit),
-        'totals': {
-            'total_users': Profile.objects.count(),
-            'total_tables': Table.objects.count(),
-            'total_memberships': Membership.objects.count(),
-            'active_tables_now': Table.objects.filter(status='open').count(),
-            'pending_reports': Report.objects.filter(status='pending').count(),
-            'total_bans': Ban.objects.count(),
-            'banned_users_distinct': Ban.objects.values('user_id').distinct().count(),
-        },
+        'totals': _stats_totals(),
     }
 
 
