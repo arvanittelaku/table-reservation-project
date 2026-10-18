@@ -27,6 +27,10 @@ export default function LandingPage({ onGetStarted, onSignIn }: { onGetStarted: 
         </nav>
 
         <div className="landing-hero-content">
+          <div className="landing-live-strip">
+            <span className="landing-live-dot" />
+            Live events tonight
+          </div>
           <h1 className="landing-h1">
             {t('landing.heroTitleBefore')}
             <br />
