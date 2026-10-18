@@ -2640,3 +2640,23 @@ body { overflow-x: clip; }
 .app-shell .live-dot { background: var(--bn-accent2); box-shadow: 0 0 0 0 rgba(124,245,255,.5); }
 .app-shell .count .live, .app-shell .count [class*="live"] { color: var(--bn-accent2); }
 .app-shell .card-left > div[style*="E8DFCC"] { background: rgba(255,255,255,.08) !important; }
+
+/* ── Choice buttons + quiz progress (taste quiz, Wednesday quiz, onboarding, edit profile) ── */
+.app-shell .choice, .app.onboard .choice {
+  background: rgba(255,255,255,.05);
+  border: 1.5px solid rgba(255,255,255,.12);
+  color: #F2F1FA;
+}
+.app-shell .choice:hover, .app.onboard .choice:hover { border-color: rgba(255,79,216,.5); background: rgba(255,255,255,.08); }
+.app-shell .choice.on, .app.onboard .choice.on {
+  background: rgba(255,79,216,.16);
+  border-color: #FF4FD8;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(255,79,216,.14);
+}
+.app-shell .quiz-dot, .app.onboard .quiz-dot { background: rgba(255,255,255,.18); }
+.app-shell .quiz-dot.answered, .app.onboard .quiz-dot.answered { background: rgba(255,79,216,.45); }
+.app-shell .quiz-dot.current, .app.onboard .quiz-dot.current { background: #FF4FD8; }
+.app-shell .quiz-fill, .app.onboard .quiz-fill { background: #FF4FD8; }
+.app-shell .quiz-q, .app.onboard .quiz-q { color: #fff; }
+.app-shell .quiz-skip, .app.onboard .quiz-skip { color: rgba(242,241,250,.6); }
