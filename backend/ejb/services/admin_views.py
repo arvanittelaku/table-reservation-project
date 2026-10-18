@@ -35,8 +35,22 @@ def _row(obj):
     return {f.column: getattr(obj, f.attname) for f in obj._meta.concrete_fields}
 
 
-def _profiles():
-    return {p['user_id']: p for p in Profile.objects.values()}
+def _profiles(ids=None):
+    qs = Profile.objects.all() if ids is None else Profile.objects.filter(pk__in=[i for i in ids if i])
+    return {p['user_id']: p for p in qs.values()}
+
+
+def _counts_row(base_qs, spec):
+    """Several counts in ONE query: base_qs.annotate(name=(SELECT COUNT FROM ...)) fetched as a single row.
+    spec: {name: (queryset filtered to the rows to count, outer-ref column on that queryset)}."""
+    from django.db.models import IntegerField, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+    ann = {}
+    for name, (qs, col) in spec.items():
+        sub = (qs.filter(**{col: OuterRef('pk')}).order_by().values(col)
+               .annotate(c=Count('pk')).values('c'))
+        ann[name] = Coalesce(Subquery(sub, output_field=IntegerField()), 0)
+    return base_qs.annotate(**ann).values(*spec.keys()).first() or {k: 0 for k in spec}
 
 
 def _emails():
@@ -188,23 +202,27 @@ def admin_get_dashboard(p_range: str = 'month'):
     by_city = sorted(_count_by(Table.objects.all(), 'city').items(), key=lambda kv: -kv[1])[:8]
     by_kind = sorted(_count_by(Table.objects.all(), 'kind').items(), key=lambda kv: -kv[1])
 
-    emails = _emails()
+    recent_rows = list(Profile.objects.order_by('-created_at').values()[:6])
+    emails = dict(AuthUser.objects.filter(pk__in=[p['user_id'] for p in recent_rows]).values_list('id', 'email'))
     recent_users = [
         {'id': p['user_id'], 'first_name': p['first_name'], 'last_name': p['last_name'],
          'photo_path': p['photo_path'], 'created_at': p['created_at'], 'email': emails.get(p['user_id'])}
-        for p in Profile.objects.order_by('-created_at').values()[:6]]
+        for p in recent_rows]
 
-    seated = _count_by(Membership.objects.all(), 'table_id')
+    upcoming_rows = list(future.filter(status__in=('open', 'full')).order_by('event_datetime').values()[:6])
+    seated = _count_by(Membership.objects.filter(table_id__in=[t['id'] for t in upcoming_rows]), 'table_id')
     upcoming = [
         {'id': t['id'], 'title': t['title'], 'city': t['city'], 'kind': t['kind'],
          'event_datetime': t['event_datetime'], 'spots': t['spots'], 'status': t['status'],
          'seated': seated.get(t['id'], 0)}
-        for t in future.filter(status__in=('open', 'full')).order_by('event_datetime').values()[:6]]
+        for t in upcoming_rows]
 
-    profs = _profiles()
-    titles = dict(Table.objects.values_list('id', 'title'))
+    pay_rows = list(Payment.objects.order_by('-created_at').values()[:6])
+    profs = _profiles({x['user_id'] for x in pay_rows})
+    titles = dict(Table.objects.filter(pk__in=[x['table_id'] for x in pay_rows if x['table_id']])
+                  .values_list('id', 'title'))
     recent_payments = []
-    for pay in Payment.objects.order_by('-created_at').values()[:6]:
+    for pay in pay_rows:
         recent_payments.append({
             'id': pay['id'], 'amount_cents': pay['amount_cents'], 'currency': pay['currency'],
             'status': pay['status'], 'provider': pay['provider'], 'ticket_code': pay['ticket_code'],
@@ -408,36 +426,56 @@ def admin_get_user(p_user: UUID):
     profile.update(id=p['user_id'], email=u.get('email'), last_sign_in_at=u.get('last_sign_in_at'),
                    email_confirmed_at=u.get('email_confirmed_at'), auth_created_at=u.get('created_at'))
 
-    paid = Payment.objects.filter(user_id=p_user, status='paid')
+    # All 13 counts in one round trip (a row of scalar subqueries) instead of 13+.
+    c = _counts_row(AuthUser.objects.filter(pk=p_user), {
+        'hosted': (Table.objects.all(), 'host_id'),
+        'joined': (Membership.objects.filter(role='member'), 'user_id'),
+        'requests': (Request.objects.all(), 'user_id'),
+        'payments': (Payment.objects.filter(status='paid'), 'user_id'),
+        'messages': (Message.objects.all(), 'sender_id'),
+        'ratings_given': (Rating.objects.all(), 'rater_id'),
+        'conn_a': (Connection.objects.all(), 'a_id'),
+        'conn_b': (Connection.objects.all(), 'b_id'),
+        'blocked_by': (Block.objects.all(), 'blocked_id'),
+        'blocking': (Block.objects.all(), 'blocker_id'),
+        'reports_against': (Report.objects.all(), 'reported_id'),
+        'reports_made': (Report.objects.all(), 'reporter_id'),
+        'bans': (Ban.objects.all(), 'user_id'),
+    })
+    my_pays = list(Payment.objects.filter(user_id=p_user).order_by('-created_at').values())
     counts = {
-        'hosted': Table.objects.filter(host_id=p_user).count(),
-        'joined': Membership.objects.filter(user_id=p_user, role='member').count(),
-        'requests': Request.objects.filter(user_id=p_user).count(),
-        'payments': paid.count(),
-        'paid_cents': sum(paid.values_list('amount_cents', flat=True)),
-        'messages': Message.objects.filter(sender_id=p_user).count(),
-        'ratings_given': Rating.objects.filter(rater_id=p_user).count(),
-        'connections': Connection.objects.filter(a_id=p_user).count() + Connection.objects.filter(b_id=p_user).count(),
-        'blocked_by': Block.objects.filter(blocked_id=p_user).count(),
-        'blocking': Block.objects.filter(blocker_id=p_user).count(),
-        'reports_against': Report.objects.filter(reported_id=p_user).count(),
-        'reports_made': Report.objects.filter(reporter_id=p_user).count(),
-        'bans': Ban.objects.filter(user_id=p_user).count(),
+        'hosted': c['hosted'], 'joined': c['joined'], 'requests': c['requests'],
+        'payments': c['payments'],
+        'paid_cents': sum(x['amount_cents'] or 0 for x in my_pays if x['status'] == 'paid'),
+        'messages': c['messages'], 'ratings_given': c['ratings_given'],
+        'connections': c['conn_a'] + c['conn_b'],
+        'blocked_by': c['blocked_by'], 'blocking': c['blocking'],
+        'reports_against': c['reports_against'], 'reports_made': c['reports_made'], 'bans': c['bans'],
     }
 
-    profs = _profiles()
-    guests = _count_by(Membership.objects.filter(role='member'), 'table_id')
+    hosted_rows = list(Table.objects.filter(host_id=p_user).order_by('-event_datetime').values()[:50])
+    member_rows = list(Membership.objects.filter(user_id=p_user, role='member').order_by('-joined_at').values()[:50])
+    request_rows = list(Request.objects.filter(user_id=p_user).order_by('-created_at').values()[:50])
+    against_rows = list(Report.objects.filter(reported_id=p_user).order_by('-created_at').values()[:50])
+    made_rows = list(Report.objects.filter(reporter_id=p_user).order_by('-created_at').values()[:50])
+
+    # Only the tables / people these rows point at, not the whole database.
+    table_ids = ({m['table_id'] for m in member_rows} | {r['table_id'] for r in request_rows}
+                 | {x['table_id'] for x in my_pays[:100] if x['table_id']}
+                 | {r['table_id'] for r in against_rows if r['table_id']})
+    tables = {t['id']: t for t in Table.objects.filter(pk__in=table_ids).values(
+        'id', 'title', 'kind', 'city', 'status', 'event_datetime', 'host_id')}
+    profs = _profiles({t['host_id'] for t in tables.values()} | {r['reporter_id'] for r in against_rows}
+                      | {r['reported_id'] for r in made_rows})
+    hosted_ids = [t['id'] for t in hosted_rows]
+    guests = _count_by(Membership.objects.filter(role='member', table_id__in=hosted_ids), 'table_id')
     hosted = [{'id': t['id'], 'title': t['title'], 'kind': t['kind'], 'city': t['city'], 'status': t['status'],
                'event_datetime': t['event_datetime'], 'spots': t['spots'], 'created_at': t['created_at'],
-               'guests': guests.get(t['id'], 0)}
-              for t in Table.objects.filter(host_id=p_user).order_by('-event_datetime').values()[:50]]
+               'guests': guests.get(t['id'], 0)} for t in hosted_rows]
 
-    tables = {t['id']: t for t in Table.objects.values('id', 'title', 'kind', 'city', 'status',
-                                                         'event_datetime', 'host_id')}
-    my_pays = list(Payment.objects.filter(user_id=p_user).order_by('-created_at').values())
     pay_by_table = {x['table_id']: x for x in my_pays if x['table_id'] is not None}
     joined = []
-    for m in Membership.objects.filter(user_id=p_user, role='member').order_by('-joined_at').values()[:50]:
+    for m in member_rows:
         t = tables[m['table_id']]
         pay = pay_by_table.get(t['id']) or {}
         joined.append({'id': t['id'], 'title': t['title'], 'kind': t['kind'], 'city': t['city'],
@@ -447,7 +485,7 @@ def admin_get_user(p_user: UUID):
                        'payment_status': pay.get('status')})
 
     requests = []
-    for r in Request.objects.filter(user_id=p_user).order_by('-created_at').values()[:50]:
+    for r in request_rows:
         t = tables[r['table_id']]
         requests.append({'id': r['id'], 'status': r['status'], 'created_at': r['created_at'],
                          'table_id': t['id'], 'table_title': t['title'], 'event_datetime': t['event_datetime']})
@@ -462,10 +500,10 @@ def admin_get_user(p_user: UUID):
                         'created_at': r['created_at'], 'reporter_id': r['reporter_id'],
                         'reporter_name': _name(profs.get(r['reporter_id'])),
                         'table_title': (tables.get(r['table_id']) or {}).get('title')}
-                       for r in Report.objects.filter(reported_id=p_user).order_by('-created_at').values()[:50]]
+                       for r in against_rows]
     reports_made = [{'id': r['id'], 'reason': r['reason'], 'status': r['status'], 'created_at': r['created_at'],
                      'reported_id': r['reported_id'], 'reported_name': _name(profs.get(r['reported_id']))}
-                    for r in Report.objects.filter(reporter_id=p_user).order_by('-created_at').values()[:50]]
+                    for r in made_rows]
     bans = [{'id': b['id'], 'reason': b['reason'], 'created_at': b['created_at']}
             for b in Ban.objects.filter(user_id=p_user).order_by('-created_at').values()]
 
