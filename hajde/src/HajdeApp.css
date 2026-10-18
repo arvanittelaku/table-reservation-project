@@ -2627,3 +2627,16 @@ body { overflow-x: clip; }
 /* Leftover orange accents on small elements */
 .app-shell .verified { color: var(--bn-accent2); }
 .app-shell .stars { color: var(--bn-gold); }
+
+/* ── Logged-in app: leftovers found on first look ── */
+.app-shell .mq-banner { background: rgba(255,79,216,.08); border: 1px dashed rgba(255,79,216,.55); color: var(--bn-fg); }
+.app-shell .mq-txt { color: #CFCBEA; }
+.app-shell .mq-txt strong { color: var(--bn-fg); }
+.app-shell .mq-banner .wed-cta { color: var(--bn-accent2); }
+.app-shell .browse-mode { background: var(--bn-surface2); border: 1px solid var(--bn-border2); color: var(--bn-fg); font-weight: 700; }
+.app-shell .browse-mode:hover { border-color: var(--bn-border); }
+.app-shell .browse-mode.on { background: var(--bn-accent); border-color: var(--bn-accent); color: var(--bn-on-accent); }
+.app-shell .empty p strong { color: var(--bn-fg); }
+.app-shell .live-dot { background: var(--bn-accent2); box-shadow: 0 0 0 0 rgba(124,245,255,.5); }
+.app-shell .count .live, .app-shell .count [class*="live"] { color: var(--bn-accent2); }
+.app-shell .card-left > div[style*="E8DFCC"] { background: rgba(255,255,255,.08) !important; }

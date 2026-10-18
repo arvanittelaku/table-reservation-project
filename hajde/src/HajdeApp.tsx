@@ -469,14 +469,14 @@ function CityScape({ variant = "generic", tone = "light", height = 78 }: { varia
     const y = size / 2 + r * Math.sin(angle);
     dots.push(
       <circle key={i} cx={x} cy={y} r={4}
-        fill={i < taken ? "#FF6B35" : "none"}
-        stroke={i < taken ? "#FF6B35" : "#00C9A7"}
+        fill={i < taken ? "#FF4FD8" : "none"}
+        stroke={i < taken ? "#FF4FD8" : "#7CF5FF"}
         strokeWidth={i < taken ? 0 : 2} />
     );
   }
   return (
     <svg width={size} height={size} aria-label={t('appMisc.seatsTakenAria', { taken, total })}>
-      <circle cx={size / 2} cy={size / 2} r={size / 5.5} fill="#FFF5F2" stroke="#FFD5C5" strokeWidth="1.5" />
+      <circle cx={size / 2} cy={size / 2} r={size / 5.5} fill="rgba(255,79,216,0.12)" stroke="rgba(255,79,216,0.4)" strokeWidth="1.5" />
       {dots}
     </svg>
   );
@@ -529,6 +529,9 @@ const ADMIN_SCREEN_KEY = 'ejabashkohu-admin-screen';
 function HajdeApp() {
   const { t, locale } = useI18n()
   const { user: authUser, loading, signIn, signUp, signOut, pendingEmailConfirmation, clearPendingEmailConfirmation } = useAuth()
+  // latest auth user for async callbacks (handlePostLogin) that must not act on a stale closure
+  const authUserRef = useRef(authUser)
+  authUserRef.current = authUser
   // Routes (main.tsx): "/" and "/t/:code" (share link of a table). Other paths render the app as "/".
   const location = useLocation();
   const navigate = useNavigate();
@@ -689,6 +692,12 @@ function HajdeApp() {
       setShowDeactivatedGate(true);
       setScreen('onboard');
       setStep(0);
+      return;
+    }
+
+    // Google/Apple account that has not finished onboarding (name, age, photo, terms):
+    // stay on the onboarding steps instead of dropping the user into the feed.
+    if (data && !data.is_admin && !isOnboardingComplete(data) && socialProviderOf(authUserRef.current)) {
       return;
     }
 
@@ -2522,6 +2531,8 @@ function HajdeApp() {
       // Mid-registration: stay on onboarding steps, do not hijack to feed
       if (step > 0 && registrationUserId && authUser.id === registrationUserId) return;
       if (dbProfile && !isOnboardingComplete(dbProfile)) return;
+      // Social sign-in: wait until the profile row is known before deciding onboarding is done
+      if (socialProviderOf(authUser) && !dbProfile) return;
       if (loadPendingRegistration()?.userId === authUser.id) return;
       void handlePostLogin(authUser.id, { preferStored: true });
     }
