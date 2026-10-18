@@ -112,7 +112,10 @@ DATABASES = {
         'PASSWORD': env('DB_PASSWORD', ''),
         'HOST': env('DB_HOST', '/tmp'),
         'PORT': env('DB_PORT', '54329'),
-        'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60')),
+        # Dev (DEBUG) closes the connection after every request: ASGI serves each request on a
+        # pool thread and every thread would otherwise keep its own persistent connection, which
+        # exhausts Supabase's session pooler (15 clients on the free tier -> EMAXCONNSESSION).
+        'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '0' if DEBUG else '60')),
         'OPTIONS': {'sslmode': env('DB_SSLMODE', 'prefer')},
     }
 }
