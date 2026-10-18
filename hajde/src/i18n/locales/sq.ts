@@ -22,10 +22,13 @@ import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phas
 export default {
   app: {
     loading: 'Duke ngarkuar…',
+    confirm: 'Vazhdo',
+    cancel: 'Anulo',
+    close: 'Mbyll',
   },
   passwordRecovery: {
     title: 'Vendos fjalëkalim të ri',
-    placeholder: 'Fjalëkalimi i ri (min. 6 karaktere)',
+    placeholder: 'Fjalëkalimi i ri (min. 8 karaktere)',
     saveBusy: 'Duke ruajtur…',
     saveBtn: 'Ruaj fjalëkalimin e ri',
   },
@@ -43,13 +46,13 @@ export default {
     heroTitleAfter: 'për ty.',
     heroSubtitle:
       'Platforma sociale e Kosovës ku njerëzit hapin tavolina në kafene, organizojnë hiking dhe ndajnë vozitje. Ti zgjedh ku të ulesh.',
-    heroFee: 'Regjistrim falas · Rezervimi i vendit 2.00 €',
+    heroFee: 'Regjistrim falas · Rezervimi i vendit 2,00 €',
     liveBadge: 'LIVE · ngjarje të hapura sonte',
     heroHow: 'Si funksionon →',
     heroCards: {
       mainLabel: 'Sonte · 21:00',
       mainTitle: 'Kuiz te Soma',
-      mainHost: 'nikoqir: Dardani · 0,6 km',
+      mainHost: 'Nikoqir: Dardani · 0,6 km',
       sportLabel: 'Sport · nesër',
       sportTitle: 'Padel 2v2',
       sportSeats: '1 vend i lirë',
@@ -88,7 +91,7 @@ export default {
     trust: {
       t1: {
         title: 'Foto reale të verifikuar',
-        body: 'Çdo profil kalon kontrollin automatik të fytyrës. Profil i rremë. Llogarinë e bllokojmë.',
+        body: 'Çdo profil kalon kontrollin automatik të fytyrës. Llogaritë me profil të rremë i bllokojmë.',
       },
       t2: {
         title: 'Vetëm 18+',
@@ -112,7 +115,7 @@ export default {
     faq: {
       f1: {
         q: 'A është ejaBashkohu falas?',
-        a: 'Regjistrimi dhe shfletimi janë plotësisht falas. Kur bashkohesh te tavolina e dikujt, paguan 2.00 € për të konfirmuar vendin. Kjo siguron që të gjithë janë seriozë. Vozitjet janë gjithmonë falas.',
+        a: 'Regjistrimi dhe shfletimi janë plotësisht falas. Kur bashkohesh te tavolina e dikujt, paguan 2,00 € për të konfirmuar vendin. Kjo siguron që të gjithë janë seriozë. Vozitjet janë gjithmonë falas.',
       },
       f2: {
         q: 'Si sigurohet siguria në platormë?',
@@ -123,8 +126,8 @@ export default {
         a: 'Refuzimi është diskret. Nuk merr vesh arsyen. Mund të kërkosh te tavolina tjetër. Nikoqirët kanë të drejtë të zgjedhin me kë ndajnë tavolinën e tyre.',
       },
       f4: {
-        q: 'A rimbursohet pagesa nëse anulohet takimi?',
-        a: 'Tarifa prej 2.00 € nuk rimbursohet pasi konfirmon pjesëmarrjen. Kjo politikë ekziston për të siguruar seriozitetin e të gjithë anëtarëve.',
+        q: 'A rimbursohet tarifa prej 2,00 €?',
+        a: 'Tarifa prej 2,00 € nuk rimbursohet pasi konfirmon pjesëmarrjen. Kjo politikë ekziston për të siguruar seriozitetin e të gjithë anëtarëve.',
       },
       f5: {
         q: 'A mund të përdoret nga turistët?',
@@ -213,7 +216,7 @@ export default {
       pickBtn: 'Bëj / zgjidh foto',
       changeBtn: 'Ndrysho foton',
       flipBtn: 'Ktheje anën',
-      uploadingText: 'Duke ngarkuar...',
+      uploadingText: 'Duke ngarkuar…',
       continueBtn: 'Vazhdo',
       continueAnywayBtn: 'Vazhdo pa foto (profili do të verifikohet nga ekipi)',
       hint: 'Fotoja kontrollohet automatikisht. Duhet të tregojë fytyrë reale. U tregohet vetëm nikoqirëve.',
@@ -325,14 +328,14 @@ export default {
     title: 'Darka e së Mërkurës',
     progress: 'Pyetja {{current}} nga {{total}}',
     otherOption: 'Diçka tjetër',
-    otherPlaceholder: 'Shkruaj përgjigjen tënde...',
+    otherPlaceholder: 'Shkruaj përgjigjen tënde…',
     continueBtn: 'Vazhdo',
     continueWithCount: 'Vazhdo ({{count}})',
     langsHint: 'Zgjedh një ose më shumë gjuhë ku ndihesh rehat në darkë.',
     feeNote: 'Përgjigjet përdoren vetëm për të të ulur me njerëz me interesa të ngjashme',
     matchingTitle: 'Duke të përputhur…',
-    matchingSub: 'Po krahasojmë përgjigjet e tua me qindra të tjerë në Prishtinë',
-    matchedTitle: 'U përputhe me 5 persona!',
+    matchingSub: 'Po krahasojmë përgjigjet e tua me regjistrimet e tjera',
+    matchedTitle: 'Të gjetëm përputhjen!',
     matchedSub: 'Të njëjtat interesa, energji e ngjashme. Sipas kuizit tënd.',
     matchedWhen: 'E mërkurë, 20:00 · Prishtinë',
     matchedVenueHint: 'Restoranti zbulohet 24 orë para darkës',

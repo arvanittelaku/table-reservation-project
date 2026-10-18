@@ -3,14 +3,14 @@ export const errors = {
   invalidCredentials: 'Email ose fjalëkalimi është i gabuar.',
   emailNotConfirmed: 'Konfirmo email-in tënd para se të hysh.',
   emailAlreadyRegistered: 'Ky email është i regjistruar tashmë.',
-  passwordMinLength: 'Fjalëkalimi duhet të ketë të paktën 6 karaktere.',
+  passwordMinLength: 'Fjalëkalimi duhet të ketë të paktën 8 karaktere, me shkronja të mëdha, të vogla dhe numra.',
   passwordInvalid: 'Fjalëkalimi nuk është i vlefshëm.',
   passwordPolicy: 'Fjalëkalimi duhet të ketë të paktën 8 karaktere, me shkronja të mëdha, të vogla dhe numra.',
   passwordLeaked: 'Ky fjalëkalim është përdorur gjerësisht dhe nuk është i sigurt. Provo një tjetër.',
   emailRateLimitExceeded: 'Shumë përpjekje. Prit disa minuta dhe provo sërish.',
   invalidEmail: 'Adresa e email-it nuk është e vlefshme.',
   passwordResetRateLimit:
-    'Ke kërkuar tashmë një link. Prit {{seconds}} sekonda para se të kërkosh sërish — vetëm emaili më i fundit funksionon.',
+    'Ke kërkuar tashmë një link. Prit {{seconds}} sekonda para se të kërkosh sërish. Vetëm emaili më i fundit funksionon.',
   tableNotAvailable: 'Kjo tavolinë nuk është më e disponueshme.',
   tableExpired: 'Kjo tavolinë ka skaduar.',
   cannotJoinOwnTable: "Nuk mund t'i bashkohesh tavolinës tënde.",
@@ -47,7 +47,7 @@ export const errors = {
 
 export const toasts = {
   sessionExpired: 'Sesioni skadoi. Hyr përsëri',
-  passwordMinLength: 'Fjalëkalimi duhet të jetë të paktën 6 karaktere',
+  passwordMinLength: 'Fjalëkalimi duhet të ketë të paktën 8 karaktere, me shkronja të mëdha, të vogla dhe numra',
   passwordChangedSignInAgain: 'Fjalëkalimi u ndryshua. Hyr me të riun',
   genericFailed: 'Dështoi. Provo sërish',
   badgeEarned: 'Distinktiv i ri: {{label}}',
@@ -94,7 +94,7 @@ export const notifications = {
   reportSubmitted: 'Raporti u dërgua. Ekipi ynë e shqyrton brenda 24 orësh.',
   requestApproved: 'Kërkesa u aprovua. Personi duhet të konfirmojë vendin.',
   wednesdayMatch:
-    'U përputhe me 5 persona për Darkën e së Mërkurës! Konfirmo vendin. Restoranti zbulohet 24h para.',
+    'U përputhe për Darkën e së Mërkurës! Konfirmo vendin. Restoranti zbulohet 24h para.',
   hostSeatConfirmedNotif: '{{guest}} konfirmoi vendin te "{{table}}".',
   tableClosedByHostNotif: 'Tavolina "{{table}}" u mbyll nga nikoqiri.',
   requestNew: '{{name}} kërkon t\'i bashkohet "{{title}}". Shiko profilin dhe vendos.',

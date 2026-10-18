@@ -8,6 +8,8 @@ const ERROR_KEY_MAP: Record<string, string> = {
   'You must be 18 or older to join ejaBashkohu': 'errors.mustBe18',
   'Regjistrimi dështoi. Provo sërish': 'errors.registrationFailed',
   'Password should be at least 6 characters': 'errors.passwordMinLength',
+  'Password should be at least 8 characters.': 'errors.passwordPolicy',
+  'Password should be at least 8 characters': 'errors.passwordPolicy',
   'Signup requires a valid password': 'errors.passwordInvalid',
   'Email rate limit exceeded': 'errors.emailRateLimitExceeded',
   'Invalid email': 'errors.invalidEmail',

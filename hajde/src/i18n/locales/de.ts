@@ -22,10 +22,13 @@ import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phas
 export default {
   app: {
     loading: 'Wird geladen…',
+    confirm: 'Weiter',
+    cancel: 'Abbrechen',
+    close: 'Schließen',
   },
   passwordRecovery: {
     title: 'Neues Passwort festlegen',
-    placeholder: 'Neues Passwort (min. 6 Zeichen)',
+    placeholder: 'Neues Passwort (min. 8 Zeichen)',
     saveBusy: 'Wird gespeichert…',
     saveBtn: 'Neues Passwort speichern',
   },
@@ -75,7 +78,7 @@ export default {
     },
     catsTitle: 'Was findest du?',
     catsSub:
-      'Vom Morgenkaffee bis zum Wandern in Rugova. jede soziale Aktivität hat ihren Platz auf ejaBashkohu.',
+      'Vom Morgenkaffee bis zur Wanderung in Rugova: Jede soziale Aktivität hat ihren Platz auf ejaBashkohu.',
     categories: {
       c1: { title: 'Café & Getränke', desc: 'Tische in Cafés in Pristina und anderen Städten' },
       c2: { title: 'Wandern & Natur', desc: 'Aufstiege am Gjeravica, Spaziergänge in Rugova, Gruppentouren' },
@@ -88,7 +91,7 @@ export default {
     trust: {
       t1: {
         title: 'Verifizierte echte Fotos',
-        body: 'Jedes Profil durchläuft automatische Gesichtsprüfung. Fake-Profil. Wir sperren das Konto.',
+        body: 'Jedes Profil durchläuft automatische Gesichtsprüfung. Konten mit Fake-Profil sperren wir.',
       },
       t2: {
         title: 'Nur 18+',
@@ -123,7 +126,7 @@ export default {
         a: 'Die Ablehnung ist diskret. Du erfährst den Grund nicht. Du kannst einen anderen Tisch anfragen. Gastgeber wählen, mit wem sie ihren Tisch teilen.',
       },
       f4: {
-        q: 'Wird die Zahlung erstattet, wenn das Treffen abgesagt wird?',
+        q: 'Wird die Gebühr von 2,00 € erstattet?',
         a: 'Die Gebühr von 2,00 € wird nach Bestätigung der Teilnahme nicht erstattet. Diese Regel sichert die Ernsthaftigkeit aller Mitglieder.',
       },
       f5: {
@@ -213,7 +216,7 @@ export default {
       pickBtn: 'Foto aufnehmen / wählen',
       changeBtn: 'Foto ändern',
       flipBtn: 'Spiegeln',
-      uploadingText: 'Wird hochgeladen...',
+      uploadingText: 'Wird hochgeladen…',
       continueBtn: 'Weiter',
       continueAnywayBtn: 'Ohne Foto fortfahren (Profil wird vom Team geprüft)',
       hint: 'Fotos werden automatisch geprüft. Sie müssen ein echtes Gesicht zeigen. Nur Gastgeber sehen dein Foto.',
@@ -325,14 +328,14 @@ export default {
     title: 'Mittwochs-Dinner',
     progress: 'Frage {{current}} von {{total}}',
     otherOption: 'Etwas anderes',
-    otherPlaceholder: 'Schreib deine Antwort...',
+    otherPlaceholder: 'Schreib deine Antwort…',
     continueBtn: 'Weiter',
     continueWithCount: 'Weiter ({{count}})',
     langsHint: 'Wähle eine oder mehrere Sprachen, in denen du dich beim Dinner wohlfühlst.',
     feeNote: 'Antworten werden nur genutzt, um dich mit ähnlich interessierten Menschen zu platzieren',
     matchingTitle: 'Wir suchen dein Match…',
-    matchingSub: 'Wir vergleichen deine Antworten mit Hunderten anderen in Pristina',
-    matchedTitle: 'Du passt zu 5 Personen!',
+    matchingSub: 'Wir vergleichen deine Antworten mit den anderen Anmeldungen',
+    matchedTitle: 'Wir haben dein Match gefunden!',
     matchedSub: 'Gleiche Interessen, ähnliche Energie. Basierend auf deinem Quiz.',
     matchedWhen: 'Mittwoch, 20:00 · Pristina',
     matchedVenueHint: 'Restaurant wird 24 Stunden vor dem Essen enthüllt',

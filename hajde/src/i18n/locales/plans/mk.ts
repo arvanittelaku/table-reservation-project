@@ -10,6 +10,7 @@ export const plans = {
   activeUntil: 'Премиум активен до {{date}}',
   basicCity: 'Само твојот град: {{city}}',
   basicLimit: 'До {{count}} маси месечно',
+  basicLimit_one: 'До {{count}} маса месечно',
   basicWed: 'Вечера во среда по ред',
   premiumCities: 'Сите градови во Косово',
   unlimitedTables: 'Неограничени маси',

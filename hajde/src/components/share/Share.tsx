@@ -1,3 +1,4 @@
+import { copyDialog } from '../ui/Dialog'
 import { sb } from '../../backendClient'
 import './share.css'
 import { formatEventTime } from '../../lib/formatEventTime'
@@ -73,7 +74,7 @@ export async function shareTableLink(
     showToast?.(t('share.copied'))
     return 'copied'
   } catch {
-    window.prompt(t('share.copyPrompt'), url)
+    await copyDialog(t('share.copyPrompt'), url)
     return 'prompted'
   }
 }

@@ -11,7 +11,8 @@ export const editProfile = {
   rateApp: 'Vlerëso aplikacionin', followApp: 'Na ndiq në rrjetet sociale',
 }
 export const rating = {
-  title: 'Si ishte përvoja?', starLabel: '{{n}} yje', again: 'A do të takoheshe sërish me këtë grup?',
+  title: 'Si ishte përvoja?', starLabel: '{{n}} yje',
+  starLabel_one: '{{n}} yll', again: 'A do të takoheshe sërish me këtë grup?',
   yes: 'Po, patjetër', no: 'Ndoshta jo', keepContact: 'Me kë do të mbaje kontakt? (opsionale)',
   keepContactNote: 'Ata nuk e marrin vesh nëse nuk të zgjedhin edhe ty. Vetëm përputhjet e ndërsjella hapin chat privat.',
   submit: 'Dërgo vlerësimin', footer: 'Vlerësimet përdoren për përputhje më të mira dhe për yjet e nikoqirëve',

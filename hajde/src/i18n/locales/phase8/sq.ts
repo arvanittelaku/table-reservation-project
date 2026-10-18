@@ -26,7 +26,7 @@ export const appMisc = {
   leaveTableConfirm: 'A dëshiron të largohesh? Pagesa nuk rimbursohet.',
   tableFallback: 'tavolina',
   sharePlanText:
-    'Po shkoj te tavolina "{{place}}" {{locationPart}}{{timePart}}përmes ejaBashkohu. Nëse s\'të lajmërohem 2 orë pas, më merr në telefon.',
+    'Po shkoj te tavolina "{{place}}" {{locationPart}}{{timePart}}përmes ejaBashkohu. Nëse nuk të lajmërohem brenda 2 orësh pas kësaj, më merr në telefon.',
 }
 
 export const wednesdaySeed = {

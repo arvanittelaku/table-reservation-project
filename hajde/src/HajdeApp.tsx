@@ -19,6 +19,9 @@ import { uploadAvatar, saveAvatarToProfile, getAvatarUrl, clearAvatarCache } fro
 import { checkEmailDomain } from './api/checkEmail'
 import { resendSignupConfirmation, signInWithProvider, fetchAuthProviders } from './api/auth'
 import { isEmailFormatValid } from './lib/emailValidation'
+import { isPasswordValid, PASSWORD_MIN } from './lib/password'
+import { formatAmount, formatEuro } from './lib/formatMoney'
+import { confirmDialog } from './components/ui/Dialog';
 import {
   savePendingRegistration,
   loadPendingRegistration,
@@ -575,7 +578,7 @@ function HajdeApp() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resetCooldown, setResetCooldown] = useState(0);
   const emailValid = isEmailFormatValid(user.email);
-  const passwordValid = password.length >= 8;
+  const passwordValid = isPasswordValid(password);
   const ageNum = parseInt(user.age, 10);
   const ageValid = !isNaN(ageNum) && ageNum >= 18 && ageNum <= 99;
   const ageTooYoung = !isNaN(ageNum) && user.age.length > 0 && ageNum < 18;
@@ -815,7 +818,6 @@ function HajdeApp() {
         (payload) => {
           const row = payload.new;
           if (row?.user_id === authUser.id) {
-            console.log('[ejaBashkohu] Membership channel update:', (row as { status?: string }).status); // memberships have no status column: logs undefined, as before
             void refetchTables();
           }
         },
@@ -831,14 +833,11 @@ function HajdeApp() {
         (payload) => {
           const row = payload.new;
           if (row?.user_id === authUser.id) {
-            console.log('[ejaBashkohu] Request channel update:', row.status);
             void refetchTables();
           }
         },
       )
-      .subscribe((status) => {
-        console.log('[ejaBashkohu] Membership channel status:', status);
-      });
+      .subscribe();
     return () => { sb.removeChannel(channel); };
   }, [active, authUser?.id, refetchTables]);
 
@@ -1044,9 +1043,9 @@ function HajdeApp() {
   };
 
   const deactivateAccount = async () => {
-    if (!window.confirm(t('profile.confirmDeactivate'))) return;
+    if (!(await confirmDialog(t('profile.confirmDeactivate'), { danger: true }))) return;
 
-    if (!window.confirm(t('profile.confirmDeactivateSecond'))) return;
+    if (!(await confirmDialog(t('profile.confirmDeactivateSecond'), { danger: true, confirmLabel: t('profile.deactivateAccount') }))) return;
 
     try {
       await sb.from('profiles')
@@ -1142,9 +1141,6 @@ function HajdeApp() {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (showMQ) console.log('[ejaBashkohu] quizAnswers:', quizAnswers, 'mqi:', mqi);
-  }, [showMQ, quizAnswers, mqi]);
 
   const openMatchQuiz = (startIndex = 0) => {
     setQuizAnswers((prev) => {
@@ -1162,7 +1158,7 @@ function HajdeApp() {
 
   const submitNewPassword = async (e?: React.FormEvent) => {
     e?.preventDefault?.();
-    if (newPassword.length < 6) {
+    if (!isPasswordValid(newPassword)) {
       showToast(t('toasts.passwordMinLength'));
       return;
     }
@@ -1882,7 +1878,7 @@ function HajdeApp() {
     const label = targetName?.split(" ")[0] || targetName || t('myReportsScreen.defaultUserName');
     if (
       confirm &&
-      !window.confirm(t('reportBlockSheet.confirmBlock', { name: label }))
+      !(await confirmDialog(t('reportBlockSheet.confirmBlock', { name: label }), { danger: true, confirmLabel: t('reportBlockSheet.blockUserBtn') }))
     ) {
       return false;
     }
@@ -1910,7 +1906,7 @@ function HajdeApp() {
 
   const handleChangePassword = async (e?: React.FormEvent) => {
     e?.preventDefault?.();
-    if (changeNewPassword.length < 6) {
+    if (!isPasswordValid(changeNewPassword)) {
       showToast(t('changePasswordScreen.minLengthToast'));
       return;
     }
@@ -1946,7 +1942,7 @@ function HajdeApp() {
 
   const handleUnblock = async (blockedUserId: string) => {
     if (!authUser?.id || !blockedUserId) return;
-    if (!window.confirm(t('blockedUsersScreen.confirmUnblock'))) return;
+    if (!(await confirmDialog(t('blockedUsersScreen.confirmUnblock'), { confirmLabel: t('blockedUsersScreen.unblockBtn') }))) return;
 
     try {
       const { error } = await sb
@@ -2003,7 +1999,7 @@ function HajdeApp() {
   };
 
   const leaveTable = async (id: string) => {
-    if (!window.confirm(t('appMisc.leaveTableConfirm'))) return;
+    if (!(await confirmDialog(t('appMisc.leaveTableConfirm'), { danger: true, confirmLabel: t('tableDetail.leaveTable') }))) return;
     try {
       await apiLeaveTable(id);
       setTickets((prev) => { const p = { ...prev }; delete p[id]; return p; });
@@ -2335,7 +2331,6 @@ function HajdeApp() {
       const path = await uploadAvatar(file, expectedUserId);
       await saveAvatarToProfile(path, expectedUserId);
       pendingAvatarFile.current = null;
-      console.log("[ejaBashkohu] Avatar uploaded successfully:", path);
       setUser((u) => ({ ...u, photoPath: path }));
       void reloadProfile();
       return path;
@@ -2911,7 +2906,7 @@ function HajdeApp() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={PASSWORD_MIN}
               autoFocus
             />
             <button className="btn primary full" type="submit" disabled={newPasswordBusy}>
@@ -3003,7 +2998,7 @@ function HajdeApp() {
           isAdmin={isAdmin}
           adminId={authUser?.id}
           onViewAsUser={() => setAdminScreen('main')}
-          onSignOut={() => { if (window.confirm(t('profile.confirmSignOut'))) void handleSignOut(); }}
+          onSignOut={async () => { if (await confirmDialog(t('profile.confirmSignOut'), { confirmLabel: t('profile.signOut') })) void handleSignOut(); }}
         />
       </React.Suspense>
     );
@@ -3169,7 +3164,6 @@ function HajdeApp() {
                         value={signInPassword}
                         onChange={(e) => setSignInPassword(e.target.value)}
                         required
-                        minLength={6}
                       />
                       <button
                         className="forgot-link"
@@ -3349,7 +3343,7 @@ function HajdeApp() {
                             !user.firstName.trim() ||
                             !user.lastName.trim() ||
                             !emailValid ||
-                            !(password?.length >= 6) ||
+                            !passwordValid ||
                             !agreedToTerms
                           }
                           onClick={() => {
@@ -3548,7 +3542,7 @@ function HajdeApp() {
                   onChange={(e) => setChangeNewPassword(e.target.value)}
                   autoComplete="new-password"
                   required
-                  minLength={6}
+                  minLength={PASSWORD_MIN}
                 />
                 <PasswordInput
                   placeholder={t('changePasswordScreen.confirmPasswordLabel')}
@@ -3556,7 +3550,7 @@ function HajdeApp() {
                   onChange={(e) => setChangeConfirmPassword(e.target.value)}
                   autoComplete="new-password"
                   required
-                  minLength={6}
+                  minLength={PASSWORD_MIN}
                 />
                 <button className="btn primary full" type="submit" disabled={changingPassword}>
                   {changingPassword ? t('changePasswordScreen.changingText') : t('changePasswordScreen.submitBtn')}
@@ -4379,7 +4373,7 @@ function HajdeApp() {
                   <button className="btn full primary" onClick={() => requestJoin(activeTable.id)}>
                     {t('tableDetail.requestToJoin')}
                   </button>
-                  <p className="fee-note"><ShieldCheck size={11} />{isRide(activeTable) ? t('tableDetail.paymentNoteRide', { host: activeTable.host }) : t('tableDetail.paymentNoteTable', { host: activeTable.host, fee: tableFee(activeTable).toFixed(2) })}</p>
+                  <p className="fee-note"><ShieldCheck size={11} />{isRide(activeTable) ? t('tableDetail.paymentNoteRide', { host: activeTable.host }) : t('tableDetail.paymentNoteTable', { host: activeTable.host, fee: formatAmount(tableFee(activeTable)) })}</p>
                 </>
               )}
               {st === "pending" && (
@@ -4398,7 +4392,7 @@ function HajdeApp() {
                     </button>
                   ) : (
                     <button className="btn full primary glow" onClick={() => startPayment(activeTable.id)}>
-                      {t('tableDetail.approvedConfirmPay', { fee: tableFee(activeTable).toFixed(2) })}
+                      {t('tableDetail.approvedConfirmPay', { fee: formatAmount(tableFee(activeTable)) })}
                     </button>
                   )}
                   <p className="fee-note"><Lock size={11} /> {t('tableDetail.paymentFinalNote')}</p>
@@ -4437,7 +4431,7 @@ function HajdeApp() {
                   className="btn-delete-table"
                   type="button"
                   onClick={async () => {
-                    if (!window.confirm(t('tableDetail.closeTableConfirm'))) return;
+                    if (!(await confirmDialog(t('tableDetail.closeTableConfirm'), { danger: true, confirmLabel: t('tableDetail.closeTable') }))) return;
                     try {
                       // members, requesters and the waitlist are notified by the server
                       const { error: closeErr } = await sb.from('tables')
@@ -4561,9 +4555,9 @@ function HajdeApp() {
                 </div>
 
                 <div className="pay-summary">
-                  <div className="pay-row"><span>{isRide(payTable) ? t('payment.rideSeatApproved') : t('payment.tableSeatApproved')}</span><span>{tableFee(payTable).toFixed(2)} €</span></div>
+                  <div className="pay-row"><span>{isRide(payTable) ? t('payment.rideSeatApproved') : t('payment.tableSeatApproved')}</span><span>{formatEuro(tableFee(payTable))}</span></div>
                   <div className="pay-row muted small"><span>{isRide(payTable) ? t('payment.rideExtrasNote') : t('payment.tableExtrasNote')}</span><span>-</span></div>
-                  <div className="pay-row total"><span>{t('payment.totalNow')}</span><span>{tableFee(payTable).toFixed(2)} €</span></div>
+                  <div className="pay-row total"><span>{t('payment.totalNow')}</span><span>{formatEuro(tableFee(payTable))}</span></div>
                 </div>
 
                 <p className="label">{t('payment.paymentMethodLabel')}</p>
@@ -4599,7 +4593,7 @@ function HajdeApp() {
                   onClick={confirmPayment}>
                   {payState === "processing"
                     ? <span className="spinner" aria-label={t('payment.processing')} />
-                    : t('payment.payButton', { amount: tableFee(payTable).toFixed(2) })}
+                    : t('payment.payButton', { amount: formatAmount(tableFee(payTable)) })}
                 </button>
                 <p className="fee-note"><Lock size={11} /> {t('payment.secureNote')}</p>
               </>
@@ -4804,7 +4798,7 @@ function HajdeApp() {
                 <button type="button" className="btn primary" onClick={() => setShowPlans(true)}>{t('plans.seePremium')}</button>
               </div>
             ) : (<button className="btn primary full" onClick={createTable}>{form.mode === "sport" ? t('sports.submit') : form.mode === "vozitje" ? t('createTable.submitRide') : form.mode === "udhetim" ? t('createTable.submitTrip') : t('createTable.submitTable')}</button>)}
-            <p className="fee-note"><ShieldCheck size={11} /> {form.mode === "vozitje" ? t('createTable.feeNoteRide') : t('createTable.feeNoteTable', { fee: BOOKING_FEE.toFixed(2) })}</p>
+            <p className="fee-note"><ShieldCheck size={11} /> {form.mode === "vozitje" ? t('createTable.feeNoteRide') : t('createTable.feeNoteTable', { fee: formatAmount(BOOKING_FEE) })}</p>
           </div>
         </div>
       )}
@@ -5075,8 +5069,8 @@ function HajdeApp() {
                 <button
                   className="btn ghost full"
                   type="button"
-                  onClick={() => {
-                    if (window.confirm(t('profile.confirmSignOut'))) void handleSignOut();
+                  onClick={async () => {
+                    if (await confirmDialog(t('profile.confirmSignOut'), { confirmLabel: t('profile.signOut') })) void handleSignOut();
                     setProfileView(null);
                   }}
                 >

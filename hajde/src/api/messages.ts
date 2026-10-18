@@ -97,9 +97,7 @@ export function subscribeMessages(tableId: string, onNew: (row: MessageRow) => v
         if (payload.new) onNew(payload.new)
       },
     )
-    .subscribe((status) => {
-      console.log('[ejaBashkohu] Chat channel status:', status)
-    })
+    .subscribe()
 
   return () => {
     void sb.removeChannel(channel)

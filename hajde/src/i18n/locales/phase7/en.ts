@@ -79,7 +79,7 @@ export const termsOfService = {
   section4Intro: 'The following are prohibited:',
   section4Items: [
     'Fake profiles or photos of other people',
-    'Abusive, harassing, or discriminatory behavior',
+    'Abusive, harassing, or discriminatory behaviour',
     'Offering commercial services without permission',
     'Spam or unsolicited messages',
     'Violating other members’ privacy',
@@ -87,7 +87,7 @@ export const termsOfService = {
   ],
   section5Title: '5. Safety and reporting',
   section5Body1:
-    'If you feel unsafe or see inappropriate behavior, report it immediately through the app or contact us. Our team reviews every report within 24 hours.',
+    'If you feel unsafe or see inappropriate behaviour, report it immediately through the app or contact us. Our team reviews every report within 24 hours.',
   section5Body2:
     'We reserve the right to suspend any account that violates these terms without prior notice.',
   section6Title: '6. Refund policy',
@@ -96,7 +96,7 @@ export const termsOfService = {
   section7Title: '7. Limitation of liability',
   section7Intro: 'ejaBashkohu is an intermediary platform. We are not responsible for:',
   section7Items: [
-    'Members’ behavior at in-person meetups',
+    'Members’ behaviour at in-person meetups',
     'Quality of tables organized by hosts',
     'Damage caused during shared rides',
     'Disputes between members',
@@ -133,7 +133,7 @@ export const privacyPolicy = {
   section3Items: [
     'To connect you with people who share similar interests',
     'To send you notifications about your tables',
-    'To personalize table recommendations',
+    'To personalise table recommendations',
     'For community safety (reporting and blocking)',
   ],
   section3Body: 'We never sell your data to anyone. Ever.',
@@ -147,10 +147,10 @@ export const privacyPolicy = {
     'Bank card data is never stored on our servers. Payments are processed by certified providers. We only store transaction confirmation and ticket code.',
   section6Title: '6. Your rights',
   section6Items: [
-    'Right of access — you may request all your data',
-    'Right to erasure — you may delete your account and data',
-    'Right to rectification — you may change your data',
-    'Right to data portability — you may export your data',
+    'Right of access: you may request all your data',
+    'Right to erasure: you may delete your account and data',
+    'Right to rectification: you may change your data',
+    'Right to data portability: you may request a copy of your data',
   ],
   section6Body: 'To exercise these rights, email: hello@ejabashkohu.app',
   section7Title: '7. Data security',
@@ -158,8 +158,8 @@ export const privacyPolicy = {
     'All data is transmitted with TLS encryption',
     'Data is stored with AES-256 encryption',
     'Daily backups',
-    'Access controlled with row-level security (RLS) policies',
-    'Passwords stored as hashes only — no one can read them',
+    'Access to data is limited by strict permission rules',
+    'Passwords stored as hashes only; no one can read them',
   ],
   section8Title: '8. Data retention',
   section8Body:

@@ -46,7 +46,7 @@ paths:
                   format: email
                 password:
                   type: string
-                  minLength: 6
+                  minLength: 8
                 options:
                   type: object
                   properties:

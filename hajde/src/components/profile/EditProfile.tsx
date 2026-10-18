@@ -1,3 +1,4 @@
+import { confirmDialog } from '../ui/Dialog'
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useI18n } from '../../i18n/I18nContext'
 import { sb } from '../../backendClient'
@@ -98,7 +99,7 @@ export function EditProfile({ profile, photo, languages, validatePhoto, compress
   }
 
   const removePhoto = async () => {
-    if (!window.confirm(t('editProfile.removePhotoConfirm'))) return
+    if (!(await confirmDialog(t('editProfile.removePhotoConfirm'), { danger: true, confirmLabel: t('editProfile.removePhoto') }))) return
     setPhotoBusy(true)
     try {
       await deleteAvatar()

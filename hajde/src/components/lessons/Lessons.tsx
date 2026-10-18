@@ -1,3 +1,4 @@
+import { formatEuro } from '../../lib/formatMoney'
 import { useCallback, useEffect, useMemo, useRef, useState, type DependencyList } from 'react'
 import { useI18n } from '../../i18n/I18nContext'
 import { getAvatarUrl } from '../../api/storage'
@@ -26,7 +27,7 @@ export interface LessonsProps {
   initialView?: LessonsView
 }
 
-const euros = (cents: number) => `€${(Number(cents || 0) / 100).toFixed(cents % 100 ? 2 : 0)}`
+const euros = (cents: number) => formatEuro(Number(cents || 0) / 100, { whole: true })
 const TEACH_LANGS = ['sq', 'en', 'de', 'fr', 'it', 'tr', 'sr', 'mk', 'es']
 const RADII = [5, 10, 25, 50]
 const PRICE_CAPS = [1000, 1500, 2000, 3000]
@@ -308,7 +309,7 @@ function TutorSheet({ tutor, preferredSubject, onClose, onBooked, showToast, map
           <div className="ls-price-box">
             <span>{t('lessons.lessonPrice', { minutes: duration })}</span><strong>{lessonPrice ? euros(lessonPrice) : t('lessons.free')}</strong>
             <span className="muted small">{t('lessons.paidToTeacher')}</span>
-            <span>{t('lessons.bookingFee')}</span><strong>€2</strong>
+            <span>{t('lessons.bookingFee')}</span><strong>{formatEuro(2, { whole: true })}</strong>
           </div>
           <button type="button" className="btn primary full" disabled={busy} onClick={submit}>{busy ? t('lessons.sending') : t('lessons.sendRequest')}</button>
           <p className="fee-note">{t('lessons.requestNote')}</p>

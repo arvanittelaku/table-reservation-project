@@ -4,7 +4,7 @@ export const share = {
   "text": "Join me: {{title}} · {{city}} · {{when}}",
   "copied": "Link copied. Paste it in WhatsApp, Instagram or anywhere.",
   "copyPrompt": "Copy the link:",
-  "invited": "You're invited to a table",
+  "invited": "You’re invited to a table",
   "secretTitle": "Secret place",
   "seatsLeft": "{{count}} of {{total}} seats left",
   "womenOnly": "Women only",

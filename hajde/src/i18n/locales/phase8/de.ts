@@ -9,7 +9,7 @@ export const badges = {
 export const icebreakers = [
   'Was ist der schönste Ort, den du je besucht hast?',
   'Wenn du ein Café eröffnen würdest, wie würdest du es nennen?',
-  'Macchiato oder Espresso — und warum Macchiato?',
+  'Macchiato oder Espresso? Und warum Macchiato?',
   'Welches Lied wird dir nie langweilig?',
   'Was würdest du einem Touristen zuerst in deiner Stadt zeigen?',
   'Dein verborgenes Talent, das niemand kennt?',

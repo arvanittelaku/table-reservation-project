@@ -9,7 +9,7 @@ export const badges = {
 export const icebreakers = [
   'What is the most beautiful place you have ever visited?',
   'If you opened a café, what would you call it?',
-  'Macchiato or espresso — and why macchiato?',
+  'Macchiato or espresso? And why macchiato?',
   'What song never gets old for you?',
   'What would you show a tourist first in your city?',
   'Your hidden talent that nobody knows about?',
@@ -26,7 +26,7 @@ export const appMisc = {
   leaveTableConfirm: 'Leave this table? Payment is not refunded.',
   tableFallback: 'table',
   sharePlanText:
-    'I\'m heading to the table "{{place}}" {{locationPart}}{{timePart}}via ejaBashkohu. If you don\'t hear from me 2 hours after, call me.',
+    'I’m heading to the table "{{place}}" {{locationPart}}{{timePart}}via ejaBashkohu. If you don’t hear from me within 2 hours after that, call me.',
 }
 
 export const wednesdaySeed = {
@@ -39,21 +39,21 @@ export const wednesdaySeed = {
 }
 
 export const errorsExtra = {
-  groupNotFoundOrNotMember: "The group doesn't exist or you're not a member",
+  groupNotFoundOrNotMember: "The group doesn’t exist or you’re not a member",
   applicationNotFound: "Application not found",
-  tableDatePassed: "The table's date has passed",
+  tableDatePassed: "The table’s date has passed",
   videoNotConfigured: "The video room is not set up",
   unknownBadge: "Unknown badge",
   mustBeSignedIn: "You need to be signed in",
   restaurantFieldsRequired: "Name, city and address are required",
   removeAdminRoleFirst: "Remove the admin role first",
   mapsLinkGoogle: "The map link must be a Google Maps link",
-  deactivatedCannotReactivate: "Deactivated accounts can't be reactivated",
+  deactivatedCannotReactivate: "Deactivated accounts can’t be reactivated",
   messageLength: "The message must be 1 to 500 characters",
-  cannotDeleteOwnAccount: "You can't delete your own account",
-  cannotRemoveOwnAdmin: "You can't remove the admin role from yourself",
-  cannotChangeOwnAccount: "You can't change your own account here",
-  cannotSuspendSelf: "You can't suspend yourself",
+  cannotDeleteOwnAccount: "You can’t delete your own account",
+  cannotRemoveOwnAdmin: "You can’t remove the admin role from yourself",
+  cannotChangeOwnAccount: "You can’t change your own account here",
+  cannotSuspendSelf: "You can’t suspend yourself",
   orderNotPending: "The order is not pending",
   userNotFound: "User not found",
   restaurantNotFound: "Restaurant not found",

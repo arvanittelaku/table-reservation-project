@@ -1,3 +1,4 @@
+import { formatEuro } from '../../lib/formatMoney'
 import { useState } from 'react'
 import { useI18n } from '../../i18n/I18nContext'
 import { plansApi } from '../../api/plans'
@@ -28,7 +29,7 @@ interface HomeCityPickerProps {
   onClose: () => void
 }
 
-const euro = (cents: number) => `€${(cents / 100).toFixed(2)}`
+const euro = (cents: number) => formatEuro(cents / 100)
 const SUPPORT_NUMBER = String(import.meta.env?.VITE_SUPPORT_WHATSAPP || '').replace(/\D/g, '')
 
 /** Package comparison + buying flow. */

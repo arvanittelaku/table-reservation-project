@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType }
 import { useI18n } from '../../i18n/I18nContext'
 import { sb } from '../../backendClient'
 import LanguageSwitcher from '../LanguageSwitcher'
-import { adminApi, isMissingRpc } from './adminApi'
+import { adminApi } from './adminApi'
 import { AdminCtx, useAdmin, type AdminContextValue, type AdminSection, type SectionParams, type SectionProps } from './shared'
 import type { DashboardTotals, GlobalSearch as GlobalSearchResult } from './adminTypes'
 import type { Uuid } from '../../types/db'
@@ -63,7 +63,6 @@ export default function AdminPanel({ isAdmin, onViewAsUser, onSignOut, adminId: 
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [counts, setCounts] = useState<Counts | null>(null)
-  const [setupMissing, setSetupMissing] = useState(false)
   const [me, setMe] = useState<Me | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -92,9 +91,9 @@ export default function AdminPanel({ isAdmin, onViewAsUser, onSignOut, adminId: 
           adminApi.listTutors('pending').then((r) => (r || []).length).catch(() => 0),
           adminApi.plansOverview().then((r) => (r?.orders || []).filter((o) => o.status === 'pending').length).catch(() => 0),
         ])
-        if (alive) { setCounts({ ...d.totals, tutors_pending: pending, orders_pending: orders }); setSetupMissing(false) }
+        if (alive) { setCounts({ ...d.totals, tutors_pending: pending, orders_pending: orders }) }
       })
-      .catch((err) => { if (alive && isMissingRpc(err)) setSetupMissing(true) })
+      .catch(() => { /* the counters are optional; each page shows its own load error */ })
     return () => { alive = false }
   }, [refreshKey])
 
@@ -182,13 +181,6 @@ export default function AdminPanel({ isAdmin, onViewAsUser, onSignOut, adminId: 
             <span className="adm-top-title">{t(`adm.nav.${current.key}`)}</span>
           </header>
 
-          {setupMissing && (
-            <div className="adm-setup">
-              <strong>{t('adm.setup.title')}</strong>
-              <p>{t('adm.setup.body')}</p>
-              <code>supabase/migrations/20261003120000_admin_panel_v2.sql</code>
-            </div>
-          )}
 
           <main className="adm-content">
             <Comp key={nav.key} params={nav.params} />

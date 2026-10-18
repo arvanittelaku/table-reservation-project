@@ -3,7 +3,7 @@ export const chat = {
   autoTranslate: 'Автоматски превод',
   loading: 'Се вчитува разговорот…',
   empty: 'Уште тишина… кажи нешто прво!',
-  translating: 'Се преведува...',
+  translating: 'Се преведува…',
   translateBtn: 'Преведи',
   inputPlaceholder: 'Напиши порака…',
   translateOwnTitle: 'Преведи ја својата порака',
@@ -17,6 +17,7 @@ export const chat = {
 export const profile = {
   close: 'Затвори',
   tablesHeld: '{{count}} организирани маси',
+  tablesHeld_one: '{{count}} организирана маса',
   reportUser: 'Пријави',
   blockUser: 'Блокирај корисник',
   changePassword: 'Промени лозинка',
@@ -45,13 +46,13 @@ export const changePasswordScreen = {
   successToast: 'Лозинката е успешно променета',
   wrongCurrentToast: 'Тековната лозинка е погрешна',
   mismatchToast: 'Лозинките не се совпаѓаат',
-  minLengthToast: 'Лозинката мора да има најмалку 6 знаци',
-  failedToast: 'Не успеа — обиди се повторно',
+  minLengthToast: 'Лозинката мора да има најмалку 8 знаци и големи и мали букви и броеви',
+  failedToast: 'Не успеа. Обиди се повторно',
 }
 
 export const myReportsScreen = {
   title: 'Мои пријави',
-  loading: 'Се вчитува...',
+  loading: 'Се вчитува…',
   emptyState: 'Уште немаш поднесено пријави.',
   defaultUserName: 'Корисник',
   statusPending: 'Во преглед',
@@ -62,7 +63,7 @@ export const myReportsScreen = {
 
 export const blockedUsersScreen = {
   title: 'Блокирани корисници',
-  loading: 'Се вчитува...',
+  loading: 'Се вчитува…',
   emptyState: 'Уште никого не си блокирал.',
   unblockBtn: 'Одблокирај',
   blockedOnLabel: 'Блокиран на {{date}}',
@@ -81,7 +82,7 @@ export const reportBlockSheet = {
   blockAlsoCheckbox: 'Блокирај исто така. Повеќе нема да ги гледам масите на {{name}}',
   blockWithoutReport: 'Блокирај без пријава',
   anonymityNote:
-    'Пријавата е анонимна — {{name}} нема да знае кој ја испратил. Тимот за безбедност одговара во рок од 24 часа.',
+    'Пријавата е анонимна. {{name}} нема да знае кој ја испратил. Тимот за безбедност одговара во рок од 24 часа.',
   reportSentTitle: 'Пријавата е испратена',
   postReportNoThanks: 'Не, благодарам',
   confirmBlock: 'Да го блокирам {{name}}? Неговите маси повеќе нема да се прикажуваат кај тебе.',

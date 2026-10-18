@@ -3,7 +3,7 @@ export const chat = {
   autoTranslate: 'Auto-translate',
   loading: 'Loading chat…',
   empty: 'Still quiet… say something first!',
-  translating: 'Translating...',
+  translating: 'Translating…',
   translateBtn: 'Translate',
   inputPlaceholder: 'Write a message…',
   translateOwnTitle: 'Translate your message',
@@ -17,6 +17,7 @@ export const chat = {
 export const profile = {
   close: 'Close',
   tablesHeld: '{{count}} tables hosted',
+  tablesHeld_one: '{{count}} table hosted',
   reportUser: 'Report',
   blockUser: 'Block user',
   changePassword: 'Change password',
@@ -45,14 +46,14 @@ export const changePasswordScreen = {
   successToast: 'Password changed successfully',
   wrongCurrentToast: 'Current password is incorrect',
   mismatchToast: 'Passwords do not match',
-  minLengthToast: 'Password must be at least 6 characters',
-  failedToast: 'Failed — try again',
+  minLengthToast: 'Password must be at least 8 characters and include uppercase and lowercase letters and numbers',
+  failedToast: 'Failed. Try again',
 }
 
 export const myReportsScreen = {
   title: 'My reports',
-  loading: 'Loading...',
-  emptyState: "You haven't submitted any reports yet.",
+  loading: 'Loading…',
+  emptyState: "You haven’t submitted any reports yet.",
   defaultUserName: 'User',
   statusPending: 'Under review',
   statusBanned: 'Action taken',
@@ -62,8 +63,8 @@ export const myReportsScreen = {
 
 export const blockedUsersScreen = {
   title: 'Blocked users',
-  loading: 'Loading...',
-  emptyState: "You haven't blocked anyone yet.",
+  loading: 'Loading…',
+  emptyState: "You haven’t blocked anyone yet.",
   unblockBtn: 'Unblock',
   blockedOnLabel: 'Blocked on {{date}}',
   confirmUnblock: 'Unblock this user? You will be able to see their tables again.',
@@ -81,7 +82,7 @@ export const reportBlockSheet = {
   blockAlsoCheckbox: 'Also block. I will no longer see {{name}}\'s tables',
   blockWithoutReport: 'Block without reporting',
   anonymityNote:
-    'Reporting is anonymous — {{name}} will not know who sent it. The safety team responds within 24 hours.',
+    'Reporting is anonymous. {{name}} will not know who sent it. The safety team responds within 24 hours.',
   reportSentTitle: 'Report submitted',
   postReportNoThanks: 'No, thanks',
   confirmBlock: 'Block {{name}}? Their tables will no longer appear for you.',
@@ -92,7 +93,7 @@ export const reportBlockSheet = {
   reportFailedToast: 'Report was not sent. Try again',
   reportMissingProfileToast: 'Report was not sent. Profile missing',
   reasons: {
-    inappropriate: 'Inappropriate behavior',
+    inappropriate: 'Inappropriate behaviour',
     fake_profile: 'Fake profile or stolen photo',
     spam: 'Spam / advertising',
     no_show: 'Did not show up',

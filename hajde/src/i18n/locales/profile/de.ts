@@ -11,7 +11,8 @@ export const editProfile = {
   rateApp: 'App bewerten', followApp: 'Folge uns in sozialen Netzwerken',
 }
 export const rating = {
-  title: 'Wie war es?', starLabel: '{{n}} Sterne', again: 'Würdest du diese Gruppe wieder treffen?',
+  title: 'Wie war es?', starLabel: '{{n}} Sterne',
+  starLabel_one: '{{n}} Stern', again: 'Würdest du diese Gruppe wieder treffen?',
   yes: 'Ja, auf jeden Fall', no: 'Eher nicht', keepContact: 'Mit wem möchtest du in Kontakt bleiben? (optional)',
   keepContactNote: 'Sie erfahren es nur, wenn sie dich auch wählen. Nur gegenseitige Treffer öffnen einen privaten Chat.',
   submit: 'Bewertung senden', footer: 'Bewertungen sorgen für bessere Treffer und für die Sterne der Gastgeber',

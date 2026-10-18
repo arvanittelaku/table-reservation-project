@@ -11,8 +11,9 @@ export const editProfile = {
   rateApp: 'Rate the app', followApp: 'Follow us on social media',
 }
 export const rating = {
-  title: 'How was it?', starLabel: '{{n}} stars', again: 'Would you meet this group again?',
+  title: 'How was it?', starLabel: '{{n}} stars',
+  starLabel_one: '{{n}} star', again: 'Would you meet this group again?',
   yes: 'Yes, definitely', no: 'Maybe not', keepContact: 'Who would you keep in touch with? (optional)',
-  keepContactNote: "They won't know unless they pick you too. Only mutual matches open a private chat.",
+  keepContactNote: "They won’t know unless they pick you too. Only mutual matches open a private chat.",
   submit: 'Send rating', footer: 'Ratings are used for better matches and for hosts’ stars',
 }

@@ -10,6 +10,7 @@ export const plans = {
   activeUntil: 'Premium active until {{date}}',
   basicCity: 'Your city only: {{city}}',
   basicLimit: 'Up to {{count}} tables per month',
+  basicLimit_one: 'Up to {{count}} table per month',
   basicWed: 'Wednesday Dinner in turn',
   premiumCities: 'All cities in Kosovo',
   unlimitedTables: 'Unlimited tables',

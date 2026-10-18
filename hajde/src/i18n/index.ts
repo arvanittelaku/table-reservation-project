@@ -72,9 +72,12 @@ export function tValue(locale: Locale, key: string): Dict[string] | undefined {
   return getNestedKey(LOCALES[locale] || LOCALES[DEFAULT], key) || getNestedKey(LOCALES[DEFAULT], key)
 }
 
-/** The text at `key` with {{vars}} filled in; the key itself when missing. */
+/** The text at `key` with {{vars}} filled in; the key itself when missing. A `count` (or `n`) of 1 picks `<key>_one` when it exists. */
 export function t(locale: Locale, key: string, vars: TVars = {}): string {
-  const found = tValue(locale, key)
+  // Singular form: when the number is exactly 1 and "<key>_one" exists, use it ("1 table", not "1 tables").
+  const n = Number(vars.count ?? vars.n)
+  const singular = n === 1 ? tValue(locale, `${key}_one`) : undefined
+  const found = typeof singular === 'string' ? singular : tValue(locale, key)
   if (!found) return key
   if (typeof found !== 'string') return String(found)
   let str = found

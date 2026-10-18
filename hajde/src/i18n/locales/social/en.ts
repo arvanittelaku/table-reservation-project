@@ -30,6 +30,7 @@ export const sports = {
   defaultDesc: 'We need players. Come play!',
   allSports: 'All sports',
   playersBadge: '{{count}} players',
+  playersBadge_one: '{{count}} player',
   emptySport: 'No {{sport}} games in {{city}} yet. Open the first one!',
   list: {
     football: 'Football',
@@ -56,9 +57,13 @@ export const browse = {
   live: 'live',
   count: {
     tables: '{{count}} open tables in {{city}}',
+    tables_one: '{{count}} open table in {{city}}',
     sport: '{{count}} open games in {{city}}',
+    sport_one: '{{count}} open game in {{city}}',
     trips: '{{count}} open trips from {{city}}',
+    trips_one: '{{count}} open trip from {{city}}',
     rides: '{{count}} open rides from {{city}}',
+    rides_one: '{{count}} open ride from {{city}}',
   },
 }
 

@@ -72,7 +72,7 @@ export const termsOfService = {
   section3Body1:
     'ejaBashkohu është platformë sociale për organizimin e takimeve. Ne nuk organizojmë vetë takimet. Kjo është përgjegjësi e nikoqirëve dhe mysafirëve.',
   section3Body2:
-    'Pagesa prej 2.00 € është tarifë rezervimi që konfirmon seriozitetin e pjesëmarrjes. Nuk rimbursohet pasi paguhet.',
+    'Pagesa prej 2,00 € është tarifë rezervimi që konfirmon seriozitetin e pjesëmarrjes. Nuk rimbursohet pasi paguhet.',
   section3Body3:
     'Vozitjet janë plotësisht falas. Platforma nuk ndërmjetëson pagesa mes shoferëve dhe pasagjerëve.',
   section4Title: '4. Sjellja e pranueshme',
@@ -92,7 +92,7 @@ export const termsOfService = {
     'Ne rezervojmë të drejtën të bllokojmë çdo llogari që shkel këto kushte pa paralajmërim paraprak.',
   section6Title: '6. Politika e rimbursimit',
   section6Body:
-    'Tarifa e rezervimit prej 2.00 € nuk rimbursohet pasi konfirmoni pjesëmarrjen, pavarësisht nëse anuloni takimin. Kjo politikë ekziston për të siguruar seriozitetin e të gjithë pjesëmarrësve.',
+    'Tarifa e rezervimit prej 2,00 € nuk rimbursohet pasi konfirmoni pjesëmarrjen, pavarësisht nëse anuloni takimin. Kjo politikë ekziston për të siguruar seriozitetin e të gjithë pjesëmarrësve.',
   section7Title: '7. Kufizimi i përgjegjësisë',
   section7Intro: 'ejaBashkohu është platformë ndërmjetëse. Nuk jemi përgjegjës për:',
   section7Items: [
@@ -150,7 +150,7 @@ export const privacyPolicy = {
     'E drejta e aksesit. Mund të kërkoni të gjitha të dhënat tuaja',
     'E drejta e fshirjes. Mund të fshini llogarinë dhe të dhënat tuaja',
     'E drejta e korrigjimit. Mund të ndryshoni të dhënat tuaja',
-    'E drejta e transportueshmërisë. Mund të eksportoni të dhënat tuaja',
+    'E drejta e transportueshmërisë. Mund të kërkoni një kopje të të dhënave tuaja',
   ],
   section6Body: 'Për të ushtruar këto të drejta, shkruani: hello@ejabashkohu.app',
   section7Title: '7. Siguria e të dhënave',
@@ -158,7 +158,7 @@ export const privacyPolicy = {
     'Të gjitha të dhënat transmetohen me enkriptim TLS',
     'Të dhënat ruhen me enkriptim AES-256',
     'Kopje rezervë çdo ditë',
-    'Hyrja e kontrolluar me politika të sigurisë në nivel rreshti (RLS)',
+    'Qasja në të dhëna kufizohet me rregulla të rrepta lejesh',
     'Fjalëkalimet ruhen vetëm si hash. Askush nuk i sheh',
   ],
   section8Title: '8. Ruajtja e të dhënave',

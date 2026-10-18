@@ -3,7 +3,7 @@ export const chat = {
   autoTranslate: 'Përkthim automatik',
   loading: 'Duke ngarkuar bisedën…',
   empty: 'Ende heshtje… thuaj diçka të parën!',
-  translating: 'Duke përkthyer...',
+  translating: 'Duke përkthyer…',
   translateBtn: 'Përkthe',
   inputPlaceholder: 'Shkruaj mesazh…',
   translateOwnTitle: 'Përktheje mesazhin tënd',
@@ -17,6 +17,7 @@ export const chat = {
 export const profile = {
   close: 'Mbyll',
   tablesHeld: '{{count}} tavolina të mbajtura',
+  tablesHeld_one: '{{count}} tavolinë e mbajtur',
   reportUser: 'Raporto',
   blockUser: 'Blloko përdoruesin',
   changePassword: 'Ndrysho fjalëkalimin',
@@ -45,13 +46,13 @@ export const changePasswordScreen = {
   successToast: 'Fjalëkalimi u ndryshua me sukses',
   wrongCurrentToast: 'Fjalëkalimi aktual është gabim',
   mismatchToast: 'Fjalëkalimet nuk përputhen',
-  minLengthToast: 'Fjalëkalimi duhet të ketë të paktën 6 karaktere',
-  failedToast: 'Dështoi — provo sërish',
+  minLengthToast: 'Fjalëkalimi duhet të ketë të paktën 8 karaktere, me shkronja të mëdha, të vogla dhe numra',
+  failedToast: 'Dështoi. Provo sërish',
 }
 
 export const myReportsScreen = {
   title: 'Raportimet e mia',
-  loading: 'Duke ngarkuar...',
+  loading: 'Duke ngarkuar…',
   emptyState: "S'ke bërë asnjë raportim ende.",
   defaultUserName: 'Përdorues',
   statusPending: 'Në shqyrtim',
@@ -62,7 +63,7 @@ export const myReportsScreen = {
 
 export const blockedUsersScreen = {
   title: 'Përdoruesit e bllokuar',
-  loading: 'Duke ngarkuar...',
+  loading: 'Duke ngarkuar…',
   emptyState: "S'ke bllokuar askënd ende.",
   unblockBtn: 'Zhblloko',
   blockedOnLabel: 'Bllokuar më {{date}}',

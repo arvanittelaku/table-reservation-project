@@ -50,8 +50,15 @@ def _valid_email(email):
 
 
 def _check_password_rules(password):
+    """One rule for sign-up, reset and change (the web app shows the same text): at least
+    AUTH_MIN_PASSWORD (8) characters with a lowercase letter, an uppercase letter and a number."""
     if not password or len(password) < settings.AUTH_MIN_PASSWORD:
         raise BadRequest(f'Password should be at least {settings.AUTH_MIN_PASSWORD} characters.',
+                         422, 'weak_password')
+    if not (any(c.islower() for c in password) and any(c.isupper() for c in password)
+            and any(c.isdigit() for c in password)):
+        raise BadRequest('Password should contain at least one character of each: '
+                         'abcdefghijklmnopqrstuvwxyz, ABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789.',
                          422, 'weak_password')
 
 

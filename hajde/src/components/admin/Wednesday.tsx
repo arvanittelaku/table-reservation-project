@@ -1,3 +1,4 @@
+import { confirmDialog } from '../ui/Dialog'
 import { useState } from 'react'
 import { useI18n } from '../../i18n/I18nContext'
 import { adminApi } from './adminApi'
@@ -18,7 +19,7 @@ export default function Wednesday() {
   const signupsQ = useLoader(() => adminApi.wednesdaySignups().catch((): AdminWednesdaySignup[] => []), [ctx.refreshKey])
   const signups = signupsQ.data || []
   const formNow = async () => {
-    if (!window.confirm(t('adm.wed.formBody'))) return
+    if (!(await confirmDialog(t('adm.wed.formBody'), { confirmLabel: t('adm.wed.formNow') }))) return
     setForming(true)
     try {
       await adminApi.formWednesday()

@@ -3,7 +3,7 @@ export const chat = {
   autoTranslate: 'Automatische Übersetzung',
   loading: 'Chat wird geladen…',
   empty: 'Noch still… sag etwas als Erstes!',
-  translating: 'Wird übersetzt...',
+  translating: 'Wird übersetzt…',
   translateBtn: 'Übersetzen',
   inputPlaceholder: 'Nachricht schreiben…',
   translateOwnTitle: 'Eigene Nachricht übersetzen',
@@ -17,6 +17,7 @@ export const chat = {
 export const profile = {
   close: 'Schließen',
   tablesHeld: '{{count}} Tische veranstaltet',
+  tablesHeld_one: '{{count}} Tisch veranstaltet',
   reportUser: 'Melden',
   blockUser: 'Nutzer blockieren',
   changePassword: 'Passwort ändern',
@@ -45,13 +46,13 @@ export const changePasswordScreen = {
   successToast: 'Passwort erfolgreich geändert',
   wrongCurrentToast: 'Aktuelles Passwort ist falsch',
   mismatchToast: 'Passwörter stimmen nicht überein',
-  minLengthToast: 'Passwort muss mindestens 6 Zeichen haben',
-  failedToast: 'Fehlgeschlagen — erneut versuchen',
+  minLengthToast: 'Das Passwort muss mindestens 8 Zeichen lang sein und Groß- und Kleinbuchstaben sowie Zahlen enthalten',
+  failedToast: 'Fehlgeschlagen. Erneut versuchen',
 }
 
 export const myReportsScreen = {
   title: 'Meine Meldungen',
-  loading: 'Wird geladen...',
+  loading: 'Wird geladen…',
   emptyState: 'Du hast noch keine Meldungen eingereicht.',
   defaultUserName: 'Nutzer',
   statusPending: 'In Prüfung',
@@ -62,7 +63,7 @@ export const myReportsScreen = {
 
 export const blockedUsersScreen = {
   title: 'Blockierte Nutzer',
-  loading: 'Wird geladen...',
+  loading: 'Wird geladen…',
   emptyState: 'Du hast noch niemanden blockiert.',
   unblockBtn: 'Entblocken',
   blockedOnLabel: 'Blockiert am {{date}}',
@@ -81,7 +82,7 @@ export const reportBlockSheet = {
   blockAlsoCheckbox: 'Auch blockieren. Ich sehe {{name}}s Tische nicht mehr',
   blockWithoutReport: 'Blockieren ohne Meldung',
   anonymityNote:
-    'Die Meldung ist anonym — {{name}} erfährt nicht, wer sie gesendet hat. Das Sicherheitsteam antwortet innerhalb von 24 Stunden.',
+    'Die Meldung ist anonym. {{name}} erfährt nicht, wer sie gesendet hat. Das Sicherheitsteam antwortet innerhalb von 24 Stunden.',
   reportSentTitle: 'Meldung gesendet',
   postReportNoThanks: 'Nein, danke',
   confirmBlock: '{{name}} blockieren? Seine Tische werden dir nicht mehr angezeigt.',

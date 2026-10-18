@@ -30,6 +30,7 @@ export const sports = {
   defaultDesc: 'Ни недостасуваат играчи. Дојди да играме!',
   allSports: 'Сите спортови',
   playersBadge: '{{count}} играчи',
+  playersBadge_one: '{{count}} играч',
   emptySport: 'Сè уште нема игри {{sport}} во {{city}}. Отвори ја првата!',
   list: {
     football: 'Фудбал',
@@ -56,9 +57,13 @@ export const browse = {
   live: 'во живо',
   count: {
     tables: '{{count}} отворени маси во {{city}}',
+    tables_one: '{{count}} отворена маса во {{city}}',
     sport: '{{count}} отворени игри во {{city}}',
+    sport_one: '{{count}} отворена игра во {{city}}',
     trips: '{{count}} отворени патувања од {{city}}',
+    trips_one: '{{count}} отворено патување од {{city}}',
     rides: '{{count}} отворени превози од {{city}}',
+    rides_one: '{{count}} отворен превоз од {{city}}',
   },
 }
 

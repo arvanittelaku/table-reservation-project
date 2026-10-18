@@ -187,7 +187,7 @@ JWT_ACCESS_TTL = int(env('JWT_ACCESS_TTL', '3600'))           # 1 hour, like Sup
 REFRESH_TOKEN_TTL_DAYS = int(env('REFRESH_TOKEN_TTL_DAYS', '30'))
 AUTH_EMAIL_CONFIRM = env_bool('AUTH_EMAIL_CONFIRM', True)       # require email confirmation
 AUTH_LINK_TTL = int(env('AUTH_LINK_TTL', str(24 * 3600)))      # confirmation/reset links
-AUTH_MIN_PASSWORD = int(env('AUTH_MIN_PASSWORD', '6'))
+AUTH_MIN_PASSWORD = int(env('AUTH_MIN_PASSWORD', '8'))
 AUTH_RATE_LIMIT_PER_MIN = int(env('AUTH_RATE_LIMIT_PER_MIN', '20'))
 
 OAUTH = {

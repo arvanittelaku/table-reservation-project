@@ -196,7 +196,7 @@ def static_paths():
             'description': 'Sends a confirmation email unless AUTH_EMAIL_CONFIRM is off (then a session is returned). '
                            '`options.data` becomes the user metadata (first_name, last_name, age...).',
             'requestBody': _body({'type': 'object', 'required': ['email', 'password'], 'properties': {
-                'email': {'type': 'string', 'format': 'email'}, 'password': {'type': 'string', 'minLength': 6},
+                'email': {'type': 'string', 'format': 'email'}, 'password': {'type': 'string', 'minLength': 8},
                 'options': {'type': 'object', 'properties': {
                     'data': {'type': 'object'}, 'emailRedirectTo': {'type': 'string', 'format': 'uri'}}}}}),
             'responses': {'200': _json({'type': 'object', 'properties': {

@@ -30,6 +30,7 @@ export const sports = {
   defaultDesc: 'Na mungojnë lojtarë. Hajde luajmë!',
   allSports: 'Të gjitha sportet',
   playersBadge: '{{count}} lojtarë',
+  playersBadge_one: '{{count}} lojtar',
   emptySport: "S'ka ende lojëra {{sport}} në {{city}}. Hape të parën!",
   list: {
     football: 'Futboll',
@@ -56,9 +57,13 @@ export const browse = {
   live: 'live',
   count: {
     tables: '{{count}} tavolina të hapura në {{city}}',
+    tables_one: '{{count}} tavolinë e hapur në {{city}}',
     sport: '{{count}} lojëra të hapura në {{city}}',
+    sport_one: '{{count}} lojë e hapur në {{city}}',
     trips: '{{count}} udhëtime të hapura nga {{city}}',
+    trips_one: '{{count}} udhëtim i hapur nga {{city}}',
     rides: '{{count}} vozitje të hapura nga {{city}}',
+    rides_one: '{{count}} vozitje e hapur nga {{city}}',
   },
 }
 

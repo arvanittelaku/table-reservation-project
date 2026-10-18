@@ -22,10 +22,13 @@ import { badges, icebreakers, appMisc, wednesdaySeed, errorsExtra } from './phas
 export default {
   app: {
     loading: 'Loading…',
+    confirm: 'Continue',
+    cancel: 'Cancel',
+    close: 'Close',
   },
   passwordRecovery: {
     title: 'Set a new password',
-    placeholder: 'New password (min. 6 characters)',
+    placeholder: 'New password (min. 8 characters)',
     saveBusy: 'Saving…',
     saveBtn: 'Save new password',
   },
@@ -43,13 +46,13 @@ export default {
     heroTitleAfter: 'for you.',
     heroSubtitle:
       'Kosovo’s social platform where people open tables at cafés, organize hikes, and share rides. You choose where to sit.',
-    heroFee: 'Free registration · Seat reservation 2.00 €',
+    heroFee: 'Free registration · Seat reservation €2.00',
     liveBadge: 'Live · events open tonight',
     heroHow: 'How it works →',
     heroCards: {
       mainLabel: 'Tonight · 21:00',
       mainTitle: 'Quiz at Soma',
-      mainHost: 'host: Dardan · 0.6 km',
+      mainHost: 'Host: Dardan · 0.6 km',
       sportLabel: 'Sport · tomorrow',
       sportTitle: 'Padel 2v2',
       sportSeats: '1 free seat',
@@ -75,7 +78,7 @@ export default {
     },
     catsTitle: 'What can you find?',
     catsSub:
-      'From morning coffee to hiking in Rugova. every social activity has its place on ejaBashkohu.',
+      'From morning coffee to hiking in Rugova, every social activity has its place on ejaBashkohu.',
     categories: {
       c1: { title: 'Café & drinks', desc: 'Tables at cafés in Pristina and other cities' },
       c2: { title: 'Hiking & nature', desc: 'Climbs in Gjeravica, walks in Rugova, group expeditions' },
@@ -88,7 +91,7 @@ export default {
     trust: {
       t1: {
         title: 'Verified real photos',
-        body: 'Every profile passes automatic face checks. Fake profile. We block the account.',
+        body: 'Every profile passes automatic face checks. We block any account with a fake profile.',
       },
       t2: {
         title: '18+ only',
@@ -112,7 +115,7 @@ export default {
     faq: {
       f1: {
         q: 'Is ejaBashkohu free?',
-        a: 'Registration and browsing are completely free. When you join someone’s table, you pay 2.00 € to confirm your seat. This keeps everyone serious. Rides are always free.',
+        a: 'Registration and browsing are completely free. When you join someone’s table, you pay €2.00 to confirm your seat. This keeps everyone serious. Rides are always free.',
       },
       f2: {
         q: 'How is safety ensured on the platform?',
@@ -123,8 +126,8 @@ export default {
         a: 'Rejection is discreet. You won’t know the reason. You can request another table. Hosts choose who they share their table with.',
       },
       f4: {
-        q: 'Is the payment refunded if the meetup is cancelled?',
-        a: 'The 2.00 € fee is not refunded after you confirm attendance. This policy ensures everyone takes participation seriously.',
+        q: 'Is the €2.00 fee refundable?',
+        a: 'The €2.00 fee is not refunded after you confirm attendance. This policy ensures everyone takes participation seriously.',
       },
       f5: {
         q: 'Can tourists use it?',
@@ -213,7 +216,7 @@ export default {
       pickBtn: 'Take / choose photo',
       changeBtn: 'Change photo',
       flipBtn: 'Flip',
-      uploadingText: 'Uploading...',
+      uploadingText: 'Uploading…',
       continueBtn: 'Continue',
       continueAnywayBtn: 'Continue without photo (profile will be reviewed by our team)',
       hint: 'Photos are checked automatically. They must show a real face. Only hosts see your photo.',
@@ -225,7 +228,7 @@ export default {
       faceErrors: {
         too_dark: 'Photo is too dark. Try better lighting.',
         too_bright: 'Photo is too bright. Avoid glare.',
-        too_flat: 'Photo looks uniform (single color). Use a real photo where your face is visible.',
+        too_flat: 'Photo looks uniform (single colour). Use a real photo where your face is visible.',
         no_face: 'No face detected. Make sure your face is clear and not covered by a mask.',
         invalid_file: 'Please choose an image file.',
         read_error: 'Could not read the photo. Try another.',
@@ -325,14 +328,14 @@ export default {
     title: 'Wednesday Dinner',
     progress: 'Question {{current}} of {{total}}',
     otherOption: 'Something else',
-    otherPlaceholder: 'Write your answer...',
+    otherPlaceholder: 'Write your answer…',
     continueBtn: 'Continue',
     continueWithCount: 'Continue ({{count}})',
     langsHint: 'Pick one or more languages you’re comfortable with at dinner.',
     feeNote: 'Answers are used only to seat you with people who have similar interests',
     matchingTitle: 'Matching you…',
-    matchingSub: 'Comparing your answers with hundreds of others in Pristina',
-    matchedTitle: 'You matched with 5 people!',
+    matchingSub: 'Comparing your answers with the other sign-ups',
+    matchedTitle: 'We found your match!',
     matchedSub: 'Same interests, similar energy. Based on your quiz.',
     matchedWhen: 'Wednesday, 8:00 PM · Pristina',
     matchedVenueHint: 'Restaurant revealed 24 hours before dinner',

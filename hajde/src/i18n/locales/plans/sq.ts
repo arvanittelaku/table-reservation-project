@@ -10,6 +10,7 @@ export const plans = {
   activeUntil: 'Premium aktiv deri më {{date}}',
   basicCity: 'Vetëm qyteti yt: {{city}}',
   basicLimit: 'Deri {{count}} tavolina në muaj',
+  basicLimit_one: 'Deri {{count}} tavolinë në muaj',
   basicWed: 'Darka e Mërkurës sipas radhës',
   premiumCities: 'Të gjitha qytetet e Kosovës',
   unlimitedTables: 'Tavolina pa limit',

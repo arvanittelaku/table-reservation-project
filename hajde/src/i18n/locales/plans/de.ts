@@ -10,6 +10,7 @@ export const plans = {
   activeUntil: 'Premium aktiv bis {{date}}',
   basicCity: 'Nur deine Stadt: {{city}}',
   basicLimit: 'Bis zu {{count}} Tische pro Monat',
+  basicLimit_one: 'Bis zu {{count}} Tisch pro Monat',
   basicWed: 'Mittwochsdinner der Reihe nach',
   premiumCities: 'Alle Städte im Kosovo',
   unlimitedTables: 'Unbegrenzt Tische',

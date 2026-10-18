@@ -7,6 +7,7 @@ import HajdeApp from './HajdeApp'
 import { I18nProvider } from './i18n/I18nContext'
 import { detectLocale, loadLocale } from './i18n/index'
 import { queryClient } from './lib/queryClient'
+import { DialogHost } from './components/ui/Dialog'
 
 /* One app shell for every path; HajdeApp reads the route (useLocation):
  *   /            feed / landing
@@ -49,7 +50,7 @@ class CrashBoundary extends Component<{ children: ReactNode }, { error: Error | 
 const render = () => ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <QueryClientProvider client={queryClient}>
     <I18nProvider>
-      <CrashBoundary><RouterProvider router={router} /></CrashBoundary>
+      <CrashBoundary><RouterProvider router={router} /><DialogHost /></CrashBoundary>
     </I18nProvider>
   </QueryClientProvider>,
 )
