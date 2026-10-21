@@ -37,3 +37,5 @@ node_modules/.cache/
 # IDE / hosting
 .vercel
 dump.rdb
+.env-old/
+.env.bak
