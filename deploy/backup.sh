@@ -1,13 +1,13 @@
 #!/bin/bash
 # Daily database backup: pg_dump of the public + auth schemas (plain SQL, gzip)
 # into deploy/backups/, keeps the last ${BACKUP_KEEP_DAYS:-14} days. With
-# BACKUP_S3=1 (and the S3_* settings in .env.production) the file is also
+# BACKUP_S3=1 (and the S3_* settings in .env) the file is also
 # uploaded to the bucket under backups/ (private, signed with the backend's SigV4 client).
 #   cron: 15 3 * * * cd /opt/ejabashkohu/deploy && ./backup.sh >> backups/backup.log 2>&1
 # Restore: gunzip -c backups/<file>.sql.gz | psql "<connection string>"
 set -euo pipefail
 cd "$(dirname "$0")"
-set -a; . ./.env.production; set +a
+set -a; . ../.env; set +a
 KEEP="${BACKUP_KEEP_DAYS:-14}"
 mkdir -p backups
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)

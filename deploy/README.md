@@ -14,9 +14,9 @@ Supabase; the web app stays on Cloudflare Pages.
 ## 2. Configure
 ```bash
 git clone <this repo> && cd <repo>/deploy
-cp .env.production.example .env.production && chmod 600 .env.production
-nano .env.production                        # secrets, database, SMTP, Google
-echo "API_DOMAIN=api.ejabashkohu.com" > .env
+cd .. && cp .env.example .env && chmod 600 .env && cd deploy
+nano ../.env        # the one env file: follow the "PRODUCTION" notes in it
+                    # (secrets, database, SMTP, Google, API_DOMAIN)
 ```
 - **Database:** Supabase → Project Settings → Database → Connection string →
   *Session pooler* (host, user `postgres.upxxfhvgbmddhyebaiug`, password).
@@ -51,9 +51,9 @@ SQL logic, restarts the backend and copies the profile photos.
 ## 5. Deploy the web app right after
 On your computer, in `hajde/`:
 ```bash
-echo "VITE_API_URL=https://api.ejabashkohu.com" > .env.production.local
-echo "VITE_SUPPORT_WHATSAPP=<support number, digits only>" >> .env.production.local
-npm run build && npx wrangler pages deploy dist --branch production
+# VITE_API_URL / VITE_SUPPORT_WHATSAPP are read from the root .env (or from the
+# environment, e.g. Cloudflare Pages -> Settings -> Environment variables)
+VITE_API_URL=https://api.ejabashkohu.com VITE_SUPPORT_WHATSAPP=<digits only> npm run build && npx wrangler pages deploy dist --branch production
 ```
 Users sign in again once, with their existing passwords.
 
@@ -81,7 +81,7 @@ Users sign in again once, with their existing passwords.
   (with `STORAGE_BACKEND=s3` the photos are in the bucket instead).
 - Database backups: `deploy/backup.sh` dumps the `public` and `auth` schemas
   (`pg_dump` in a `postgres:17-alpine` container) to `deploy/backups/db-<time>.sql.gz`
-  and keeps 14 days (`BACKUP_KEEP_DAYS`). With `BACKUP_S3=1` in `.env.production` it also
+  and keeps 14 days (`BACKUP_KEEP_DAYS`). With `BACKUP_S3=1` in `.env` it also
   uploads each file to the S3 bucket under `backups/` (add a lifecycle rule there to expire
   old ones). Daily at 03:15 via `crontab -e` (adjust the path):
   ```
@@ -113,7 +113,7 @@ $0.99 per extra MAU. Every tutor/student who joins a call in a month counts as o
 the free plan only fits testing / a handful of lessons.
 1. Sign up at https://jaas.8x8.vc, then *API Keys* → *Add API key* → *Generate API key pair*
    and download the private key (`.pk`, shown only once).
-2. In `.env.production`: `VIDEO_PROVIDER=jaas`, `JAAS_APP_ID=vpaas-magic-cookie-…`,
+2. In `.env`: `VIDEO_PROVIDER=jaas`, `JAAS_APP_ID=vpaas-magic-cookie-…`,
    `JAAS_API_KEY_ID=` the key id shown next to the key (`vpaas-magic-cookie-…/abc123`), and
    `JAAS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE…\n-----END PRIVATE KEY-----"`
    (one line, newlines as `\n`; or mount the file and set `JAAS_PRIVATE_KEY_FILE`).
@@ -128,13 +128,13 @@ parallel group lessons want 4 vCPU / 8 GB). Ports **80, 443 TCP and 10000 UDP** 
 1. DNS: A record `meet.ejabashkohu.com` → the Jitsi server (plain DNS, not proxied).
 2. On that server:
    ```bash
-   cd deploy/jitsi && cp .env.example .env && chmod 600 .env
-   nano .env      # JITSI_DOMAIN, JITSI_APP_SECRET=$(openssl rand -hex 32), JITSI_PUBLIC_IP,
+   cd deploy/jitsi && cp ../../.env.example ../../.env && chmod 600 ../../.env
+   nano ../../.env   # uncomment/fill: JITSI_DOMAIN, JITSI_APP_SECRET=$(openssl rand -hex 32), JITSI_PUBLIC_IP,
                   # LETSENCRYPT_EMAIL, JICOFO_AUTH_PASSWORD / JVB_AUTH_PASSWORD (openssl rand -hex 16)
    ufw allow 80,443/tcp && ufw allow 10000/udp
-   docker compose up -d
+   docker compose --env-file ../../.env up -d
    ```
-3. In the backend's `.env.production`: `VIDEO_PROVIDER=jitsi` and the same `JITSI_DOMAIN`,
+3. In the backend's `.env` (the same file, if it is the same machine; otherwise copy the values): `VIDEO_PROVIDER=jitsi` and the same `JITSI_DOMAIN`,
    `JITSI_APP_ID`, `JITSI_APP_SECRET`. Restart the backend; preflight shows
    `video lessons (own Jitsi, JWT HS256)` OK.
 4. Check: `https://meet.ejabashkohu.com/` shows no welcome page, `…/test` without a token

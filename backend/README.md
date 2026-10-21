@@ -64,7 +64,7 @@ Needs Python 3.12+, PostgreSQL, Redis.
 ```bash
 cd backend
 pip install -r requirements.txt
-cp .env.example .env               # adjust DB_* if needed
+cp ../.env.example ../.env       # the one project-wide .env (repo root); adjust DB_* if needed
 dev/rebuild_db.sh                  # local DB: manage.py migrate + manage.py seed_dev
 python manage.py serve             # http://localhost:8000  (HTTP + websockets + jobs)
 ```
@@ -72,7 +72,7 @@ python manage.py serve             # http://localhost:8000  (HTTP + websockets +
 Seed accounts (local only): `support@ejabashkohu.com` (admin) and
 `<first>.<last>@gmail.com`, password `Test1234!`.
 
-Web app: in `../hajde/.env` set `VITE_API_URL=http://localhost:8000`, then `npm run dev`.
+Web app: `VITE_API_URL=http://localhost:8000` is already in the same root `.env`; run `npm run dev` in `hajde/`.
 
 ### Configuration added for production
 
@@ -126,7 +126,7 @@ from 2026-10-03 on were never applied there; they are superseded by `0002`).
 1. Back up the database.
 2. Deploy this backend (a long-lived Python process, Redis, a persistent volume
    for `STORAGE_ROOT`, `pip install -r requirements.txt` incl. `bcrypt`).
-   Environment: see `.env.example`; `DB_*` from Supabase → Database → connection
+   Environment: see `.env.example` in the repo root; `DB_*` from Supabase → Database → connection
    string (user `postgres`).
 3. At the switch:
    ```bash

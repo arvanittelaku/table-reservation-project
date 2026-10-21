@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DC="docker compose"
-set -a; . ./.env.production; set +a
+set -a; . ../.env; set +a
 
 echo "== 1/6 preflight"
 $DC run --rm backend python manage.py preflight || { echo "fix the FAIL lines first"; exit 1; }

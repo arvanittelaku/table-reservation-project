@@ -1,7 +1,7 @@
 """Django settings for the ejaBashkohu backend.
 
 Everything environment-specific comes from environment variables (see
-.env.example). The database is the existing Postgres; Django runs every app
+.env.example in the repo root). The database is the existing Postgres; Django runs every app
 request as the signed-in user so the row-level rules in the database apply.
 """
 import os
@@ -22,7 +22,8 @@ def _load_dotenv(path):
         os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
-_load_dotenv(BASE_DIR / '.env')
+_load_dotenv(BASE_DIR.parent / '.env')   # the one project-wide .env (repo root)
+_load_dotenv(BASE_DIR / '.env')          # optional older location, still honoured
 
 
 def env(name, default=None):

@@ -29,7 +29,7 @@ hajde/
 
 ## Environment variables
 
-Create `hajde/.env` from `.env.example`:
+The web app reads the single project `.env` in the repo root (copy `../.env.example`, see `VITE_*`):
 
 | Variable | Description |
 |----------|-------------|
@@ -45,7 +45,7 @@ Never commit `.env`. Edge Function secrets (`SUPABASE_SERVICE_ROLE_KEY`, `SMTP_P
 ```bash
 cd hajde
 npm install
-cp .env.example .env   # then fill in values
+cp ../.env.example ../.env   # one env file for the whole project
 npm run dev            # http://localhost:5173
 ```
 

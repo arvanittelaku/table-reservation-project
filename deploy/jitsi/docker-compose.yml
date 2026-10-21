@@ -1,7 +1,7 @@
 # Optional self-hosted Jitsi Meet for online lessons (VIDEO_PROVIDER=jitsi).
 # Separate stack, best on its own VPS (4 GB+ RAM, 2+ vCPU): Jitsi needs ports 80/443
 # for its own HTTPS (Let's Encrypt) and UDP 10000 for media.
-#   cd deploy/jitsi && cp .env.example .env && nano .env && docker compose up -d
+#   cd deploy/jitsi && docker compose --env-file ../../.env up -d   # values come from the root .env
 # Official images from jitsi/docker-jitsi-meet, all pinned to one release; bump together
 # (https://github.com/jitsi/docker-jitsi-meet/releases).
 # Rooms open only with a JWT from the backend (get_lesson_room): ENABLE_AUTH=1,
