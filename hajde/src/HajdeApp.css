@@ -2763,3 +2763,18 @@ body { overflow-x: clip; }
   .app-shell .hdr-user > span { display: none; }
   .app-shell .hdr-right { gap: 6px; }
 }
+
+/* ── Landing header on phones: logo, language switcher and Sign in no longer collide ── */
+@media (max-width: 500px) {
+  .landing-nav { padding: 14px 18px; gap: 10px; }
+  .landing-nav .logo-word { font-size: 18px; letter-spacing: -.5px; }
+  .landing-nav-actions { gap: 8px; flex-shrink: 0; }
+  .landing-nav .lang-switcher { transform: none; }
+  .landing-nav .lang-switcher button { padding: 5px 8px; font-size: 11px; }
+  .landing-nav .btn { white-space: nowrap; padding-left: 14px; padding-right: 14px; }
+}
+
+/* ── Sign-up: readable terms line ── */
+.app.onboard .terms-label { color: rgba(255,255,255,.82); line-height: 1.55; font-size: 13px; }
+.app.onboard .terms-row { padding: 14px 16px; gap: 12px; }
+.app.onboard .input-group { gap: 12px; }
