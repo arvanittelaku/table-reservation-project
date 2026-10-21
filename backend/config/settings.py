@@ -5,6 +5,7 @@ Everything environment-specific comes from environment variables (see
 request as the signed-in user so the row-level rules in the database apply.
 """
 import os
+import re
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,7 +20,10 @@ def _load_dotenv(path):
         if not line or line.startswith('#') or '=' not in line:
             continue
         key, value = line.split('=', 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+        value = value.strip()
+        if value[:1] not in ('"', "'"):
+            value = re.split(r'\s+#', value, maxsplit=1)[0].strip()   # trailing "# comment"
+        os.environ.setdefault(key.strip(), value.strip('"').strip("'"))
 
 
 _load_dotenv(BASE_DIR.parent / '.env')   # the one project-wide .env (repo root)
