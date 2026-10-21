@@ -27,7 +27,7 @@ def parse(path):
         k, v = line.split('=', 1)
         k, v = k.strip(), v.strip()
         if v[:1] not in ('"', "'"):
-            v = re.split(r'\s+#', v, maxsplit=1)[0].strip()      # drop trailing "# comment"
+            v = re.split(r'(?:^|\s+)#', v, maxsplit=1)[0].strip()      # drop trailing "# comment"
         out[k] = v
     return out
 

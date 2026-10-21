@@ -22,7 +22,7 @@ def _load_dotenv(path):
         key, value = line.split('=', 1)
         value = value.strip()
         if value[:1] not in ('"', "'"):
-            value = re.split(r'\s+#', value, maxsplit=1)[0].strip()   # trailing "# comment"
+            value = re.split(r'(?:^|\s+)#', value, maxsplit=1)[0].strip()   # trailing "# comment"
         os.environ.setdefault(key.strip(), value.strip('"').strip("'"))
 
 
